@@ -1,5 +1,0 @@
-import React, { forwardRef } from 'react';
-export const FabIcon = (StyledFabIcon) => forwardRef((props, ref) => {
-    return <StyledFabIcon {...props} ref={ref}/>;
-});
-//# sourceMappingURL=FabIcon.jsx.map

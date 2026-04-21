@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+/node_modules
 
 # Expo
 .expo/
@@ -35,6 +36,8 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+app-example
 
 # generated native folders
 /ios

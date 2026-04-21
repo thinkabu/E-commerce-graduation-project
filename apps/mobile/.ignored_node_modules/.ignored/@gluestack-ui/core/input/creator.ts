@@ -1,1 +1,0 @@
-export * from '../lib/esm/input/creator';

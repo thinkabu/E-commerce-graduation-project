@@ -1,8 +1,0 @@
-import type { TextareaContext } from './types';
-export declare const TextareaProvider: {
-    (props: TextareaContext & {
-        children: React.ReactNode;
-    }): React.JSX.Element;
-    displayName: string;
-}, useTextarea: (consumerName: string) => TextareaContext;
-//# sourceMappingURL=TextareaContext.d.ts.map

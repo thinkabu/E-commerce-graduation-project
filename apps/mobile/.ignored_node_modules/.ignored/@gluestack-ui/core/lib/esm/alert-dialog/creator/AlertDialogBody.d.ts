@@ -1,4 +1,0 @@
-import React from 'react';
-declare const AlertDialogBody: <StyledAlertDialogBody>(StyledAlertDialogBody: React.ComponentType<StyledAlertDialogBody>) => React.ForwardRefExoticComponent<Omit<any, "ref"> & React.RefAttributes<unknown>>;
-export default AlertDialogBody;
-//# sourceMappingURL=AlertDialogBody.d.ts.map

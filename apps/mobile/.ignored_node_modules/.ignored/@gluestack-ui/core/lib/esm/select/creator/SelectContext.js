@@ -1,4 +1,0 @@
-import React from 'react';
-export const SelectContext = React.createContext({});
-export const SelectPortalContext = React.createContext({});
-//# sourceMappingURL=SelectContext.js.map

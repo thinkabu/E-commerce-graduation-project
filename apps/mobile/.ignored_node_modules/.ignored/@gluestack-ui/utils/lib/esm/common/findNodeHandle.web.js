@@ -1,6 +1,0 @@
-// for web, it returns the element directly
-const findNodeHandle = (node) => {
-    return node;
-};
-export { findNodeHandle };
-//# sourceMappingURL=findNodeHandle.web.js.map

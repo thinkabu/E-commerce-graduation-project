@@ -1,5 +1,0 @@
-import type { ForwardRefExoticComponent, PropsWithoutRef, RefAttributes } from 'react';
-export declare function createSpinner<SpinnerProps>({ Root, }: {
-    Root: React.ComponentType<SpinnerProps>;
-}): ForwardRefExoticComponent<PropsWithoutRef<SpinnerProps> & RefAttributes<SpinnerProps>>;
-//# sourceMappingURL=index.d.ts.map

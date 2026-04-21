@@ -1,5 +1,0 @@
-export declare const CheckboxGroupProvider: {
-    (props: any): React.JSX.Element;
-    displayName: string;
-}, useCheckboxGroup: (consumerName: string) => any;
-//# sourceMappingURL=CheckboxGroupContext.d.ts.map

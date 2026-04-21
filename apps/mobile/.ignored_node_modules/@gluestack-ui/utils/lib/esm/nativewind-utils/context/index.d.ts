@@ -1,3 +1,0 @@
-export declare const ParentContext: import("react").Context<{}>;
-export declare const useParentContext: () => any;
-//# sourceMappingURL=index.d.ts.map

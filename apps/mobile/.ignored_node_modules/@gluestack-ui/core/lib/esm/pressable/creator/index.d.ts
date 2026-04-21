@@ -1,4 +1,0 @@
-export declare function createPressable<PressableProps>({ Root, }: {
-    Root: React.ComponentType<PressableProps>;
-}): React.ForwardRefExoticComponent<React.PropsWithoutRef<PressableProps> & React.RefAttributes<PressableProps>>;
-//# sourceMappingURL=index.d.ts.map
