@@ -1,121 +1,96 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Layout from "@/components/layout/Layout";
+import Login from "@/pages/auth/Login";
+import Dashboard from "@/pages/Dashboard";
 
-function App() {
-  const [count, setCount] = useState(0)
+// Products
+import AllProducts from "@/pages/Products/AllProducts";
+import AddProduct from "@/pages/Products/AddProduct";
+import EditProduct from "@/pages/Products/EditProduct";
 
+// Users
+import AllUsers from "@/pages/Users/AllUsers";
+
+// Addresses
+import AllAddresses from "@/pages/Addresses/AllAddresses";
+
+// Categories
+import CategoryList from "@/pages/Categories/CategoryList";
+
+// Orders
+import OrderList from "@/pages/Orders/OrderList";
+
+// Coupons
+import CouponList from "@/pages/Coupons/CouponList";
+
+const App: React.FC = () => {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <Router>
+      <Routes>
+        {/* Public route */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected routes — bọc trong Layout */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
         >
-          Count is {count}
-        </button>
-      </section>
+          {/* Redirect root => /dashboard */}
+          <Route index element={<Navigate to="/dashboard" replace />} />
 
-      <div className="ticks"></div>
+          {/* Dashboard */}
+          <Route path="dashboard" element={<Dashboard />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          {/* Products */}
+          <Route path="products" element={<AllProducts />} />
+          <Route path="products/add" element={<AddProduct />} />
+          <Route path="products/edit/:id" element={<EditProduct />} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
+          {/* Users */}
+          <Route path="users" element={<AllUsers />} />
 
-export default App
+          {/* Addresses */}
+          <Route path="addresses" element={<AllAddresses />} />
+
+          {/* Categories */}
+          <Route path="category" element={<CategoryList />} />
+
+          {/* Orders */}
+          <Route path="orders" element={<OrderList />} />
+
+          {/* Coupons */}
+          <Route path="coupons" element={<CouponList />} />
+
+          {/* Placeholder pages */}
+          <Route path="report" element={<ComingSoon title="Báo cáo" />} />
+          <Route path="help" element={<ComingSoon title="Hỗ trợ" />} />
+          <Route path="setting" element={<ComingSoon title="Cài đặt" />} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+};
+
+const ComingSoon: React.FC<{ title: string }> = ({ title }) => (
+  <div className="flex flex-col items-center justify-center h-64 gap-3">
+    <div className="text-5xl">🚧</div>
+    <h2 className="text-xl font-semibold text-gray-700">{title}</h2>
+    <p className="text-gray-400 text-sm">Tính năng đang được phát triển...</p>
+  </div>
+);
+
+export default App;

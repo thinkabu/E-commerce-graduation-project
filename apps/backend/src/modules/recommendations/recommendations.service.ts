@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { IRecommendationResult } from '@repo/shared';
+
+export interface IRecommendationResult {
+  productId: string;
+  score: number;
+  reason?: string;
+}
 
 @Injectable()
 export class RecommendationsService {

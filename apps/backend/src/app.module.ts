@@ -4,11 +4,17 @@ import { MongooseModule, InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
+// Feature Modules
+import { CategoriesModule } from './modules/categories/categories.module';
+import { UsersModule } from './modules/users/users.module';
+import { ProductsModule } from './modules/products/products.module';
+import { CartModule } from './modules/cart/cart.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 
 @Module({
   imports: [
-    RecommendationsModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '../../.env',
@@ -21,6 +27,14 @@ import { RecommendationsModule } from './modules/recommendations/recommendations
       }),
       inject: [ConfigService],
     }),
+
+    // Feature Modules
+    CategoriesModule,
+    UsersModule,
+    ProductsModule,
+    CartModule,
+    WishlistModule,
+    RecommendationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

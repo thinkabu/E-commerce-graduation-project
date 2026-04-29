@@ -1,44 +1,16 @@
-// --- User Types ---
-export enum UserRole {
-  USER = 'user',
-  ADMIN = 'admin',
-}
+// =============================================
+// @repo/shared - Shared Types, Enums & Constants
+// =============================================
 
-export interface IUser {
-  id: string;
-  email: string;
-  fullName: string;
-  avatar?: string;
-  role: UserRole;
-  createdAt: string;
-}
+// --- Enums ---
+export * from './constants/enums';
 
-// --- Product Types ---
-export interface IProduct {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  images: string[];
-  category: string;
-  stock: number;
-  embedding?: number[]; // Dùng cho Vector Search
-  averageRating: number;
-  reviewCount: number;
-  createdAt: string;
-}
-
-// --- Recommendation Types ---
-export interface IRecommendationResult {
-  productId: string;
-  score: number; // Điểm ranking từ AI
-  reason?: string; // Lý do gợi ý (CF, Content-based, etc.)
-}
-
-// --- API Response Types ---
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: any;
-}
+// --- Types ---
+export * from './types/user.types';
+export * from './types/product.types';
+export * from './types/order.types';
+export * from './types/payment.types';
+export * from './types/review.types';
+export * from './types/ai.types';
+export * from './types/chat.types';
+export * from './types/common.types';
