@@ -29,15 +29,8 @@ import {
 import { useProducts } from "@/hooks/useProducts";
 import { usePageTitle } from "@/contexts/PageTitleContext";
 import { toast } from "sonner";
-import type { Product } from "@/types/product";
 
-interface Category {
-  _id: string;
-  name: string;
-  description?: string;
-  image?: string;
-  isActive: boolean;
-}
+import { fetchCategories, type Category } from "@/services/categoryService";
 
 const AllProducts: React.FC = () => {
   const { products, isLoading, error, deleteProduct } = useProducts();
@@ -50,26 +43,26 @@ const AllProducts: React.FC = () => {
 
   usePageTitle(`Danh Sách Sản Phẩm (${products.length})`);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch("http://localhost:5001/api/categories");
-      const data = await response.json();
-      setCategories(data.data || data.categories || []);
-    } catch (err: unknown) {
-      console.error("Lỗi fetch categories:", err);
-      setCategories([{ _id: "fallback", name: "All", isActive: true }]);
-    }
-  };
-
   useEffect(() => {
-    fetchCategories();
+    const loadCategories = async () => {
+      try {
+        const data = await fetchCategories();
+        setCategories(data);
+      } catch (err: unknown) {
+        console.error("Lỗi fetch categories:", err);
+      }
+    };
+    loadCategories();
   }, []);
 
   const getCategoryName = (
-    categoryId: string | { name: string } | undefined
+    categoryId: string | { _id: string; name: string; slug: string } | undefined
   ): string => {
     if (!categoryId) return "N/A";
-    return typeof categoryId === "object" ? categoryId.name : categoryId;
+    if (typeof categoryId === "object" && categoryId.name) return categoryId.name;
+    // Lookup from categories list
+    const found = categories.find((c) => c._id === categoryId);
+    return found ? found.name : String(categoryId);
   };
 
   let filteredProducts = products
@@ -83,7 +76,7 @@ const AllProducts: React.FC = () => {
     );
 
   if (sortOption !== "none") {
-    filteredProducts = filteredProducts.sort((a, b) => {
+    filteredProducts = [...filteredProducts].sort((a, b) => {
       const [field, order] = sortOption.split("-");
       const aVal = field === "name" ? a.name.toLowerCase() : a.basePrice;
       const bVal = field === "name" ? b.name.toLowerCase() : b.basePrice;
@@ -135,7 +128,7 @@ const AllProducts: React.FC = () => {
           disabled={currentPage === 1}
         >
           <ChevronLeft className="h-4 w-4" />
-          Previous
+          Trước
         </Button>
         {Array.from(
           { length: endPage - startPage + 1 },
@@ -156,7 +149,7 @@ const AllProducts: React.FC = () => {
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
         >
-          Next
+          Sau
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -226,7 +219,7 @@ const AllProducts: React.FC = () => {
             </div>
             <Button asChild className="md:w-auto w-full">
               <Link to="/products/add">
-                <Plus className="mr-2 h-4 w-4" /> Add Product
+                <Plus className="mr-2 h-4 w-4" /> Thêm Sản Phẩm
               </Link>
             </Button>
           </div>
@@ -235,14 +228,14 @@ const AllProducts: React.FC = () => {
           <Table className="table-fixed">
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead className="w-20">ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead className="w-30">Category</TableHead>
-                <TableHead className="w-24 text-right">Price ($)</TableHead>
-                <TableHead className="w-25 text-right">Discount (%)</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="w-50 sticky right-0 z-10 bg-background text-center">
-                  Actions
+                <TableHead className="w-28">Mã SP</TableHead>
+                <TableHead>Tên sản phẩm</TableHead>
+                <TableHead className="w-32">Danh mục</TableHead>
+                <TableHead className="w-28 text-right">Giá</TableHead>
+                <TableHead className="w-24 text-right">Giảm (%)</TableHead>
+                <TableHead className="w-28">Nhà SX</TableHead>
+                <TableHead className="w-40 sticky right-0 z-10 bg-background text-center">
+                  Thao tác
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -250,8 +243,8 @@ const AllProducts: React.FC = () => {
               {paginatedProducts.length > 0 ? (
                 paginatedProducts.map((product) => (
                   <TableRow key={product._id}>
-                    <TableCell className="w-20 font-medium truncate">
-                      {product.productId || product._id}
+                    <TableCell className="w-28 font-mono text-xs truncate">
+                      {product.productId || product._id.slice(-6)}
                     </TableCell>
                     <TableCell
                       className="font-medium max-w-xs truncate"
@@ -259,37 +252,36 @@ const AllProducts: React.FC = () => {
                     >
                       {product.name}
                     </TableCell>
-                    <TableCell className="w-30 truncate">
+                    <TableCell className="w-32 truncate">
                       {getCategoryName(product.categoryId)}
                     </TableCell>
-                    <TableCell className="w-24 text-right font-medium">
+                    <TableCell className="w-28 text-right font-medium">
                       {product.currency === "USD" ? "$" : "₫"}
-                      {product.basePrice.toLocaleString()}
+                      {(product.basePrice || 0).toLocaleString()}
                     </TableCell>
-                    <TableCell className="w-25 text-right">
-                      {product.discountPercentage}%
+                    <TableCell className="w-24 text-right">
+                      {product.discountPercentage || 0}%
                     </TableCell>
-                    <TableCell
-                      className="max-w-md truncate"
-                      title={product.description}
-                    >
-                      {product.description}
+                    <TableCell className="w-28 truncate" title={product.manufacturer}>
+                      {product.manufacturer || "N/A"}
                     </TableCell>
-                    <TableCell className="w-50 sticky right-0 z-10 bg-background flex space-x-2">
-                      <Button asChild variant="outline" size="sm">
-                        <Link to={`/products/edit/${product._id}`}>
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(product._id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
+                    <TableCell className="w-40 sticky right-0 z-10 bg-background">
+                      <div className="flex space-x-2 justify-center">
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={`/products/edit/${product._id}`}>
+                            <Edit className="h-4 w-4 mr-1" />
+                            Sửa
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(product._id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Xóa
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

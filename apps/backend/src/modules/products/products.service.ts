@@ -158,10 +158,43 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto): Promise<Product> {
+    const { variants, ...updateData } = dto as any;
+
     const product = await this.productModel
-      .findByIdAndUpdate(id, dto, { new: true, runValidators: true })
+      .findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
       .lean();
     if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
+
+    // Đồng bộ variants nếu có gửi lên
+    if (variants !== undefined) {
+      // Lấy danh sách _id của các variants gửi lên (nếu có)
+      const variantIdsToKeep = variants
+        .map((v: any) => v._id)
+        .filter((vid: any) => vid && Types.ObjectId.isValid(vid));
+
+      // Xóa các variants cũ của sản phẩm này mà không nằm trong danh sách giữ lại
+      await this.variantModel.deleteMany({
+        productId: new Types.ObjectId(id),
+        _id: { $nin: variantIdsToKeep.map((vId: string) => new Types.ObjectId(vId)) },
+      });
+
+      // Upsert (Cập nhật hoặc Tạo mới) từng variant
+      for (const variant of variants) {
+        if (variant._id && Types.ObjectId.isValid(variant._id)) {
+          // Có _id hợp lệ => Cập nhật
+          const { _id, ...variantUpdateData } = variant;
+          await this.variantModel.findByIdAndUpdate(_id, variantUpdateData);
+        } else {
+          // Không có _id => Tạo mới
+          const { _id, ...newVariantData } = variant; // Loại bỏ _id nếu có bị dính
+          await this.variantModel.create({
+            ...newVariantData,
+            productId: new Types.ObjectId(id),
+          });
+        }
+      }
+    }
+
     return product;
   }
 
@@ -180,10 +213,8 @@ export class ProductsService {
     return product;
   }
 
-  // ==========================================
-  // Variant CRUD
-  // ==========================================
 
+  // Variant CRUD
   async createVariant(
     productId: string,
     dto: CreateVariantDto,

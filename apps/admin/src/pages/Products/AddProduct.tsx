@@ -27,7 +27,7 @@ const AddProduct: React.FC = () => {
     formData, newTag, setNewTag, newSpecProperty, setNewSpecProperty,
     newSpecValue, setNewSpecValue, isSubmitting, handleChange, addTag,
     removeTag, updateSpec, deleteSpec, addNewSpec, handleImageUpload,
-    removeImage, calculateFinalPrice, handleGoBack, handleSubmit,
+    removeImage, setCoverImage, calculateFinalPrice, handleGoBack, handleSubmit,
   } = useProductForm(defaultFormData, "add");
 
   useEffect(() => {
@@ -68,21 +68,21 @@ const AddProduct: React.FC = () => {
               <CardHeader className="bg-muted/20">
                 <CardTitle className="text-lg">Thông Tin Cơ Bản</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-4">
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <div>
-                        <Label htmlFor="name">Tên sản phẩm:</Label>
+                        <Label htmlFor="name">Tên sản phẩm: <span className="text-destructive">*</span></Label>
                         <Input id="name" value={formData.name} onChange={(e) => handleChange("name", e.target.value)} className="mt-1" required />
                       </div>
                       <div>
-                        <Label htmlFor="manufacturer">Nhà sản xuất:</Label>
+                        <Label htmlFor="manufacturer">Nhà sản xuất: <span className="text-destructive">*</span></Label>
                         <Input id="manufacturer" value={formData.manufacturer} onChange={(e) => handleChange("manufacturer", e.target.value)} className="mt-1" required />
                       </div>
                       <div>
-                        <Label htmlFor="id">Mã sản phẩm:</Label>
-                        <Input id="id" value={formData.id} onChange={(e) => handleChange("id", e.target.value)} className="mt-1" />
+                        <Label htmlFor="productId">Mã sản phẩm (SKU): <span className="text-destructive">*</span></Label>
+                        <Input id="productId" value={formData.productId} onChange={(e) => handleChange("productId", e.target.value)} className="mt-1" placeholder="VD: IP15-PRO-MAX" />
                       </div>
                       <div>
                         <Label>Thẻ tag:</Label>
@@ -106,11 +106,11 @@ const AddProduct: React.FC = () => {
                   <div className="space-y-4">
                     <h4 className="text-md font-medium">Loại Sản Phẩm</h4>
                     <div>
-                      <Label>Danh mục:</Label>
+                      <Label>Danh mục: <span className="text-destructive">*</span></Label>
                       {loadingCategories ? (
                         <div className="mt-1 text-sm text-muted-foreground">Đang tải danh mục...</div>
                       ) : (
-                        <Select value={formData.category} onValueChange={(value) => handleChange("category", value)}>
+                        <Select value={formData.categoryId} onValueChange={(value) => handleChange("categoryId", value)}>
                           <SelectTrigger className="mt-1"><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
                           <SelectContent>
                             {categories.filter((cat) => cat.isActive).map((cat) => (
@@ -123,7 +123,7 @@ const AddProduct: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="stockQuantity">Số lượng trong kho:</Label>
-                        <Input id="stockQuantity" type="number" min={0} value={formData.stockQuantity} onChange={(e) => handleChange("stockQuantity", e.target.value)} className="mt-1" placeholder="e.g., 50" />
+                        <Input id="stockQuantity" type="number" min={0} value={formData.stockQuantity || ""} onChange={(e) => handleChange("stockQuantity", Number(e.target.value))} className="mt-1" placeholder="0" disabled={formData.variants?.length > 0} />
                       </div>
                       <div>
                         <Label>Trạng thái kho:</Label>
@@ -137,6 +137,38 @@ const AddProduct: React.FC = () => {
                         </Select>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Giá Cả */}
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-muted/20">
+                <CardTitle className="text-lg">Giá Cả</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="flex items-end space-x-4">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="basePrice" className="text-sm font-medium">Giá gốc: <span className="text-destructive">*</span></Label>
+                    <div className="flex items-center space-x-2">
+                      <Input id="basePrice" type="number" value={formData.basePrice || ""} onChange={(e) => handleChange("basePrice", Number(e.target.value))} className="flex-1" required placeholder="0" />
+                      <Select value={formData.currency} onValueChange={(value) => handleChange("currency", value)}>
+                        <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="VND">VND</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="discountPercentage" className="text-sm font-medium">Giảm giá (%):</Label>
+                    <Input id="discountPercentage" type="number" min={0} max={100} value={formData.discountPercentage || ""} onChange={(e) => handleChange("discountPercentage", Number(e.target.value))} className="w-full" placeholder="0" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="finalPrice" className="text-sm font-medium">Giá cuối:</Label>
+                    <Input id="finalPrice" type="number" value={calculateFinalPrice()} readOnly className="w-full bg-muted/50" />
                   </div>
                 </div>
               </CardContent>
@@ -167,15 +199,38 @@ const AddProduct: React.FC = () => {
                   {formData.images.length > 0 && (
                     <div className="mb-6">
                       <h5 className="text-sm font-medium mb-3">Hình ảnh đã chọn:</h5>
-                      <div className="grid grid-cols-6 gap-6">
-                        {formData.images.map((img, idx) => (
-                          <div key={idx} className="relative w-40 h-40 rounded-md shadow-sm overflow-hidden">
-                            <img src={typeof img === "string" ? img : URL.createObjectURL(img)} alt="Preview" className="w-full h-full object-cover" />
-                            <Button type="button" variant="ghost" size="sm" className="absolute top-1 right-1 h-5 w-5 p-0 bg-destructive text-destructive-foreground z-10" onClick={() => removeImage(idx)}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                        {formData.images.map((img: any, idx: number) => {
+                          const isCover = idx === 0;
+                          return (
+                            <div key={idx} className={`relative w-40 h-40 rounded-md overflow-hidden group ${isCover ? 'ring-4 ring-primary ring-offset-2' : 'border border-border'}`}>
+                              <img src={typeof img === "string" ? img : URL.createObjectURL(img)} alt="Preview" className="w-full h-full object-cover" />
+                              
+                              {isCover && (
+                                <div className="absolute top-0 left-0 w-full bg-primary/90 text-primary-foreground text-xs font-semibold py-1 text-center">
+                                  Ảnh Bìa
+                                </div>
+                              )}
+                              
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center gap-2">
+                                {!isCover && (
+                                  <Button 
+                                    type="button" 
+                                    variant="secondary" 
+                                    size="sm" 
+                                    className="text-xs" 
+                                    onClick={() => setCoverImage(idx)}
+                                  >
+                                    Đặt làm ảnh bìa
+                                  </Button>
+                                )}
+                                <Button type="button" variant="destructive" size="sm" onClick={() => removeImage(idx)}>
+                                  <Trash2 className="h-4 w-4 mr-1" /> Xóa
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -205,12 +260,16 @@ const AddProduct: React.FC = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="origin">Quốc gia gốc:</Label>
-                    <Select value={formData.origin} onValueChange={(value) => handleChange("origin", value)}>
+                    <Label htmlFor="countryOfOrigin">Quốc gia xuất xứ: <span className="text-destructive">*</span></Label>
+                    <Select value={formData.countryOfOrigin} onValueChange={(value) => handleChange("countryOfOrigin", value)}>
                       <SelectTrigger className="mt-1"><SelectValue placeholder="Chọn" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="vietnam">Việt Nam</SelectItem>
-                        <SelectItem value="china">Trung Quốc</SelectItem>
+                        <SelectItem value="Việt Nam">Việt Nam</SelectItem>
+                        <SelectItem value="Trung Quốc">Trung Quốc</SelectItem>
+                        <SelectItem value="Mỹ">Mỹ</SelectItem>
+                        <SelectItem value="Hàn Quốc">Hàn Quốc</SelectItem>
+                        <SelectItem value="Nhật Bản">Nhật Bản</SelectItem>
+                        <SelectItem value="Đài Loan">Đài Loan</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -222,7 +281,7 @@ const AddProduct: React.FC = () => {
                   </div>
                   <div>
                     <Label htmlFor="warrantyLength">Độ dài bảo hành:</Label>
-                    <Input id="warrantyLength" value={formData.warrantyLength} onChange={(e) => handleChange("warrantyLength", e.target.value)} placeholder="e.g., 1 năm" className="mt-1" />
+                    <Input id="warrantyLength" value={formData.warrantyLength} onChange={(e) => handleChange("warrantyLength", e.target.value)} placeholder="e.g., 12 tháng" className="mt-1" />
                   </div>
                 </div>
               </CardContent>
@@ -253,37 +312,7 @@ const AddProduct: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Giá Cả */}
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-muted/20">
-                <CardTitle className="text-lg">Giá Cả</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="flex items-end space-x-4">
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor="basePrice" className="text-sm font-medium">Giá gốc:</Label>
-                    <div className="flex items-center space-x-2">
-                      <Input id="basePrice" type="number" value={formData.basePrice} onChange={(e) => handleChange("basePrice", e.target.value)} className="flex-1" required />
-                      <Select value={formData.currency} onValueChange={(value) => handleChange("currency", value)}>
-                        <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="VND">VND</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor="discount" className="text-sm font-medium">Giảm giá (%):</Label>
-                    <Input id="discount" type="number" min={0} max={100} value={formData.discount} onChange={(e) => handleChange("discount", e.target.value)} className="w-full" />
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor="finalPrice" className="text-sm font-medium">Giá cuối:</Label>
-                    <Input id="finalPrice" type="number" value={calculateFinalPrice()} readOnly className="w-full bg-muted/50" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            
 
             {/* Buttons */}
             <div className="flex justify-between pt-6 border-t">

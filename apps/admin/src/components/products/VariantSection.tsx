@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Plus, RefreshCw, Package } from "lucide-react";
 import type { ProductVariant } from "@/types/addProductTypes";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
@@ -121,8 +122,6 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
       };
     });
 
-    // If variants already exist, we might want to warn about overwriting,
-    // but for simplicity, we just replace them here
     onChange(newVariants);
     toast.success(`Đã tạo ${newVariants.length} biến thể`);
   };
@@ -143,10 +142,21 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
     onChange(updated);
   };
 
+  // Compute totals
+  const totalStock = variants.reduce((sum, v) => sum + (Number(v.stockQuantity) || 0), 0);
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="bg-muted/20">
-        <CardTitle className="text-lg">Biến Thể Sản Phẩm</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">Biến Thể Sản Phẩm</CardTitle>
+          {variants.length > 0 && (
+            <Badge variant="secondary" className="text-sm">
+              <Package className="w-3.5 h-3.5 mr-1" />
+              {variants.length} biến thể
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="p-6 space-y-6">
         <div className="space-y-4">
@@ -231,63 +241,93 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
           <>
             <Separator />
             <div className="space-y-4">
-              <h4 className="font-medium">Danh sách biến thể</h4>
+              <div className="flex justify-between items-center">
+                <h4 className="font-medium">Danh sách biến thể</h4>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className="text-sm">
+                    Tổng tồn kho: <span className="font-bold ml-1">{totalStock.toLocaleString()}</span>
+                  </Badge>
+                </div>
+              </div>
               <div className="border rounded-lg overflow-x-auto">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-muted text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 font-medium">Tên / Thuộc tính</th>
                       <th className="px-4 py-3 font-medium">SKU</th>
-                      <th className="px-4 py-3 font-medium w-32">Giá</th>
-                      <th className="px-4 py-3 font-medium w-32">Số lượng</th>
+                      <th className="px-4 py-3 font-medium w-50">Giá (₫)</th>
+                      <th className="px-4 py-3 font-medium w-28">Giảm giá (%)</th>
+                      <th className="px-4 py-3 font-medium w-20">Số lượng</th>
                       <th className="px-4 py-3 font-medium w-16"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {variants.map((variant, i) => (
-                      <tr key={i} className="hover:bg-muted/50">
-                        <td className="px-4 py-3">
-                          <div className="font-medium">{variant.variantName}</div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {variant.attributes.map(a => `${a.name}: ${a.value}`).join(" | ")}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            value={variant.sku}
-                            onChange={(e) => handleVariantChange(i, "sku", e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            type="number"
-                            value={variant.price}
-                            onChange={(e) => handleVariantChange(i, "price", Number(e.target.value))}
-                            className="h-8 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <Input
-                            type="number"
-                            value={variant.stockQuantity}
-                            onChange={(e) => handleVariantChange(i, "stockQuantity", Number(e.target.value))}
-                            className="h-8 text-sm"
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveVariant(i)}
-                            className="text-destructive h-8 w-8 p-0"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {variants.map((variant, i) => {
+                      const finalPrice = variant.price * (1 - (variant.discountPercentage || 0) / 100);
+                      return (
+                        <tr key={i} className="hover:bg-muted/50">
+                          <td className="px-4 py-3">
+                            <div className="font-medium">{variant.variantName}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {variant.attributes.map(a => `${a.name}: ${a.value}`).join(" | ")}
+                            </div>
+                            {variant.discountPercentage > 0 && (
+                              <div className="text-xs text-green-600 mt-0.5">
+                                Giá sau giảm: {Math.round(finalPrice).toLocaleString()}₫
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Input
+                              value={variant.sku}
+                              onChange={(e) => handleVariantChange(i, "sku", e.target.value)}
+                              className="h-8 text-sm"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Input
+                              type="number"
+                              value={variant.price || ""}
+                              onChange={(e) => handleVariantChange(i, "price", Number(e.target.value))}
+                              className="h-8 text-sm"
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={variant.discountPercentage || ""}
+                              onChange={(e) => handleVariantChange(i, "discountPercentage", Number(e.target.value))}
+                              className="h-8 text-sm"
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Input
+                              type="number"
+                              min={0}
+                              value={variant.stockQuantity || ""}
+                              onChange={(e) => handleVariantChange(i, "stockQuantity", Number(e.target.value))}
+                              className="h-8 text-sm"
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveVariant(i)}
+                              className="text-destructive h-8 w-8 p-0"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

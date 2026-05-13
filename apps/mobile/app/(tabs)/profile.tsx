@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Star
 } from 'lucide-react-native';
+import { useAuth } from '@/contexts/AuthContext';
 
 const menuGroups = [
   {
@@ -49,6 +50,12 @@ const menuGroups = [
 
 const ProfileScreen = () => {
   const router = useRouter();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/login' as any);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-zinc-50 dark:bg-zinc-950">
@@ -59,7 +66,7 @@ const ProfileScreen = () => {
           <VStack className="items-center">
             <Box className="relative">
               <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop' }} 
+                source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop' }} 
                 className="w-28 h-28 rounded-full border-4 border-yellow-400"
               />
               <Pressable className="absolute bottom-1 right-1 bg-zinc-900 dark:bg-zinc-100 p-2 rounded-full border-2 border-white dark:border-zinc-900">
@@ -67,10 +74,15 @@ const ProfileScreen = () => {
               </Pressable>
             </Box>
             
-            <Text className="text-2xl font-bold text-zinc-900 dark:text-white mt-4">Wilson Junior</Text>
-            <Text className="text-sm text-zinc-500 font-medium">wilson.jr@example.com</Text>
+            <Text className="text-2xl font-bold text-zinc-900 dark:text-white mt-4">
+              {user?.fullName || 'Người dùng'}
+            </Text>
+            <Text className="text-sm text-zinc-500 font-medium">
+              {user?.email || 'email@example.com'}
+            </Text>
             
             <HStack className="mt-6 space-x-8 gap-8 bg-zinc-50 dark:bg-zinc-800 px-8 py-4 rounded-3xl">
+              {/* ... (stats keep as is for now) */}
               <VStack className="items-center">
                 <Text className="text-lg font-bold text-zinc-900 dark:text-white">12</Text>
                 <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Đơn hàng</Text>
@@ -90,6 +102,7 @@ const ProfileScreen = () => {
         </Box>
 
         {/* Menu Items */}
+        {/* ... (Menu Groups mapping) */}
         <Box className="px-5 mt-8 mb-10">
           {menuGroups.map((group, groupIndex) => (
             <VStack key={groupIndex} className="mb-8">
@@ -100,6 +113,10 @@ const ProfileScreen = () => {
                 {group.items.map((item, index) => (
                   <Pressable 
                     key={item.id}
+                    onPress={() => {
+                      if (item.id === 'address') router.push('/address/my-addresses');
+                      if (item.id === 'orders') router.push('/orders/my-orders');
+                    }}
                     className={`flex-row items-center justify-between p-4 active:bg-zinc-50 dark:active:bg-zinc-800 ${
                       index < group.items.length - 1 ? 'border-b border-zinc-50 dark:border-zinc-800' : ''
                     }`}
@@ -119,6 +136,7 @@ const ProfileScreen = () => {
 
           {/* Logout Button */}
           <Pressable 
+            onPress={handleLogout}
             className="flex-row items-center justify-center bg-red-50 dark:bg-red-900/20 p-5 rounded-3xl border border-red-100 dark:border-red-900/30 mb-10 active:opacity-80"
           >
             <Icon as={LogOut} className="text-red-500 w-5 h-5 mr-3" />

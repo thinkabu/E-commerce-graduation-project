@@ -31,5 +31,5 @@ export default function Index() {
 
   // BƯỚC 2: ĐIỀU HƯỚNG (REDIRECT) DỰA THEO KẾT QUẢ ĐĂNG NHẬP
   // Bạn có thể đổi `/(tabs)/home` và `/(auth)/login` theo đúng tên file route thực tế trong dự án
-  return <Redirect href={(isAuthenticated ? "/(tabs)/home" : "/(auth)/login") as any} />;
+  return <Redirect href={(isAuthenticated ? "/home" : "/login") as any} />;
 }

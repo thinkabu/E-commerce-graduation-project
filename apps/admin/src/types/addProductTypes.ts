@@ -4,8 +4,11 @@ export interface ProductVariant {
   sku: string;
   price: number;
   stockQuantity: number;
-  discountPercentage?: number;
+  discountPercentage: number;
   attributes: { name: string; value: string }[];
+  images?: string[];
+  stockStatus?: string;
+  sortOrder?: number;
 }
 
 export interface ProductSpec {
@@ -14,49 +17,47 @@ export interface ProductSpec {
 }
 
 export interface ProductFormData {
-  id?: string;
+  _id?: string;
+  productId: string;
   name: string;
+  manufacturer: string;
   description: string;
   categoryId: string;
-  category?: string;
-  manufacturer?: string;
-  origin?: string;
+  countryOfOrigin: string;
   tags: string[];
-  price: number;
   basePrice: number;
   currency: string;
-  discount: number;
-  stock: number;
+  discountPercentage: number;
   stockQuantity: number;
   stockStatus: string;
   importStatus: string;
   releaseDate: string;
   warrantyLength: string;
-  isActive?: boolean;
+  isActive: boolean;
+  isFeatured: boolean;
   images: any[]; // File[] for new uploads, string[] for existing URLs
   specs: ProductSpec[];
   variants: ProductVariant[];
 }
 
 export const defaultFormData: ProductFormData = {
+  productId: "",
   name: "",
+  manufacturer: "",
   description: "",
   categoryId: "",
-  category: "",
-  manufacturer: "",
-  origin: "vietnam",
+  countryOfOrigin: "Việt Nam",
   tags: [],
-  price: 0,
   basePrice: 0,
   currency: "VND",
-  discount: 0,
-  stock: 0,
+  discountPercentage: 0,
   stockQuantity: 0,
   stockStatus: "Instock",
   importStatus: "Imported",
   releaseDate: "",
   warrantyLength: "",
   isActive: true,
+  isFeatured: false,
   images: [],
   specs: [],
   variants: [],

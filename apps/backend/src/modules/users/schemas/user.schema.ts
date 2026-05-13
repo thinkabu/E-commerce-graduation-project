@@ -83,6 +83,30 @@ export class User {
 
   @Prop({ select: false })
   refreshToken: string;
+
+  @Prop({
+    type: {
+      manageProducts: { type: Boolean, default: false },
+      manageOrders: { type: Boolean, default: false },
+      manageUsers: { type: Boolean, default: false },
+      viewReports: { type: Boolean, default: false },
+      manageCoupons: { type: Boolean, default: false },
+    },
+    default: {
+      manageProducts: false,
+      manageOrders: false,
+      manageUsers: false,
+      viewReports: false,
+      manageCoupons: false,
+    }
+  })
+  permissions: {
+    manageProducts: boolean;
+    manageOrders: boolean;
+    manageUsers: boolean;
+    viewReports: boolean;
+    manageCoupons: boolean;
+  };
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

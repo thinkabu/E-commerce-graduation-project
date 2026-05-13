@@ -36,12 +36,6 @@ export class Address {
 
   @Prop({
     type: { code: Number, name: String },
-    required: [true, 'Quận/Huyện là bắt buộc'],
-  })
-  district: LocationInfo;
-
-  @Prop({
-    type: { code: Number, name: String },
     required: [true, 'Phường/Xã là bắt buộc'],
   })
   ward: LocationInfo;

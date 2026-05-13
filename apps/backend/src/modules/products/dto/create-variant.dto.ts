@@ -24,6 +24,10 @@ export class VariantAttributeDto {
 }
 
 export class CreateVariantDto {
+  @ApiPropertyOptional({ description: 'Chỉ dùng khi update để đồng bộ variant' })
+  @IsOptional()
+  @IsString()
+  _id?: string;
   @ApiProperty({ example: 'IP15-BLK-128' })
   @IsString()
   sku: string;

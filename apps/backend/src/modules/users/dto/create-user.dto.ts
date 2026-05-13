@@ -6,6 +6,7 @@ import {
   MaxLength,
   IsEnum,
   IsBoolean,
+  IsObject,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../../common/enums';
@@ -49,4 +50,15 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  permissions?: {
+    manageProducts: boolean;
+    manageOrders: boolean;
+    manageUsers: boolean;
+    viewReports: boolean;
+    manageCoupons: boolean;
+  };
 }

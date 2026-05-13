@@ -6,6 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PageTitleProvider } from "@/contexts/PageTitleContext";
 import Layout from "@/components/layout/Layout";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -17,12 +18,14 @@ import EditProduct from "@/pages/Products/EditProduct";
 
 // Users
 import AllUsers from "@/pages/Users/AllUsers";
+import AddUser from "@/pages/Users/AddUser";
 
 // Addresses
 import AllAddresses from "@/pages/Addresses/AllAddresses";
 
 // Categories
 import CategoryList from "@/pages/Categories/CategoryList";
+import CategoryForm from "@/pages/Categories/CategoryForm";
 
 // Orders
 import OrderList from "@/pages/Orders/OrderList";
@@ -42,7 +45,9 @@ const App: React.FC = () => {
           path="/"
           element={
             <ProtectedRoute>
-              <Layout />
+              <PageTitleProvider>
+                <Layout />
+              </PageTitleProvider>
             </ProtectedRoute>
           }
         >
@@ -59,12 +64,15 @@ const App: React.FC = () => {
 
           {/* Users */}
           <Route path="users" element={<AllUsers />} />
+          <Route path="users/add" element={<AddUser />} />
 
           {/* Addresses */}
           <Route path="addresses" element={<AllAddresses />} />
 
           {/* Categories */}
           <Route path="category" element={<CategoryList />} />
+          <Route path="category/create" element={<CategoryForm />} />
+          <Route path="category/edit/:id" element={<CategoryForm />} />
 
           {/* Orders */}
           <Route path="orders" element={<OrderList />} />
