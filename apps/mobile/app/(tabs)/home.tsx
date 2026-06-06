@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollView, Image, SafeAreaView, ActivityIndicator, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ScrollView, Image, ActivityIndicator, View, RefreshControl } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
 import { HStack } from '@/components/ui/hstack';
@@ -15,7 +16,8 @@ import {
   Heart,
   Sparkles,
   ChevronRight,
-  PackageSearch
+  PackageSearch,
+  ArrowUp
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
@@ -39,6 +41,10 @@ const HomeScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
   const { unreadCount, refreshUnreadCount } = useNotification();
+  
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [popularProducts, setPopularProducts] = useState<Product[]>([]);
@@ -77,9 +83,32 @@ const HomeScreen = () => {
     }
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setSuggestedPage(1);
+    setHasMore(true);
+    await fetchInitialData();
+    await refreshUnreadCount();
+    setRefreshing(false);
+  };
+
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Tải ngay khi vào màn hình
+      refreshUnreadCount();
+
+      // Polling tự động làm mới unreadCount mỗi 30 giây khi đang ở trang chủ
+      const interval = setInterval(() => {
+        refreshUnreadCount();
+      }, 30000);
+
+      return () => clearInterval(interval);
+    }, [refreshUnreadCount])
+  );
 
   const loadMoreSuggested = async () => {
     if (loadingMore || !hasMore || loading) return;
@@ -104,16 +133,29 @@ const HomeScreen = () => {
     }
   };
 
+  const scrollToTop = () => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
   const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const paddingToBottom = 100;
+    
+    // Tải thêm sản phẩm khi vuốt xuống cuối trang
     if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
       loadMoreSuggested();
+    }
+
+    // Hiển thị nút "Cuộn lên đầu trang" khi cuộn qua 400px
+    if (contentOffset.y > 400) {
+      setShowScrollTop(true);
+    } else {
+      setShowScrollTop(false);
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-zinc-50 dark:bg-zinc-950">
+    <SafeAreaView style={{ flex: 1 }} className="bg-zinc-50 dark:bg-zinc-950" edges={['top', 'left', 'right']}>
       {/* =========================================
           STICKY HEADER & SEARCH BAR
           (Nằm ngoài ScrollView để luôn cố định)
@@ -189,10 +231,19 @@ const HomeScreen = () => {
           SCROLLABLE CONTENT
       ========================================= */}
       <ScrollView 
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false} 
         className="flex-1"
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#eab308"
+            colors={['#eab308']}
+          />
+        }
       >
         
         {/* 1. Category Menu */}
@@ -379,6 +430,23 @@ const HomeScreen = () => {
         <Box className="h-10" />
 
       </ScrollView>
+
+      {/* Nút cuộn lên đầu trang */}
+      {showScrollTop && (
+        <Pressable
+          onPress={scrollToTop}
+          className="absolute bottom-2 right-2 w-12 h-12 rounded-full bg-yellow-500 items-center justify-center shadow-lg active:scale-95 z-50 flex"
+          style={{
+            elevation: 5,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+          }}
+        >
+          <Icon as={ArrowUp} className="text-zinc-900 w-7 h-7 font-bold" />
+        </Pressable>
+      )}
     </SafeAreaView>
   );
 };

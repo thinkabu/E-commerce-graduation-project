@@ -47,8 +47,9 @@ export class OrdersController {
     @Param('id') id: string,
     @Body('status') status: OrderStatus,
     @Body('adminId') adminId?: string,
+    @Body('note') note?: string,
   ) {
-    return this.ordersService.updateOrderStatus(id, status, adminId);
+    return this.ordersService.updateOrderStatus(id, status, adminId, note);
   }
 
   // --- USER ENDPOINTS ---

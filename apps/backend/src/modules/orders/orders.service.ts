@@ -319,7 +319,7 @@ export class OrdersService {
     };
   }
 
-  async updateOrderStatus(id: string, status: OrderStatus, adminId?: string): Promise<Order> {
+  async updateOrderStatus(id: string, status: OrderStatus, adminId?: string, note?: string): Promise<Order> {
     const order = await this.orderModel.findById(id);
     if (!order) {
       throw new NotFoundException('Đơn hàng không tồn tại');
@@ -330,7 +330,7 @@ export class OrdersService {
       status,
       changedAt: new Date(),
       changedBy: adminId ? new Types.ObjectId(adminId) : order.userId,
-      note: 'Admin cập nhật trạng thái đơn hàng',
+      note: note || `Trạng thái đơn hàng cập nhật thành: ${status}`,
     });
 
     await order.save();

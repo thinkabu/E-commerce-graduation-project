@@ -61,7 +61,7 @@ export const getAdminOrderSummary = async (startDate?: string, endDate?: string)
   }
 };
 
-export const updateOrderStatus = async (orderId: string, status: string) => {
+export const updateOrderStatus = async (orderId: string, status: string, note?: string) => {
   try {
     const admin = getAdminUser();
     const res = await fetch(`${BASE_URL}/orders/admin/${orderId}/status`, {
@@ -69,7 +69,7 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ status, adminId: admin?._id }),
+      body: JSON.stringify({ status, adminId: admin?._id, note }),
     });
     
     if (!res.ok) {

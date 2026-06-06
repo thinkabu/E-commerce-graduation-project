@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { usePageTitle } from "@/contexts/PageTitleContext";
-import { Eye, Search, ChevronLeft, ChevronRight, Loader2, DollarSign, ShoppingCart, Clock } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Loader2, DollarSign, ShoppingCart, Clock } from "lucide-react";
 import { getAdminOrders, updateOrderStatus, getAdminOrderSummary } from "@/services/orderService";
 
 // Mock enums
@@ -54,11 +54,34 @@ const OrderList: React.FC = () => {
     }
   };
 
+  const getOrderItemsCount = (order: any) => {
+    return order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+  };
+
+  const formatOrderTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const date = d.toLocaleDateString('vi-VN');
+    return `${time} - ${date}`;
+  };
+
+  const getPaymentMethodBadge = (method: string) => {
+    switch (method) {
+      case 'COD':
+        return <Badge variant="outline" className="text-zinc-600 border-zinc-300 bg-zinc-50 font-normal">COD (Tiền mặt)</Badge>;
+      case 'BANKING':
+        return <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50/50 font-normal">Chuyển khoản</Badge>;
+      case 'CRYPTO':
+        return <Badge variant="outline" className="text-purple-600 border-purple-300 bg-purple-50/50 font-normal">Crypto 🌐</Badge>;
+      default:
+        return <Badge variant="outline" className="font-normal">{method}</Badge>;
+    }
+  };
+
   const [orders, setOrders] = useState<any[]>([]);
   const [totalOrders, setTotalOrders] = useState<number>(0);
   const [summary, setSummary] = useState({ totalOrders: 0, totalRevenue: 0, pendingOrders: 0 });
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   const fetchOrders = async () => {
     setIsLoading(true);
@@ -103,18 +126,63 @@ const OrderList: React.FC = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, statusFilter, currentPage, startDate, endDate]);
 
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    setIsUpdating(orderId);
+  // Modals state
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [newStatus, setNewStatus] = useState<OrderStatus>(OrderStatus.PENDING);
+  const [cancelReason, setCancelReason] = useState("");
+  const [modalLoading, setModalLoading] = useState(false);
+
+  const handleOpenEditModal = (order: any) => {
+    setSelectedOrder(order);
+    setNewStatus(order.orderStatus);
+    setIsEditModalOpen(true);
+  };
+
+  const handleOpenCancelModal = (order: any) => {
+    setSelectedOrder(order);
+    setCancelReason("");
+    setIsCancelModalOpen(true);
+  };
+
+  const handleSaveStatus = async () => {
+    if (!selectedOrder) return;
+    setModalLoading(true);
     try {
-      await updateOrderStatus(orderId, newStatus);
+      await updateOrderStatus(selectedOrder._id, newStatus);
       setOrders(prevOrders => 
-        prevOrders.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o)
+        prevOrders.map(o => o._id === selectedOrder._id ? { ...o, orderStatus: newStatus } : o)
       );
+      setIsEditModalOpen(false);
+      setSelectedOrder(null);
     } catch (error) {
       console.error("Failed to update status", error);
       alert("Cập nhật trạng thái thất bại");
     } finally {
-      setIsUpdating(null);
+      setModalLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!selectedOrder) return;
+    if (!cancelReason.trim()) {
+      alert("Vui lòng nhập lý do hủy đơn hàng");
+      return;
+    }
+    setModalLoading(true);
+    try {
+      await updateOrderStatus(selectedOrder._id, OrderStatus.CANCELLED, cancelReason.trim());
+      setOrders(prevOrders => 
+        prevOrders.map(o => o._id === selectedOrder._id ? { ...o, orderStatus: OrderStatus.CANCELLED } : o)
+      );
+      setIsCancelModalOpen(false);
+      setSelectedOrder(null);
+    } catch (error) {
+      console.error("Failed to cancel order", error);
+      alert("Hủy đơn hàng thất bại");
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -218,16 +286,18 @@ const OrderList: React.FC = () => {
               <TableRow>
                 <TableHead>Mã ĐH</TableHead>
                 <TableHead>Khách hàng</TableHead>
-                <TableHead>Ngày đặt</TableHead>
-                <TableHead className="text-right">Tổng thanh toán</TableHead>
-                <TableHead>Trạng thái</TableHead>
-                <TableHead className="text-right">Chi tiết</TableHead>
+                <TableHead className="text-center">Số lượng</TableHead>
+                <TableHead>Giờ đặt</TableHead>
+                <TableHead>Thanh toán</TableHead>
+                <TableHead className="text-right">Tổng tiền</TableHead>
+                <TableHead className="text-center">Trạng thái</TableHead>
+                <TableHead className="text-center">Hành động</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
                {isLoading ? (
                  <TableRow>
-                   <TableCell colSpan={6} className="h-24 text-center">
+                   <TableCell colSpan={8} className="h-24 text-center">
                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-zinc-400" />
                    </TableCell>
                  </TableRow>
@@ -236,44 +306,48 @@ const OrderList: React.FC = () => {
                     <TableRow key={order._id}>
                       <TableCell className="font-semibold text-xs">{order.orderId}</TableCell>
                       <TableCell>{order.shippingAddressSnapshot?.fullName || 'N/A'}</TableCell>
-                      <TableCell>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</TableCell>
+                      <TableCell className="text-center font-medium">
+                         {getOrderItemsCount(order)} món
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                         {formatOrderTime(order.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                         {getPaymentMethodBadge(order.paymentMethod)}
+                      </TableCell>
                       <TableCell className="text-right font-medium text-blue-600">
                          {order.totalAmount?.toLocaleString()} ₫
                       </TableCell>
-                      <TableCell>
-                         <Select 
-                           value={order.orderStatus} 
-                           onValueChange={(val) => handleStatusChange(order._id, val as OrderStatus)}
-                           disabled={isUpdating === order._id}
-                         >
-                           <SelectTrigger className="h-8 border-none bg-transparent shadow-none focus:ring-0 p-0 w-auto">
-                              {isUpdating === order._id ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
-                              ) : (
-                                getStatusBadge(order.orderStatus)
-                              )}
-                           </SelectTrigger>
-                           <SelectContent>
-                             <SelectItem value={OrderStatus.PENDING}>Chờ duyệt</SelectItem>
-                             <SelectItem value={OrderStatus.CONFIRMED}>Đã xác nhận</SelectItem>
-                             <SelectItem value={OrderStatus.PROCESSING}>Đang xử lý</SelectItem>
-                             <SelectItem value={OrderStatus.SHIPPING}>Đang giao</SelectItem>
-                             <SelectItem value={OrderStatus.DELIVERED}>Đã giao</SelectItem>
-                             <SelectItem value={OrderStatus.CANCELLED}>Đã hủy</SelectItem>
-                             <SelectItem value={OrderStatus.RETURNED}>Đã trả hàng</SelectItem>
-                           </SelectContent>
-                         </Select>
+                      <TableCell className="text-center">
+                         <div className="flex justify-center">
+                           {getStatusBadge(order.orderStatus)}
+                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
-                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                           <Eye className="h-4 w-4" />
-                         </Button>
+                      <TableCell>
+                         <div className="flex items-center gap-2 justify-center">
+                           <Button 
+                             variant="outline" 
+                             size="sm" 
+                             className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 h-8 px-3"
+                             onClick={() => handleOpenEditModal(order)}
+                           >
+                             Sửa
+                           </Button>
+                           <Button 
+                             variant="outline" 
+                             size="sm" 
+                             className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 h-8 px-3"
+                             onClick={() => handleOpenCancelModal(order)}
+                           >
+                             Xóa
+                           </Button>
+                         </div>
                       </TableCell>
                     </TableRow>
                  ))
                ) : (
                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">Không tìm thấy đơn hàng.</TableCell>
+                    <TableCell colSpan={8} className="h-24 text-center">Không tìm thấy đơn hàng.</TableCell>
                  </TableRow>
                )}
             </TableBody>
@@ -292,6 +366,111 @@ const OrderList: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal Cập Nhật Trạng Thái */}
+      {isEditModalOpen && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-background border rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-foreground">Cập nhật trạng thái đơn hàng</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Đơn hàng: <span className="font-semibold text-primary">{selectedOrder.orderId}</span>
+              </p>
+              
+              <div className="mt-4 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Trạng thái mới</label>
+                  <Select 
+                    value={newStatus} 
+                    onValueChange={(val) => setNewStatus(val as OrderStatus)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={OrderStatus.PENDING}>Chờ duyệt</SelectItem>
+                      <SelectItem value={OrderStatus.CONFIRMED}>Đã xác nhận</SelectItem>
+                      <SelectItem value={OrderStatus.PROCESSING}>Đang xử lý</SelectItem>
+                      <SelectItem value={OrderStatus.SHIPPING}>Đang giao</SelectItem>
+                      <SelectItem value={OrderStatus.DELIVERED}>Đã giao</SelectItem>
+                      <SelectItem value={OrderStatus.CANCELLED}>Đã hủy</SelectItem>
+                      <SelectItem value={OrderStatus.RETURNED}>Đã trả hàng</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-muted/40 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => { setIsEditModalOpen(false); setSelectedOrder(null); }}
+                disabled={modalLoading}
+              >
+                Hủy bỏ
+              </Button>
+              <Button 
+                onClick={handleSaveStatus}
+                disabled={modalLoading}
+              >
+                {modalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Lưu thay đổi
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Hủy Đơn Hàng (Xóa) */}
+      {isCancelModalOpen && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-background border border-destructive/20 rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-destructive flex items-center gap-2">
+                ⚠️ Hủy đơn hàng
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Bạn đang thực hiện hủy đơn hàng <span className="font-semibold text-foreground">{selectedOrder.orderId}</span>.
+              </p>
+              
+              <div className="mt-4 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Lý do hủy đơn hàng <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    className="w-full min-h-[100px] p-3 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-destructive/50 resize-none"
+                    placeholder="Nhập lý do chi tiết hủy đơn..."
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                  />
+                  <p className="text-[11px] text-muted-foreground italic">
+                    * Lý do này sẽ được hiển thị cho khách hàng xem trong phần chi tiết đơn hàng của họ.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-muted/40 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => { setIsCancelModalOpen(false); setSelectedOrder(null); }}
+                disabled={modalLoading}
+              >
+                Hủy bỏ
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handleCancelOrder}
+                disabled={modalLoading}
+              >
+                {modalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Xác nhận hủy
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

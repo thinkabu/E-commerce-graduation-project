@@ -27,6 +27,7 @@ export interface Order {
   paymentMethod: string;
   paymentStatus: string;
   orderStatus: string;
+  statusHistory?: any[];
   createdAt: string;
 }
 

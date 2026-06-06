@@ -117,6 +117,18 @@ const OrderDetailScreen = () => {
            <Text className={`text-xs font-medium ${statusConf.color} opacity-80 leading-relaxed`}>
               {statusConf.desc}
            </Text>
+           {order.orderStatus === 'CANCELLED' && (() => {
+             const cancelHistory = order.statusHistory?.find((h: any) => h.status === 'CANCELLED');
+             if (cancelHistory && cancelHistory.note) {
+               return (
+                 <View className="mt-3 pt-3 border-t border-red-200 dark:border-red-800/40">
+                   <Text className="text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-wide">Lý do hủy đơn:</Text>
+                   <Text className="text-xs text-red-600 dark:text-red-400 mt-1 italic font-medium">"{cancelHistory.note}"</Text>
+                 </View>
+               );
+             }
+             return null;
+           })()}
         </VStack>
 
         {/* Order Info */}

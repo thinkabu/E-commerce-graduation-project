@@ -168,7 +168,7 @@ export async function markNotificationAsRead(
   userId: string,
 ): Promise<void> {
   try {
-    await api.patch(`/notifications/${notifId}/read`, null, {
+    await api.patch(`/notifications/${notifId}/read`, {}, {
       params: { userId },
     });
   } catch (error) {
