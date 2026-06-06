@@ -27,6 +27,18 @@
     },
     "plugins": [
       "expo-router",
+      "expo-dev-client",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#eab308",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "Thông báo mới",
+          "iosDisplayInForeground": true
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -41,6 +53,12 @@
       ],
       "expo-secure-store"
     ],
+    "notification": {
+      "icon": "./assets/images/icon.png",
+      "color": "#eab308",
+      "androidMode": "default",
+      "androidCollapsedTitle": "Thông báo mới"
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

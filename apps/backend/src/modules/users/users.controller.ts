@@ -13,6 +13,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -52,14 +53,40 @@ export class UsersController {
   // }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Cập nhật user (Admin)' })
+  @ApiOperation({ summary: 'Cập nhật user (Admin/User)' })
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
+  }
+
+  @Patch(':id/password')
+  @ApiOperation({ summary: 'Đổi mật khẩu user' })
+  changePassword(@Param('id') id: string, @Body() dto: ChangePasswordDto) {
+    return this.usersService.changePassword(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Xóa user - soft delete (Admin)' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  // ── Push Token ──────────────────────────────────────────────────
+
+  @Patch(':id/push-token')
+  @ApiOperation({ summary: 'Lưu Expo Push Token khi đăng nhập' })
+  savePushToken(
+    @Param('id') id: string,
+    @Body('token') token: string,
+  ) {
+    return this.usersService.savePushToken(id, token);
+  }
+
+  @Delete(':id/push-token')
+  @ApiOperation({ summary: 'Xóa Expo Push Token khi đăng xuất' })
+  removePushToken(
+    @Param('id') id: string,
+    @Body('token') token: string,
+  ) {
+    return this.usersService.removePushToken(id, token);
   }
 }

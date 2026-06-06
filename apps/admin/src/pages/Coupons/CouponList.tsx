@@ -1,34 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import { usePageTitle } from "@/contexts/PageTitleContext";
-import { Search, Plus, Edit, Trash2, Copy, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-const CouponType = {
-  PERCENTAGE: "percentage",
-  FIXED_AMOUNT: "fixed_amount",
-} as const;
-
-type CouponType = (typeof CouponType)[keyof typeof CouponType];
-
-// Mock data (Normally fetched from API)
-const mockCoupons = [
-  { _id: "1", code: "WELCOME20", type: CouponType.PERCENTAGE, value: 20, maxDiscount: 500000, usageLimit: 100, usedCount: 45, expiryDate: "2026-12-31", isActive: true },
-  { _id: "2", code: "FREESHIP", type: CouponType.FIXED_AMOUNT, value: 30000, maxDiscount: 30000, usageLimit: 500, usedCount: 490, expiryDate: "2026-05-01", isActive: true },
-  { _id: "3", code: "FLASH50", type: CouponType.PERCENTAGE, value: 50, maxDiscount: 1000000, usageLimit: 50, usedCount: 50, expiryDate: "2026-04-15", isActive: false },
-];
+import { Plus, Edit, Trash2, Copy, ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import { fetchCoupons, deleteCoupon, type Coupon } from "@/services/couponService";
 
 const CouponList: React.FC = () => {
   usePageTitle("Quản Lý Mã Giảm Giá");
 
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 10;
 
-  const filteredCoupons = mockCoupons.filter(c => c.code.toLowerCase().includes(searchTerm.toLowerCase()));
+  useEffect(() => {
+    loadCoupons();
+  }, []);
+
+  const loadCoupons = async () => {
+    setIsLoading(true);
+    const data = await fetchCoupons();
+    setCoupons(data);
+    setIsLoading(false);
+  };
+
+  const filteredCoupons = coupons.filter(c => c.code.toLowerCase().includes(searchTerm.toLowerCase()));
   const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
   const paginatedCoupons = filteredCoupons.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -37,99 +39,156 @@ const CouponList: React.FC = () => {
     toast.success(`Đã copy mã: ${code}`);
   };
 
-  const isExpiredOrDepleted = (coupon: any) => {
-    return !coupon.isActive || coupon.usedCount >= coupon.usageLimit || new Date(coupon.expiryDate) < new Date();
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa mã giảm giá này?")) {
+      const success = await deleteCoupon(id);
+      if (success) {
+        toast.success("Xóa mã giảm giá thành công!");
+        loadCoupons();
+      } else {
+        toast.error("Lỗi khi xóa mã giảm giá.");
+      }
+    }
+  };
+
+  const isExpiredOrDepleted = (coupon: Coupon) => {
+    return !coupon.isActive ||
+      (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) ||
+      new Date(coupon.endDate) < new Date();
+  };
+
+  const formatPrice = (value: number) => {
+    return value.toLocaleString("vi-VN");
   };
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row gap-4">
-             <div className="relative flex-1 md:w-[350px]">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <Card className="border-none shadow-sm">
+        <CardHeader className="border-b border-zinc-100">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-sm">
                 <Input
                   placeholder="Tìm mã giảm giá..."
-                  className="pl-8 uppercase"
+                  className="rounded-xl h-11 uppercase"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-             </div>
-             <Button asChild className="md:w-auto w-full">
-               <a href="/coupons/add">
-                 <Plus className="mr-2 h-4 w-4" /> Tạo Mã
-               </a>
-             </Button>
+              </div>
+              <Button
+                variant="outline"
+                onClick={loadCoupons}
+                className="rounded-xl h-11"
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+            <Button asChild className="rounded-xl h-11 bg-zinc-900 hover:bg-zinc-800">
+              <Link to="/coupons/add">
+                <Plus className="mr-2 h-4 w-4" /> Tạo Mã
+              </Link>
+            </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead>Mã (Code)</TableHead>
-                <TableHead>Chi tiết giảm</TableHead>
-                <TableHead className="text-center">Đã dùng</TableHead>
-                <TableHead>Ngày hết hạn</TableHead>
-                <TableHead>Trạng thái</TableHead>
-                <TableHead className="text-right">Hành động</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-               {paginatedCoupons.length > 0 ? (
-                 paginatedCoupons.map((coupon) => (
-                    <TableRow key={coupon._id} className={isExpiredOrDepleted(coupon) ? "bg-muted/30" : ""}>
-                      <TableCell className="font-bold text-blue-600">
-                        {coupon.code}
-                      </TableCell>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-zinc-50/50">
+                <TableRow>
+                  <TableHead className="py-4 font-bold text-zinc-900">Mã (Code)</TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">Chi tiết giảm</TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900 text-center">Đã dùng</TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">Ngày hết hạn</TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">Trạng thái</TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900 text-right pr-6">Hành động</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-48 text-center">
+                      <div className="flex flex-col items-center gap-2 text-zinc-400">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                        <p className="text-sm font-medium">Đang tải dữ liệu...</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedCoupons.length > 0 ? (
+                  paginatedCoupons.map((coupon) => (
+                    <TableRow key={coupon._id} className={`hover:bg-zinc-50/50 transition-colors ${isExpiredOrDepleted(coupon) ? "bg-zinc-50/30" : ""}`}>
+                      <TableCell className="font-bold text-blue-600 font-mono">{coupon.code}</TableCell>
                       <TableCell>
-                         Giảm {coupon.value}{coupon.type === CouponType.PERCENTAGE ? '%' : '₫'}
-                         <br />
-                         <span className="text-xs text-muted-foreground">Tối đa: {coupon.maxDiscount.toLocaleString()} ₫</span>
+                        <span className="font-semibold">
+                          Giảm {coupon.discountValue}{coupon.discountType === "PERCENTAGE" ? "%" : "₫"}
+                        </span>
+                        {coupon.maxDiscountAmount ? (
+                          <>
+                            <br />
+                            <span className="text-xs text-zinc-500">Tối đa: {formatPrice(coupon.maxDiscountAmount)} ₫</span>
+                          </>
+                        ) : null}
                       </TableCell>
                       <TableCell className="text-center">
-                         <Badge variant="secondary" className="font-mono">
-                           {coupon.usedCount}/{coupon.usageLimit}
-                         </Badge>
+                        <Badge variant="secondary" className="font-mono rounded-lg">
+                          {coupon.usedCount}/{coupon.usageLimit || "∞"}
+                        </Badge>
                       </TableCell>
-                      <TableCell>{coupon.expiryDate}</TableCell>
+                      <TableCell className="text-sm text-zinc-500">
+                        {new Date(coupon.endDate).toLocaleDateString("vi-VN")}
+                      </TableCell>
                       <TableCell>
-                         {isExpiredOrDepleted(coupon) ? (
-                            <Badge variant="destructive">Hết hiệu lực</Badge>
-                         ) : (
-                            <Badge variant="default" className="bg-green-600 hover:bg-green-700">Đang chạy</Badge>
-                         )}
+                        {isExpiredOrDepleted(coupon) ? (
+                          <Badge variant="destructive" className="rounded-lg px-3 py-1">Hết hiệu lực</Badge>
+                        ) : (
+                          <Badge variant="outline" className="rounded-lg px-3 py-1 text-green-600 border-green-200 bg-green-50">Đang chạy</Badge>
+                        )}
                       </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="outline" size="icon" onClick={() => handleCopy(coupon.code)}>
-                          <Copy className="h-4 w-4 text-green-600" />
+                      <TableCell className="text-right space-x-2 pr-6">
+                        <Button variant="ghost" size="icon" onClick={() => handleCopy(coupon.code)} className="h-9 w-9 rounded-lg hover:bg-green-50 text-green-600">
+                          <Copy className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon">
-                          <Edit className="h-4 w-4 text-blue-600" />
+                        <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-blue-50 text-blue-600">
+                          <Link to={`/coupons/edit/${coupon._id}`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
                         </Button>
-                        <Button variant="outline" size="icon">
-                          <Trash2 className="h-4 w-4 text-red-600" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(coupon._id)}
+                          className="h-9 w-9 rounded-lg hover:bg-red-50 text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
-                 ))
-               ) : (
-                 <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">Không tìm thấy mã giảm giá.</TableCell>
-                 </TableRow>
-               )}
-            </TableBody>
-          </Table>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-48 text-center text-zinc-400">
+                      Không tìm thấy mã giảm giá nào.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
           {totalPages > 1 && (
-             <div className="flex items-center justify-end space-x-2 mt-4">
-               <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                 <ChevronLeft className="h-4 w-4" /> Prev
-               </Button>
-               <span className="text-sm">Page {currentPage} of {totalPages}</span>
-               <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-                 Next <ChevronRight className="h-4 w-4" />
-               </Button>
-             </div>
+            <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-100">
+              <p className="text-sm text-zinc-500">
+                Hiển thị trang {currentPage} trên tổng số {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-lg">
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Trước
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="rounded-lg">
+                  Sau <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

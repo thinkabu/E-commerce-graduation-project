@@ -19,6 +19,7 @@ import EditProduct from "@/pages/Products/EditProduct";
 // Users
 import AllUsers from "@/pages/Users/AllUsers";
 import AddUser from "@/pages/Users/AddUser";
+import EditUser from "@/pages/Users/EditUser";
 
 // Addresses
 import AllAddresses from "@/pages/Addresses/AllAddresses";
@@ -32,6 +33,14 @@ import OrderList from "@/pages/Orders/OrderList";
 
 // Coupons
 import CouponList from "@/pages/Coupons/CouponList";
+import CouponForm from "@/pages/Coupons/CouponForm";
+
+// Banners
+import BannerList from "@/pages/Banners/BannerList";
+import BannerForm from "@/pages/Banners/BannerForm";
+
+// Campaigns
+import CampaignList from "@/pages/Campaigns/CampaignList";
 
 const App: React.FC = () => {
   return (
@@ -65,6 +74,7 @@ const App: React.FC = () => {
           {/* Users */}
           <Route path="users" element={<AllUsers />} />
           <Route path="users/add" element={<AddUser />} />
+          <Route path="users/edit/:id" element={<EditUser />} />
 
           {/* Addresses */}
           <Route path="addresses" element={<AllAddresses />} />
@@ -79,6 +89,16 @@ const App: React.FC = () => {
 
           {/* Coupons */}
           <Route path="coupons" element={<CouponList />} />
+          <Route path="coupons/add" element={<CouponForm />} />
+          <Route path="coupons/edit/:id" element={<CouponForm />} />
+
+          {/* Banners */}
+          <Route path="banners" element={<BannerList />} />
+          <Route path="banners/add" element={<BannerForm />} />
+          <Route path="banners/edit/:id" element={<BannerForm />} />
+
+          {/* Campaigns */}
+          <Route path="campaigns" element={<CampaignList />} />
 
           {/* Placeholder pages */}
           <Route path="report" element={<ComingSoon title="Báo cáo" />} />

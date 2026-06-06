@@ -11,6 +11,12 @@ import { CartContextProvider } from "../contexts/CartContext";
 import { AddressContextProvider } from "../contexts/AddressContext";
 import { PaymentContextProvider } from "../contexts/PaymentContext";
 import { NFTContextProvider } from "../contexts/NFTContext";
+import { ThemeContextProvider } from "../contexts/ThemeContext";
+import { NotificationContextProvider } from "../contexts/NotificationContext";
+import { initNotificationHandler } from "../services/notification.service";
+
+// Khởi tạo handler một lần khi app load
+initNotificationHandler();
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
@@ -18,23 +24,27 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? customDarkTheme : customLightTheme}>
       <GluestackUIProvider mode="system">
-        <AuthContextProvider>
-          <CartContextProvider>
-            <AddressContextProvider>
-              <PaymentContextProvider>
-                <NFTContextProvider>
-                  <Stack screenOptions={{ headerShown: false }}>
-                    {/* Trạm gác cổng điều hướng */}
-                    <Stack.Screen name="index" />
-                    
-                    {/* Các nhóm màn hình chính */}
-                    <Stack.Screen name="(tabs)" />
-                  </Stack>
-                </NFTContextProvider>
-              </PaymentContextProvider>
-            </AddressContextProvider>
-          </CartContextProvider>
-        </AuthContextProvider>
+        <ThemeContextProvider>
+          <AuthContextProvider>
+            <NotificationContextProvider>
+              <CartContextProvider>
+                <AddressContextProvider>
+                  <PaymentContextProvider>
+                    <NFTContextProvider>
+                      <Stack screenOptions={{ headerShown: false }}>
+                        {/* Trạm gác cổng điều hướng */}
+                        <Stack.Screen name="index" />
+
+                        {/* Các nhóm màn hình chính */}
+                        <Stack.Screen name="(tabs)" />
+                      </Stack>
+                    </NFTContextProvider>
+                  </PaymentContextProvider>
+                </AddressContextProvider>
+              </CartContextProvider>
+            </NotificationContextProvider>
+          </AuthContextProvider>
+        </ThemeContextProvider>
       </GluestackUIProvider>
     </ThemeProvider>
   );

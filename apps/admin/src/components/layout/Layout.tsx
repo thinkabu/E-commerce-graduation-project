@@ -2,21 +2,88 @@ import React, { useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { usePageTitle } from "@/contexts/PageTitleContext";
 import { logout, getAdminUser } from "@/services/authService";
-import { LogOut, ChevronLeft, ChevronRight, LayoutDashboard, Smartphone, Users, Layers, ShoppingCart, Ticket, BarChart3, HelpCircle, Settings } from "lucide-react";
+import {
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  Smartphone,
+  Users,
+  Layers,
+  ShoppingCart,
+  Ticket,
+  BarChart3,
+  HelpCircle,
+  Settings,
+  ImageIcon,
+  Bell,
+} from "lucide-react";
 
 const menuItems = [
-  { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
-  { id: "products", label: "Products", icon: <Smartphone size={20} />, path: "/products" },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: <LayoutDashboard size={20} />,
+    path: "/dashboard",
+  },
+  {
+    id: "products",
+    label: "Products",
+    icon: <Smartphone size={20} />,
+    path: "/products",
+  },
   { id: "users", label: "Users", icon: <Users size={20} />, path: "/users" },
-  { id: "category", label: "Categories", icon: <Layers size={20} />, path: "/category" },
-  { id: "orders", label: "Orders", icon: <ShoppingCart size={20} />, path: "/orders" },
-  { id: "coupons", label: "Coupons", icon: <Ticket size={20} />, path: "/coupons" },
+  {
+    id: "category",
+    label: "Categories",
+    icon: <Layers size={20} />,
+    path: "/category",
+  },
+  {
+    id: "orders",
+    label: "Orders",
+    icon: <ShoppingCart size={20} />,
+    path: "/orders",
+  },
+  {
+    id: "coupons",
+    label: "Coupons",
+    icon: <Ticket size={20} />,
+    path: "/coupons",
+  },
+  {
+    id: "banners",
+    label: "Banners",
+    icon: <ImageIcon size={20} />,
+    path: "/banners",
+  },
+  {
+    id: "campaigns",
+    label: "Campaigns",
+    icon: <Bell size={20} />,
+    path: "/campaigns",
+  },
 ];
 
 const reportItems = [
-  { id: "report", label: "Thống kê", icon: <BarChart3 size={20} />, path: "/report" },
-  { id: "help", label: "Hỗ trợ kỹ thuật", icon: <HelpCircle size={20} />, path: "/help" },
-  { id: "setting", label: "Cấu hình", icon: <Settings size={20} />, path: "/setting" },
+  {
+    id: "report",
+    label: "Thống kê",
+    icon: <BarChart3 size={20} />,
+    path: "/report",
+  },
+  {
+    id: "help",
+    label: "Hỗ trợ kỹ thuật",
+    icon: <HelpCircle size={20} />,
+    path: "/help",
+  },
+  {
+    id: "setting",
+    label: "Cấu hình",
+    icon: <Settings size={20} />,
+    path: "/setting",
+  },
 ];
 
 const Layout: React.FC = () => {
@@ -28,6 +95,10 @@ const Layout: React.FC = () => {
   const isActive = (path: string) => {
     if (path === "/products") return location.pathname.startsWith("/products");
     if (path === "/coupons") return location.pathname.startsWith("/coupons");
+    if (path === "/users") return location.pathname.startsWith("/users");
+    if (path === "/banners") return location.pathname.startsWith("/banners");
+    if (path === "/category") return location.pathname.startsWith("/category");
+    if (path === "/campaigns") return location.pathname.startsWith("/campaigns");
     return location.pathname === path;
   };
 
@@ -43,7 +114,10 @@ const Layout: React.FC = () => {
         <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-800">
           {!collapsed && (
             <span className="text-lg font-black text-white truncate tracking-tight uppercase">
-              Think hearT <span className="text-yellow-500 font-medium italic">DIGITAL</span>
+              Think hearT{" "}
+              <span className="text-yellow-500 font-medium italic">
+                DIGITAL
+              </span>
             </span>
           )}
           <button
@@ -94,18 +168,24 @@ const Layout: React.FC = () => {
 
         {/* Footer */}
         <div className="p-4 border-t border-zinc-800 bg-zinc-900/50">
-          <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
+          <div
+            className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}
+          >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-zinc-900 font-black text-sm shadow-lg">
               {admin?.fullName?.charAt(0) || "A"}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-white truncate">{admin?.fullName || "Admin"}</p>
-                <p className="text-[10px] text-zinc-500 truncate font-medium uppercase tracking-wider">{admin?.role || "Quản trị viên"}</p>
+                <p className="text-sm font-bold text-white truncate">
+                  {admin?.fullName || "Admin"}
+                </p>
+                <p className="text-[10px] text-zinc-500 truncate font-medium uppercase tracking-wider">
+                  {admin?.role || "Quản trị viên"}
+                </p>
               </div>
             )}
             {!collapsed && (
-              <button 
+              <button
                 onClick={logout}
                 className="p-2 rounded-lg text-zinc-500 hover:bg-red-500/10 hover:text-red-500 transition-colors"
                 title="Đăng xuất"
@@ -127,10 +207,12 @@ const Layout: React.FC = () => {
               {pageTitle}
             </h1>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <div className="hidden md:flex flex-col items-end">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Thời gian hệ thống</span>
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                Thời gian hệ thống
+              </span>
               <span className="text-sm font-black text-zinc-900">
                 {new Date().toLocaleDateString("vi-VN", {
                   weekday: "long",
@@ -140,15 +222,15 @@ const Layout: React.FC = () => {
                 })}
               </span>
             </div>
-            
+
             {collapsed && (
-               <button 
-               onClick={logout}
-               className="p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-sm"
-               title="Đăng xuất"
-             >
-               <LogOut size={20} />
-             </button>
+              <button
+                onClick={logout}
+                className="p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                title="Đăng xuất"
+              >
+                <LogOut size={20} />
+              </button>
             )}
           </div>
         </header>

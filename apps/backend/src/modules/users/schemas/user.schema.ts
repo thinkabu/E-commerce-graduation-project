@@ -56,10 +56,13 @@ export class User {
 
   @Prop({
     unique: true,
-    sparse: true, // Cho phép nhiều document có walletAddress = null
+    sparse: true,
     trim: true,
   })
   walletAddress: string; // Địa chỉ ví MetaMask
+
+  @Prop({ type: [String], default: [] })
+  expoPushTokens: string[]; // Expo Push Tokens (hỗ trợ nhiều thiết bị)
 
   @Prop({ type: Types.ObjectId, ref: 'Address' })
   defaultAddressId: Types.ObjectId;

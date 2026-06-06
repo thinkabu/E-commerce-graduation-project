@@ -1,6 +1,14 @@
-import React, { useState } from 'react';
-import { ScrollView, SafeAreaView, Image, Modal, Dimensions, Animated, Easing } from 'react-native';
-import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  ScrollView,
+  SafeAreaView,
+  Image,
+  Modal,
+  Animated,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { useRouter, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import Header from '@/components/Header';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
@@ -9,192 +17,590 @@ import { VStack } from '@/components/ui/vstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Button, ButtonText } from '@/components/ui/button';
-import { 
-  ChevronLeft, 
-  MapPin, 
-  CreditCard, 
-  ShieldCheck, 
+import {
+  MapPin,
   ChevronRight,
   Wallet,
+  Banknote,
+  CreditCard,
+  Package,
+  Tag,
+  Truck,
   CheckCircle2,
-  X
+  ShoppingBag,
+  AlertCircle,
 } from 'lucide-react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
+import { getAddresses, type Address } from '@/services/address.service';
+import { validateCoupon } from '@/services/coupon.service';
+import { createOrder } from '@/services/order.service';
+import { getProductById } from '@/services/product.service';
+import { Input, InputField, InputSlot, InputIcon } from '@/components/ui/input';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+// ─── Helpers ───────────────────────────────────────────────────
+const formatPrice = (price: number) =>
+  price.toLocaleString('vi-VN') + '₫';
 
+// ─── Payment method config ──────────────────────────────────────
+const PAYMENT_METHODS = [
+  {
+    id: 'COD',
+    label: 'Thanh toán khi nhận hàng',
+    sub: 'Trả tiền mặt khi nhận hàng',
+    icon: Banknote,
+    badge: null,
+  },
+  {
+    id: 'BANKING',
+    label: 'Chuyển khoản ngân hàng',
+    sub: 'QR Pay / Internet Banking',
+    icon: CreditCard,
+    badge: null,
+  },
+  {
+    id: 'CRYPTO',
+    label: 'Thanh toán Blockchain',
+    sub: 'USDT / ETH — bảo mật cao',
+    icon: Wallet,
+    badge: 'HOT',
+  },
+];
+
+// ─── Section header ─────────────────────────────────────────────
+const SectionLabel = ({ label }: { label: string }) => (
+  <Text className="text-[11px] font-black text-zinc-400 uppercase tracking-widest mb-3 ml-1">
+    {label}
+  </Text>
+);
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN SCREEN
+// ═══════════════════════════════════════════════════════════════
 const CheckoutScreen = () => {
   const router = useRouter();
-  const { mode, productId, quantity } = useLocalSearchParams();
+  const { mode, productId, variantId, quantity: qtyStr } = useLocalSearchParams();
+  const { user } = useAuth();
+  const { cartItems, subtotal, shipping, total, loading: cartLoading, clearCart } = useCart();
 
-  // Mock checkout data
-  const checkoutData = {
-    address: {
-      name: 'Nguyễn Văn A',
-      phone: '0376717480',
-      address: '123 Đường 3/2, Phường 12, Quận 10, TP. Hồ Chí Minh'
-    },
-    items: [
-      { id: '1', name: 'iPhone 15 Pro Max 256GB - Titan Tự Nhiên', price: 34990000, quantity: 1, image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?q=80&w=200&auto=format&fit=crop' }
-    ],
-    summary: {
-      subtotal: 34990000,
-      shipping: 30000,
-      discount: 0,
-      total: 35020000
+  // Single Item Logic
+  const [singleItem, setSingleItem] = useState<any>(null);
+  const [isFetchingSingle, setIsFetchingSingle] = useState(mode === 'single');
+
+  useEffect(() => {
+    if (mode === 'single' && productId) {
+      const fetchSingleProduct = async () => {
+        try {
+          const product = await getProductById(productId as string);
+          if (product) {
+            let price = product.basePrice;
+            let image = product.images?.[0] || 'https://via.placeholder.com/300';
+            let variantAttrs: Record<string, string> = {};
+
+            if (variantId) {
+              const variant = product.variants?.find((v: any) => v._id === variantId);
+              if (variant) {
+                price = variant.price;
+                if (variant.images?.length > 0) image = variant.images[0];
+                if (variant.attributes) {
+                  variant.attributes.forEach((attr: any) => {
+                    variantAttrs[attr.name] = attr.value;
+                  });
+                }
+              }
+            }
+
+            setSingleItem({
+              id: product._id,
+              productId: product._id,
+              variantId: variantId as string | undefined,
+              name: product.name,
+              price: price,
+              image: image,
+              quantity: parseInt(qtyStr as string) || 1,
+              variants: variantAttrs,
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching single product for checkout:', error);
+        } finally {
+          setIsFetchingSingle(false);
+        }
+      };
+      fetchSingleProduct();
     }
-  };
+  }, [mode, productId, variantId, qtyStr]);
 
-  const [paymentMethod, setPaymentMethod] = useState('Blockchain');
+  const checkoutItems = mode === 'single' && singleItem ? [singleItem] : cartItems;
+  const checkoutSubtotal = mode === 'single' && singleItem ? (singleItem.price * singleItem.quantity) : subtotal;
+  const checkoutShipping = checkoutItems.length > 0 ? 30000 : 0;
+  const checkoutTotal = checkoutSubtotal + checkoutShipping;
+
+  // Address
+  const [defaultAddress, setDefaultAddress] = useState<Address | null>(null);
+  const [addressLoading, setAddressLoading] = useState(true);
+
+  // Payment
+  const [paymentMethod, setPaymentMethod] = useState('COD');
+
+  // Coupon
+  const [couponInput, setCouponInput] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+
+  // Order placing
+  const [placing, setPlacing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const successAnim = React.useRef(new Animated.Value(0)).current;
 
-  const handlePlaceOrder = () => {
-    setShowSuccess(true);
-    Animated.spring(successAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 50,
-      friction: 7
-    }).start();
+  // ── Load default address ──────────────────────────────────────
+  const loadAddress = useCallback(async () => {
+    if (!user?._id) return;
+    setAddressLoading(true);
+    const addresses = await getAddresses(user._id);
+    const def = addresses.find((a) => a.isDefault) ?? addresses[0] ?? null;
+    setDefaultAddress(def);
+    setAddressLoading(false);
+  }, [user?._id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAddress();
+    }, [loadAddress]),
+  );
+
+  // ── Coupon Logic ──────────────────────────────────────────────
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    
+    setIsValidatingCoupon(true);
+    const result = await validateCoupon(couponInput, checkoutSubtotal);
+    setIsValidatingCoupon(false);
+
+    if (result.valid && result.coupon) {
+      setAppliedCoupon(result.coupon);
+      let calculatedDiscount = 0;
+      if (result.coupon.discountType === 'PERCENTAGE') {
+        calculatedDiscount = (checkoutSubtotal * result.coupon.discountValue) / 100;
+        if (result.coupon.maxDiscountAmount) {
+          calculatedDiscount = Math.min(calculatedDiscount, result.coupon.maxDiscountAmount);
+        }
+      } else {
+        calculatedDiscount = result.coupon.discountValue;
+      }
+      setDiscount(calculatedDiscount);
+      Alert.alert('Thành công', `Đã áp dụng mã ${result.coupon.code}`);
+    } else {
+      Alert.alert('Lỗi', result.message || 'Mã giảm giá không hợp lệ');
+      setAppliedCoupon(null);
+      setDiscount(0);
+    }
   };
 
-  const formatPrice = (price: number) => {
-    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  // ── Place order ───────────────────────────────────────────────
+  const handlePlaceOrder = async () => {
+    if (!defaultAddress) {
+      Alert.alert('Thiếu địa chỉ', 'Vui lòng thêm hoặc chọn địa chỉ nhận hàng.');
+      return;
+    }
+    if (checkoutItems.length === 0) {
+      Alert.alert('Giỏ hàng trống', 'Vui lòng thêm sản phẩm trước khi đặt hàng.');
+      return;
+    }
+
+    setPlacing(true);
+    try {
+      // Chuẩn bị payload
+      const payload = {
+        items: checkoutItems.map((item: any) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+        })),
+        shippingAddressId: defaultAddress._id,
+        paymentMethod,
+        couponId: appliedCoupon?.code,
+      };
+
+      const order = await createOrder(user!._id, payload);
+
+      if (mode !== 'single') {
+        await clearCart();
+      }
+      setPlacing(false);
+
+      if (!order) {
+        throw new Error('Không thể tạo đơn hàng');
+      }
+
+      // Route theo phương thức thanh toán
+      if (paymentMethod === 'BANKING') {
+        router.push({
+          pathname: '/checkout/bank-selection',
+          params: { total: grandTotal, orderId: order._id }
+        } as any);
+        return;
+      }
+
+      if (paymentMethod === 'CRYPTO') {
+        router.push({
+          pathname: '/checkout/blockchain-payment',
+          params: { total: grandTotal, orderId: order._id }
+        } as any);
+        return;
+      }
+
+      // COD -> Hiện thông báo thành công
+      setShowSuccess(true);
+      Animated.spring(successAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 7,
+      }).start();
+
+    } catch (error: any) {
+      setPlacing(false);
+      Alert.alert('Lỗi', error?.response?.data?.message || error.message || 'Có lỗi xảy ra khi tạo đơn hàng');
+    }
   };
+
+  const grandTotal = checkoutTotal - discount;
+
+  // ─── Loading state ────────────────────────────────────────────
+  if (cartLoading || addressLoading || isFetchingSingle) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} className="bg-zinc-50 dark:bg-zinc-950">
+        <Stack.Screen options={{ headerShown: false }} />
+        <Header title="Thanh toán" />
+        <Box className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#EAB308" />
+        </Box>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-zinc-50 dark:bg-zinc-950">
       <Stack.Screen options={{ headerShown: false }} />
       <Header title="Thanh toán" />
 
-      <ScrollView showsVerticalScrollIndicator={false} className="flex-1 px-5 pt-6">
-        
-        {/* Shipping Address Section */}
-        <VStack className="mb-8">
-          <Text className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3 ml-1">Địa chỉ nhận hàng</Text>
-          <Pressable 
-            onPress={() => router.push('/address/my-addresses')}
-            className="bg-white dark:bg-zinc-900 p-5 rounded-[32px] border border-zinc-100 dark:border-zinc-800 shadow-sm flex-row items-center"
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 160 }}
+      >
+
+        {/* ── 1. SHIPPING ADDRESS ── */}
+        <VStack className="mb-7">
+          <SectionLabel label="Địa chỉ nhận hàng" />
+          <Pressable
+            onPress={() => router.push('/address/my-addresses' as any)}
+            className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden"
           >
-            <Box className="w-12 h-12 rounded-2xl bg-yellow-100 dark:bg-yellow-900/30 items-center justify-center mr-4">
-              <Icon as={MapPin} className="text-yellow-600 w-6 h-6" />
-            </Box>
-            <VStack className="flex-1">
-              <Text className="text-sm font-black text-zinc-900 dark:text-white">{checkoutData.address.name} • {checkoutData.address.phone}</Text>
-              <Text className="text-xs text-zinc-500 mt-0.5" numberOfLines={1}>{checkoutData.address.address}</Text>
-            </VStack>
-            <Icon as={ChevronRight} className="text-zinc-300 w-5 h-5 ml-2" />
+            {defaultAddress ? (
+              <HStack className="p-5 items-center">
+                <Box className="w-11 h-11 rounded-2xl bg-yellow-100 dark:bg-yellow-900/30 items-center justify-center mr-4">
+                  <Icon as={MapPin} className="text-yellow-600 w-5 h-5" />
+                </Box>
+                <VStack className="flex-1">
+                  <HStack className="items-center space-x-2 gap-2 mb-0.5">
+                    <Text className="text-sm font-black text-zinc-900 dark:text-white">
+                      {defaultAddress.fullName}
+                    </Text>
+                    <Box className="bg-yellow-500 px-1.5 py-0.5 rounded-md">
+                      <Text className="text-[9px] font-black text-zinc-900">MẶC ĐỊNH</Text>
+                    </Box>
+                  </HStack>
+                  <Text className="text-xs text-zinc-500 mb-0.5">{defaultAddress.phone}</Text>
+                  <Text className="text-xs text-zinc-400 leading-relaxed" numberOfLines={2}>
+                    {defaultAddress.street}, {defaultAddress.ward}, {defaultAddress.city}
+                  </Text>
+                </VStack>
+                <Icon as={ChevronRight} className="text-zinc-300 w-5 h-5 ml-3" />
+              </HStack>
+            ) : (
+              <HStack className="p-5 items-center">
+                <Box className="w-11 h-11 rounded-2xl bg-red-50 dark:bg-red-900/20 items-center justify-center mr-4">
+                  <Icon as={AlertCircle} className="text-red-400 w-5 h-5" />
+                </Box>
+                <VStack className="flex-1">
+                  <Text className="text-sm font-bold text-zinc-900 dark:text-white">Chưa có địa chỉ giao hàng</Text>
+                  <Text className="text-xs text-red-400 mt-0.5">Nhấn để thêm địa chỉ mới</Text>
+                </VStack>
+                <Icon as={ChevronRight} className="text-zinc-300 w-5 h-5 ml-3" />
+              </HStack>
+            )}
           </Pressable>
         </VStack>
 
-        {/* Order Items */}
-        <VStack className="mb-8">
-          <Text className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3 ml-1">Sản phẩm của bạn</Text>
-          {checkoutData.items.map((item) => (
-            <Box key={item.id} className="bg-white dark:bg-zinc-900 p-4 rounded-[32px] border border-zinc-100 dark:border-zinc-800 shadow-sm mb-3">
-              <HStack className="space-x-4 gap-4">
-                <Image source={{ uri: item.image }} className="w-20 h-20 rounded-2xl bg-zinc-50" />
-                <VStack className="flex-1 justify-center space-y-1 gap-1">
-                  <Text className="text-sm font-bold text-zinc-900 dark:text-white" numberOfLines={2}>{item.name}</Text>
-                  <HStack className="justify-between items-center">
-                    <Text className="text-sm font-black text-yellow-600">{formatPrice(item.price)}₫</Text>
-                    <Text className="text-xs text-zinc-400 font-bold">x{item.quantity}</Text>
+        {/* ── 2. ORDER ITEMS ── */}
+        <VStack className="mb-7">
+          <SectionLabel label={`Sản phẩm (${checkoutItems.length})`} />
+          <VStack className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+            {checkoutItems.length === 0 ? (
+              <VStack className="items-center py-10 space-y-3 gap-3">
+                <Icon as={ShoppingBag} className="text-zinc-200 dark:text-zinc-700 w-12 h-12" />
+                <Text className="text-zinc-400 text-sm">Chưa có sản phẩm nào</Text>
+              </VStack>
+            ) : (
+              checkoutItems.map((item, index) => (
+                <React.Fragment key={item.id}>
+                  <HStack className="p-4 items-center space-x-4 gap-4">
+                    <Image
+                      source={{ uri: item.image }}
+                      style={{ width: 72, height: 72, borderRadius: 16, backgroundColor: '#f4f4f5' }}
+                    />
+                    <VStack className="flex-1 space-y-1 gap-1">
+                      <Text className="text-sm font-bold text-zinc-900 dark:text-white leading-snug" numberOfLines={2}>
+                        {item.name}
+                      </Text>
+                      {/* Variants */}
+                      {item.variants && Object.keys(item.variants).length > 0 && (
+                        <HStack className="flex-wrap gap-1">
+                          {Object.entries(item.variants).map(([k, v]) => (
+                            <Box key={k} className="bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-lg">
+                              <Text className="text-[10px] text-zinc-500 font-bold">{String(v)}</Text>
+                            </Box>
+                          ))}
+                        </HStack>
+                      )}
+                      <HStack className="justify-between items-center mt-1">
+                        <Text className="text-sm font-black text-yellow-600">
+                          {formatPrice(item.price)}
+                        </Text>
+                        <Box className="bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-xl">
+                          <Text className="text-xs font-black text-zinc-600 dark:text-zinc-300">
+                            x{item.quantity}
+                          </Text>
+                        </Box>
+                      </HStack>
+                    </VStack>
                   </HStack>
-                </VStack>
-              </HStack>
-            </Box>
-          ))}
+                  {index < checkoutItems.length - 1 && (
+                    <Box className="h-px bg-zinc-50 dark:bg-zinc-800 mx-4" />
+                  )}
+                </React.Fragment>
+              ))
+            )}
+          </VStack>
         </VStack>
 
-        {/* Payment Methods */}
-        <VStack className="mb-8">
-          <Text className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3 ml-1">Phương thức thanh toán</Text>
+        {/* ── 3. PAYMENT METHOD ── */}
+        <VStack className="mb-7">
+          <SectionLabel label="Phương thức thanh toán" />
           <VStack className="space-y-3 gap-3">
-            {[
-              { id: 'Blockchain', label: 'Blockchain (USDT)', icon: Wallet, desc: 'An toàn, bảo mật cao' },
-              { id: 'COD', label: 'Thanh toán khi nhận hàng', icon: CreditCard, desc: 'Nhận hàng rồi mới trả tiền' }
-            ].map((method) => (
-              <Pressable 
-                key={method.id}
-                onPress={() => setPaymentMethod(method.id)}
-                className={`p-5 rounded-[32px] border-2 flex-row items-center ${
-                  paymentMethod === method.id ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10' : 'border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'
-                }`}
-              >
-                <Box className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${
-                  paymentMethod === method.id ? 'bg-yellow-500' : 'bg-zinc-100 dark:bg-zinc-800'
-                }`}>
-                  <Icon as={method.icon} className={paymentMethod === method.id ? 'text-zinc-900' : 'text-zinc-400'} size="md" />
-                </Box>
-                <VStack className="flex-1">
-                  <Text className={`text-sm font-black ${paymentMethod === method.id ? 'text-zinc-900 dark:text-yellow-500' : 'text-zinc-500'}`}>{method.label}</Text>
-                  <Text className="text-[10px] text-zinc-400">{method.desc}</Text>
-                </VStack>
-                {paymentMethod === method.id && <Icon as={CheckCircle2} className="text-yellow-600 w-6 h-6" />}
-              </Pressable>
-            ))}
+            {PAYMENT_METHODS.map((method) => {
+              const isSelected = paymentMethod === method.id;
+              return (
+                <Pressable
+                  key={method.id}
+                  onPress={() => setPaymentMethod(method.id)}
+                  className={`p-4 rounded-3xl border-2 flex-row items-center ${
+                    isSelected
+                      ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10'
+                      : 'border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'
+                  }`}
+                >
+                  <Box
+                    className={`w-11 h-11 rounded-2xl items-center justify-center mr-4 ${
+                      isSelected ? 'bg-yellow-500' : 'bg-zinc-100 dark:bg-zinc-800'
+                    }`}
+                  >
+                    <Icon
+                      as={method.icon}
+                      className={isSelected ? 'text-zinc-900' : 'text-zinc-400'}
+                      size="md"
+                    />
+                  </Box>
+                  <VStack className="flex-1">
+                    <HStack className="items-center space-x-2 gap-2">
+                      <Text
+                        className={`text-sm font-black ${
+                          isSelected ? 'text-zinc-900 dark:text-yellow-400' : 'text-zinc-600 dark:text-zinc-300'
+                        }`}
+                      >
+                        {method.label}
+                      </Text>
+                      {method.badge && (
+                        <Box className="bg-red-500 px-1.5 py-0.5 rounded-md">
+                          <Text className="text-[9px] font-black text-white">{method.badge}</Text>
+                        </Box>
+                      )}
+                    </HStack>
+                    <Text className="text-[11px] text-zinc-400 mt-0.5">{method.sub}</Text>
+                  </VStack>
+                  {isSelected && <Icon as={CheckCircle2} className="text-yellow-500 w-5 h-5 ml-2" />}
+                </Pressable>
+              );
+            })}
           </VStack>
         </VStack>
 
-        {/* Order Summary */}
-        <Box className="bg-zinc-900 dark:bg-zinc-900 p-8 rounded-[40px] mb-32 shadow-xl">
-          <VStack className="space-y-4 gap-4">
-            <HStack className="justify-between">
-              <Text className="text-zinc-400 text-sm">Tạm tính</Text>
-              <Text className="text-white text-sm font-bold">{formatPrice(checkoutData.summary.subtotal)}₫</Text>
+        {/* ── 4. COUPON CODE ── */}
+        <VStack className="mb-7">
+          <SectionLabel label="Mã giảm giá" />
+          <HStack className="space-x-3 gap-3">
+            <Input className="flex-1 h-14 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2">
+              <InputSlot className="pl-4">
+                <Icon as={Tag} className="text-zinc-400 w-5 h-5" />
+              </InputSlot>
+              <InputField 
+                placeholder="Nhập mã giảm giá..."
+                value={couponInput}
+                onChangeText={setCouponInput}
+                autoCapitalize="characters"
+                className="text-zinc-900 dark:text-white font-bold"
+              />
+            </Input>
+            <Button 
+              onPress={handleApplyCoupon}
+              disabled={isValidatingCoupon || !couponInput.trim()}
+              className="bg-zinc-900 dark:bg-zinc-800 h-14 px-6 rounded-2xl"
+            >
+              {isValidatingCoupon ? <ActivityIndicator size="small" color="#fff" /> : <ButtonText className="text-white font-bold">Áp dụng</ButtonText>}
+            </Button>
+          </HStack>
+          {appliedCoupon && (
+             <HStack className="mt-2 items-center space-x-2 gap-2 ml-1">
+                <CheckCircle2 size={14} className="text-green-500" />
+                <Text className="text-xs text-green-500 font-medium">Đã áp dụng mã: {appliedCoupon.code}</Text>
+                <Pressable onPress={() => { setAppliedCoupon(null); setDiscount(0); setCouponInput(''); }}>
+                   <Text className="text-xs text-red-500 font-bold ml-2">Gỡ bỏ</Text>
+                </Pressable>
+             </HStack>
+          )}
+        </VStack>
+
+        {/* ── 4. DELIVERY INFO ── */}
+        <VStack className="mb-7">
+          <SectionLabel label="Thông tin vận chuyển" />
+          <Box className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm p-5">
+            <HStack className="items-center space-x-4 gap-4">
+              <Box className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-900/20 items-center justify-center">
+                <Icon as={Truck} className="text-blue-500 w-5 h-5" />
+              </Box>
+              <VStack className="flex-1">
+                <Text className="text-sm font-black text-zinc-900 dark:text-white">Giao hàng tiêu chuẩn</Text>
+                <Text className="text-xs text-zinc-400 mt-0.5">Dự kiến nhận hàng trong 2–4 ngày</Text>
+              </VStack>
+              <Text className="text-sm font-black text-zinc-700 dark:text-zinc-200">
+                {checkoutShipping === 0 ? 'Miễn phí' : formatPrice(checkoutShipping)}
+              </Text>
             </HStack>
-            <HStack className="justify-between">
-              <Text className="text-zinc-400 text-sm">Phí vận chuyển</Text>
-              <Text className="text-white text-sm font-bold">+{formatPrice(checkoutData.summary.shipping)}₫</Text>
-            </HStack>
-            <Box className="h-px bg-zinc-800 my-1" />
-            <HStack className="justify-between items-center">
-              <Text className="text-white text-lg font-black uppercase tracking-wider">Tổng cộng</Text>
-              <Text className="text-yellow-500 text-2xl font-black">{formatPrice(checkoutData.summary.total)}₫</Text>
-            </HStack>
-          </VStack>
-        </Box>
+          </Box>
+        </VStack>
+
+        {/* Note */}
+        <HStack className="items-start space-x-2 gap-2 px-1 mb-6">
+          <Icon as={Package} className="text-zinc-300 w-4 h-4 mt-0.5" />
+          <Text className="text-xs text-zinc-400 flex-1 leading-relaxed">
+            Bằng cách đặt hàng, bạn đồng ý với{' '}
+            <Text className="text-yellow-600 font-bold">Điều khoản sử dụng</Text> và{' '}
+            <Text className="text-yellow-600 font-bold">Chính sách bảo mật</Text> của chúng tôi.
+          </Text>
+        </HStack>
 
       </ScrollView>
 
-      {/* Place Order Button */}
-      <Box className="absolute bottom-0 left-0 right-0 p-5 bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800 pb-8">
-        <Button 
-          onPress={handlePlaceOrder}
-          className="bg-yellow-500 h-16 rounded-[24px] shadow-xl active:opacity-90"
-        >
-          <ButtonText className="text-zinc-900 font-black text-lg uppercase tracking-wider">Đặt hàng ngay</ButtonText>
-        </Button>
+      {/* ── STICKY PLACE ORDER BUTTON ── */}
+      <Box className="absolute bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800 shadow-2xl">
+        <VStack className="px-6 pt-5 pb-8 space-y-4 gap-4">
+          {/* Detailed Summary in sticky footer */}
+          <VStack className="space-y-2 gap-2">
+            <HStack className="justify-between">
+              <Text className="text-xs text-zinc-500">Tạm tính ({checkoutItems.length} sản phẩm)</Text>
+              <Text className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{formatPrice(checkoutSubtotal)}</Text>
+            </HStack>
+            <HStack className="justify-between">
+              <Text className="text-xs text-zinc-500">Phí vận chuyển</Text>
+              <Text className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                {checkoutShipping === 0 ? 'Miễn phí' : `+${formatPrice(checkoutShipping)}`}
+              </Text>
+            </HStack>
+            {discount > 0 && (
+              <HStack className="justify-between">
+                <Text className="text-xs text-zinc-500">Giảm giá</Text>
+                <Text className="text-xs font-bold text-green-600">-{formatPrice(discount)}</Text>
+              </HStack>
+            )}
+          </VStack>
+
+          <Box className="h-px bg-zinc-100 dark:bg-zinc-800" />
+
+          <HStack className="justify-between items-center">
+            <VStack>
+              <Text className="text-[10px] uppercase font-black text-zinc-400 tracking-tighter">Tổng cộng</Text>
+              <Text className="text-xl font-black text-yellow-600">{formatPrice(grandTotal)}</Text>
+            </VStack>
+            <Button
+              onPress={handlePlaceOrder}
+              disabled={placing || checkoutItems.length === 0}
+              className="bg-yellow-500 h-14 px-8 rounded-2xl shadow-lg active:opacity-90 disabled:opacity-50"
+            >
+              {placing ? (
+                <ActivityIndicator color="#18181b" />
+              ) : (
+                <ButtonText className="text-zinc-900 font-black text-base uppercase tracking-wider">
+                  Đặt hàng
+                </ButtonText>
+              )}
+            </Button>
+          </HStack>
+        </VStack>
       </Box>
 
-      {/* Success Modal */}
+      {/* ── SUCCESS MODAL ── */}
       <Modal visible={showSuccess} transparent animationType="fade">
         <Box className="flex-1 bg-black/80 items-center justify-center px-8">
-          <Animated.View 
-            style={{ 
-              transform: [{ scale: successAnim }],
-              opacity: successAnim 
-            }}
+          <Animated.View
+            style={{ transform: [{ scale: successAnim }], opacity: successAnim }}
             className="bg-white dark:bg-zinc-900 w-full p-10 rounded-[48px] items-center"
           >
             <Box className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/30 items-center justify-center mb-6">
               <Icon as={CheckCircle2} className="text-green-500 w-12 h-12" />
             </Box>
-            <Text className="text-2xl font-black text-zinc-900 dark:text-white text-center mb-2 uppercase tracking-tighter">Đặt hàng thành công!</Text>
-            <Text className="text-sm text-zinc-500 text-center mb-8">Cảm ơn bạn đã tin tưởng Think hearT DIGITAL. Đơn hàng của bạn đang được xử lý.</Text>
-            <Button 
-              onPress={() => {
-                setShowSuccess(false);
-                router.replace('/(tabs)/home');
-              }}
-              className="bg-zinc-900 dark:bg-yellow-500 w-full h-14 rounded-2xl"
-            >
-              <ButtonText className="text-white dark:text-zinc-900 font-bold uppercase">Về trang chủ</ButtonText>
-            </Button>
+            <Text className="text-2xl font-black text-zinc-900 dark:text-white text-center mb-2 uppercase tracking-tighter">
+              Đặt hàng thành công!
+            </Text>
+            <Text className="text-sm text-zinc-500 text-center mb-2 leading-relaxed">
+              Cảm ơn bạn đã tin tưởng{'\n'}Think hearT DIGITAL.
+            </Text>
+            <Text className="text-xs text-zinc-400 text-center mb-8">
+              Đơn hàng đang được xử lý và sẽ sớm được giao đến bạn.
+            </Text>
+
+            <VStack className="w-full space-y-3 gap-3">
+              <Button
+                onPress={() => {
+                  setShowSuccess(false);
+                  router.replace('/(tabs)/home' as any);
+                }}
+                className="bg-zinc-900 dark:bg-yellow-500 w-full h-14 rounded-2xl"
+              >
+                <ButtonText className="text-white dark:text-zinc-900 font-bold uppercase">
+                  Về trang chủ
+                </ButtonText>
+              </Button>
+              <Button
+                onPress={() => {
+                  setShowSuccess(false);
+                  router.replace('/(tabs)/home' as any);
+                  setTimeout(() => {
+                    router.push('/profile/order-history' as any);
+                  }, 100);
+                }}
+                className="bg-zinc-100 dark:bg-zinc-800 w-full h-14 rounded-2xl"
+              >
+                <ButtonText className="text-zinc-700 dark:text-zinc-200 font-bold">
+                  Xem đơn hàng của tôi
+                </ButtonText>
+              </Button>
+            </VStack>
           </Animated.View>
         </Box>
       </Modal>
-
     </SafeAreaView>
   );
 };

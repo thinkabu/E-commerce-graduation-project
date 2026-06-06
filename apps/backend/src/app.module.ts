@@ -2,6 +2,7 @@ import { Module, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule, InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -14,9 +15,16 @@ import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { BannersModule } from './modules/banners/banners.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { CampaignsModule } from './modules/campaigns/campaigns.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '../../.env',
@@ -39,6 +47,12 @@ import { UploadModule } from './modules/upload/upload.module';
     RecommendationsModule,
     AuthModule,
     UploadModule,
+    BannersModule,
+    CouponsModule,
+    OrdersModule,
+    ReviewsModule,
+    NotificationsModule,
+    CampaignsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -10,6 +11,7 @@ import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -87,5 +89,45 @@ export class UsersService {
       .lean();
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
     return user;
+  }
+
+  async changePassword(id: string, dto: ChangePasswordDto): Promise<{ message: string }> {
+    const user = await this.userModel.findById(id).select('+passwordHash');
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
+
+    const isMatch = await bcrypt.compare(dto.oldPassword, user.passwordHash);
+    if (!isMatch) throw new BadRequestException('Mật khẩu hiện tại không đúng');
+
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, salt);
+
+    user.passwordHash = newPasswordHash;
+    await user.save();
+
+    return { message: 'Đổi mật khẩu thành công' };
+  }
+
+  // ── Push Token Management ────────────────────────────────────────
+
+  async savePushToken(userId: string, token: string): Promise<void> {
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $addToSet: { expoPushTokens: token } }, // $addToSet tránh lưu token trùng
+    );
+  }
+
+  async removePushToken(userId: string, token: string): Promise<void> {
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $pull: { expoPushTokens: token } },
+    );
+  }
+
+  async getExpoPushTokens(userId: string): Promise<string[]> {
+    const user = await this.userModel
+      .findById(userId)
+      .select('expoPushTokens')
+      .lean();
+    return user?.expoPushTokens ?? [];
   }
 }

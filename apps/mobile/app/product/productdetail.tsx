@@ -38,7 +38,7 @@ import {
   Plus,
   X,
 } from "lucide-react-native";
-import { getProductById } from "@/services/product.service";
+import { getProductById, getProducts } from "@/services/product.service";
 import { checkWishlist, toggleWishlist } from "@/services/wishlist.service";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -62,38 +62,6 @@ const mockReviews = [
     comment: 'Dùng rất thích, nhân viên tư vấn nhiệt tình.'
   }
 ];
-
-const mockRelatedProducts = [
-  {
-    id: "p2",
-    name: "Apple Watch S9",
-    price: 9500000,
-    image:
-      "https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?q=80&w=300&auto=format&fit=crop",
-  },
-  {
-    id: "p3",
-    name: "iPhone 15 Pro",
-    price: 32500000,
-    image:
-      "https://images.unsplash.com/photo-1695048133142-1a20484d2569?q=80&w=300&auto=format&fit=crop",
-  },
-  {
-    id: "p4",
-    name: "MacBook Pro M3",
-    price: 45900000,
-    image:
-      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=300&auto=format&fit=crop",
-  },
-  {
-    id: "p5",
-    name: "iPad Pro M2",
-    price: 21900000,
-    image:
-      "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=300&auto=format&fit=crop",
-  },
-];
-
 const ProductDetailScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -120,6 +88,11 @@ const ProductDetailScreen = () => {
 
   // Animation values
   const animValue = useRef(new Animated.Value(0)).current;
+
+  // Ref for image gallery ScrollView
+  const imageScrollRef = useRef<any>(null);
+
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
   // 1. Fetch Product Data
   useEffect(() => {
@@ -150,6 +123,25 @@ const ProductDetailScreen = () => {
               initialSelection[key] = options[key][0];
             });
             setSelectedAttributes(initialSelection);
+          }
+
+          // Fetch suggested products (same category, fallback to all)
+          try {
+            let catId: string | undefined;
+            if (data.categoryId) {
+              catId = typeof data.categoryId === 'string' ? data.categoryId : data.categoryId._id;
+            }
+            const related = await getProducts({ categoryId: catId, limit: 31 });
+            const filtered = related.items.filter((p: any) => p._id !== id).slice(0, 30);
+            if (filtered.length > 0) {
+              setRelatedProducts(filtered);
+            } else {
+              // Fallback: lấy sản phẩm bất kỳ nếu cùng danh mục không có kết quả
+              const fallback = await getProducts({ limit: 31 });
+              setRelatedProducts(fallback.items.filter((p: any) => p._id !== id).slice(0, 30));
+            }
+          } catch (e) {
+            console.error('Error fetching related products:', e);
           }
         }
       } catch (error) {
@@ -302,6 +294,7 @@ const ProductDetailScreen = () => {
           {/* 1. Image Gallery */}
           <Box className="bg-white dark:bg-zinc-900 relative">
             <ScrollView
+              ref={imageScrollRef}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
@@ -364,7 +357,13 @@ const ProductDetailScreen = () => {
               ).map((img: string, index: number) => (
                 <Pressable
                   key={index}
-                  onPress={() => setActiveImageIndex(index)}
+                  onPress={() => {
+                    setActiveImageIndex(index);
+                    imageScrollRef.current?.scrollTo({
+                      x: index * Dimensions.get("window").width,
+                      animated: true,
+                    });
+                  }}
                   className={`w-16 h-16 rounded-xl border-2 overflow-hidden ${
                     activeImageIndex === index
                       ? "border-yellow-500"
@@ -381,43 +380,13 @@ const ProductDetailScreen = () => {
           </Box>
 
           {/* 2. Product Info */}
-          <Box className="px-5 py-6 bg-white dark:bg-zinc-900 mt-2">
-            <HStack className="items-center space-x-2 gap-2 mb-2">
-              <Box className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
-                <Text className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  {product.categoryId?.name || "Sản phẩm"}
-                </Text>
-              </Box>
-              <Text className="text-zinc-400">•</Text>
-              <Text className="text-xs text-zinc-500 font-medium">
-                {product.manufacturer}
-              </Text>
-            </HStack>
-
-            <Text className="text-2xl font-bold text-zinc-900 dark:text-white leading-tight mb-4">
+          <Box className="px-5 py-3 bg-white dark:bg-zinc-900 mt-2">
+            <Text className="text-2xl font-bold text-zinc-900 dark:text-white leading-tight ">
               {product.name}
             </Text>
 
-            <HStack className="items-center space-x-2 gap-2 mb-4">
-              <HStack className="items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Icon
-                    key={i}
-                    as={Star}
-                    className={`w-4 h-4 ${i < Math.floor(product.averageRating || 0) ? "text-yellow-500 fill-yellow-500" : "text-zinc-200 dark:text-zinc-700"}`}
-                  />
-                ))}
-              </HStack>
-              <Text className="text-sm font-bold text-zinc-900 dark:text-white">
-                {product.averageRating || 0}
-              </Text>
-              <Text className="text-xs text-zinc-500">
-                ({product.reviewCount || 0} reviews)
-              </Text>
-            </HStack>
-
             <VStack className="space-y-1">
-              <HStack className="items-center space-x-3 gap-3">
+              <HStack className="items-center space-x-3 gap-2">
                 <Text className="text-3xl font-extrabold text-zinc-900 dark:text-white">
                   {formatPrice(
                     matchingVariant
@@ -431,7 +400,7 @@ const ProductDetailScreen = () => {
                 </Text>
                 {(matchingVariant?.discountPercentage ||
                   product.discountPercentage) > 0 && (
-                  <Box className="bg-red-500 px-2 py-1 rounded-lg">
+                  <Box className="bg-red-500 px-2 py-2 rounded-lg">
                     <Text className="text-xs font-bold text-white">
                       -
                       {matchingVariant?.discountPercentage ||
@@ -448,17 +417,35 @@ const ProductDetailScreen = () => {
                 </Text>
               )}
             </VStack>
+            
+            <HStack className="items-center space-x-2 gap-2">
+              <HStack className="items-center">
+                {[...Array(5)].map((_, i) => (
+                  <Icon
+                    key={i}
+                    as={Star}
+                    className={`w-4 h-4 ${i < Math.floor(product.averageRating || 0) ? "text-yellow-500 fill-yellow-500" : "text-zinc-200 dark:text-zinc-700"}`}
+                  />
+                ))}
+              </HStack>
+              <Text className="text-sm font-bold text-zinc-900 dark:text-white">
+                {product.averageRating || 0}
+              </Text>
+              <Text className="text-xs text-zinc-500">
+                ({product.reviewCount || 0} reviews)
+              </Text>
+            </HStack>
           </Box>
 
           {/* 2.1 Variants Visible on Page */}
           {Object.keys(variantOptions).length > 0 && (
-            <Box className="px-5 py-6 bg-white dark:bg-zinc-900 mt-2">
+            <Box className="px-5 py-2 bg-white dark:bg-zinc-900 mt-2">
               {Object.entries(variantOptions).map(([attrName, attrValues]) => (
-                <Box key={attrName} className="mb-4">
+                <Box key={attrName} className="mb-2">
                   <Text className="text-base font-bold text-zinc-900 dark:text-white mb-4">
                     {attrName}
                   </Text>
-                  <HStack className="flex-wrap gap-3">
+                  <HStack className="flex-wrap gap-2">
                     {attrValues.map((val) => {
                       const isSelected = selectedAttributes[attrName] === val;
                       return (
@@ -601,35 +588,38 @@ const ProductDetailScreen = () => {
           </Box>
 
           {/* 7. Related Products (GRID LAYOUT) */}
-          <Box className="px-5 py-8 bg-white dark:bg-zinc-900 mt-2">
-            <Text className="text-lg font-bold text-zinc-900 dark:text-white mb-6">
-              Sản phẩm liên quan
-            </Text>
-            <HStack className="flex-wrap justify-between">
-              {mockRelatedProducts.map((p) => (
-                <Pressable
-                  key={p.id}
-                  className="w-[48%] bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-3xl border border-zinc-100 dark:border-zinc-800 mb-4 shadow-sm"
-                >
-                  <Box className="w-full h-32 rounded-2xl bg-white dark:bg-zinc-800 mb-3 items-center justify-center overflow-hidden">
-                    <Image
-                      source={{ uri: p.image }}
-                      className="w-full h-full object-cover"
-                    />
-                  </Box>
-                  <Text
-                    className="text-xs font-bold text-zinc-900 dark:text-white mb-1"
-                    numberOfLines={1}
+          {relatedProducts.length > 0 && (
+            <Box className="px-5 py-8 bg-white dark:bg-zinc-900 mt-2">
+              <Text className="text-lg font-bold text-zinc-900 dark:text-white mb-6">
+                Gợi ý sản phẩm
+              </Text>
+              <HStack className="flex-wrap justify-between">
+                {relatedProducts.map((p) => (
+                  <Pressable
+                    key={p._id}
+                    onPress={() => router.push({ pathname: '/product/productdetail', params: { id: p._id } })}
+                    className="w-[48%] bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-3xl border border-zinc-100 dark:border-zinc-800 mb-4 shadow-sm"
                   >
-                    {p.name}
-                  </Text>
-                  <Text className="text-sm font-extrabold text-yellow-600 dark:text-yellow-500">
-                    {formatPrice(p.price)}₫
-                  </Text>
-                </Pressable>
-              ))}
-            </HStack>
-          </Box>
+                    <Box className="w-full h-32 rounded-2xl bg-white dark:bg-zinc-800 mb-3 items-center justify-center overflow-hidden">
+                      <Image
+                        source={{ uri: p.images?.[0] || "https://via.placeholder.com/300" }}
+                        className="w-full h-full object-cover"
+                      />
+                    </Box>
+                    <Text
+                      className="text-xs font-bold text-zinc-900 dark:text-white mb-1"
+                      numberOfLines={1}
+                    >
+                      {p.name}
+                    </Text>
+                    <Text className="text-sm font-extrabold text-yellow-600 dark:text-yellow-500">
+                      {formatPrice(p.basePrice)}₫
+                    </Text>
+                  </Pressable>
+                ))}
+              </HStack>
+            </Box>
+          )}
 
           <Box className="h-20" />
         </ScrollView>

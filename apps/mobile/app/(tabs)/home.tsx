@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, Image, SafeAreaView, ActivityIndicator } from 'react-native';
+import { ScrollView, Image, SafeAreaView, ActivityIndicator, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
@@ -11,19 +11,14 @@ import { Pressable } from '@/components/ui/pressable';
 import { 
   Search, 
   Bell, 
-  Trash2, 
   SlidersHorizontal,
-  Smartphone,
-  Laptop,
-  Watch,
-  Headphones,
-  Monitor,
   Heart,
   Sparkles,
   ChevronRight,
   PackageSearch
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/contexts/NotificationContext';
 import { getCategories, Category } from '@/services/category.service';
 import { getProducts, Product } from '@/services/product.service';
 
@@ -43,36 +38,79 @@ const formatPrice = (price: number) => {
 const HomeScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
+  const { unreadCount, refreshUnreadCount } = useNotification();
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [popularProducts, setPopularProducts] = useState<Product[]>([]);
   const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Pagination for suggested products
+  const [suggestedPage, setSuggestedPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      // Fetch categories
+      const cats = await getCategories();
+      setCategories(cats.filter(c => c.isActive).slice(0, 5));
+
+      // Fetch popular products (limit to 15)
+      // Assuming 'soldCount' or similar is used, we just fetch 15 for now
+      const popData = await getProducts({ limit: 15 });
+      setPopularProducts(popData.items);
+
+      // Fetch initial 30 suggested products
+      const sugData = await getProducts({ limit: 30, page: 1 });
+      setSuggestedProducts(sugData.items);
+      
+      // Update hasMore
+      if (sugData.items.length < 30) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Error fetching home data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch categories (limit to 5 to show on top row)
-        const cats = await getCategories();
-        setCategories(cats.filter(c => c.isActive).slice(0, 5));
-
-        // Fetch products
-        const prodData = await getProducts({ limit: 10 });
-        const prods = prodData.items;
-
-        // Split products into popular (first 4) and suggested (rest)
-        setPopularProducts(prods.slice(0, 4));
-        setSuggestedProducts(prods.slice(4, 10));
-      } catch (error) {
-        console.error("Error fetching home data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchInitialData();
   }, []);
+
+  const loadMoreSuggested = async () => {
+    if (loadingMore || !hasMore || loading) return;
+    setLoadingMore(true);
+    
+    try {
+      const nextPage = suggestedPage + 1;
+      const sugData = await getProducts({ limit: 20, page: nextPage });
+      
+      if (sugData.items.length > 0) {
+        setSuggestedProducts(prev => [...prev, ...sugData.items]);
+        setSuggestedPage(nextPage);
+      }
+      
+      if (sugData.items.length < 20) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Error fetching more suggested products:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 100;
+    if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+      loadMoreSuggested();
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-zinc-50 dark:bg-zinc-950">
@@ -101,11 +139,32 @@ const HomeScreen = () => {
             </HStack>
             
             <HStack className="space-x-3 gap-3">
-              <Pressable className="w-10 h-10 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 items-center justify-center">
-                <Icon as={Trash2} className="text-zinc-700 dark:text-zinc-300 w-5 h-5" />
-              </Pressable>
-              <Pressable className="w-10 h-10 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 items-center justify-center">
+              {/* Bell Icon với Badge số thông báo chưa đọc */}
+              <Pressable
+                onPress={() => { refreshUnreadCount(); router.push('/notifications' as any); }}
+                className="w-10 h-10 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 items-center justify-center"
+              >
                 <Icon as={Bell} className="text-zinc-700 dark:text-zinc-300 w-5 h-5" />
+                {unreadCount > 0 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      backgroundColor: '#ef4444',
+                      borderRadius: 10,
+                      minWidth: 16,
+                      height: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: 3,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontSize: 9, fontWeight: 'bold' }}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
               </Pressable>
             </HStack>
           </HStack>
@@ -129,7 +188,12 @@ const HomeScreen = () => {
       {/* =========================================
           SCROLLABLE CONTENT
       ========================================= */}
-      <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        className="flex-1"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
         
         {/* 1. Category Menu */}
         <Box className="px-5 py-6">
@@ -141,7 +205,10 @@ const HomeScreen = () => {
             <HStack className="justify-between">
               {categories.map((item) => (
                 <VStack key={item._id} className="items-center space-y-2 gap-2">
-                  <Pressable className="w-14 h-14 rounded-full bg-white dark:bg-zinc-900 items-center justify-center shadow-sm elevation-1 active:bg-zinc-50 dark:active:bg-zinc-800 overflow-hidden">
+                  <Pressable 
+                    onPress={() => router.push({ pathname: '/category/productFollCate', params: { id: item._id, name: item.name } })}
+                    className="w-14 h-14 rounded-full bg-white dark:bg-zinc-900 items-center justify-center shadow-sm elevation-1 active:bg-zinc-50 dark:active:bg-zinc-800 overflow-hidden"
+                  >
                     {item.image ? (
                       <Image source={{ uri: item.image }} className="w-8 h-8 rounded-full object-cover" />
                     ) : (
@@ -155,7 +222,10 @@ const HomeScreen = () => {
               ))}
               {/* "Tất cả" Button */}
               <VStack className="items-center space-y-2 gap-2">
-                <Pressable className="w-14 h-14 rounded-full bg-white dark:bg-zinc-900 items-center justify-center shadow-sm elevation-1 active:bg-zinc-50 dark:active:bg-zinc-800">
+                <Pressable 
+                  onPress={() => router.push({ pathname: '/category/productFollCate', params: { name: 'Tất cả' } })}
+                  className="w-14 h-14 rounded-full bg-white dark:bg-zinc-900 items-center justify-center shadow-sm elevation-1 active:bg-zinc-50 dark:active:bg-zinc-800"
+                >
                   <Icon as={ChevronRight} className="text-yellow-500 w-6 h-6" />
                 </Pressable>
                 <Text className="text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
@@ -295,6 +365,13 @@ const HomeScreen = () => {
                 );
               })}
             </HStack>
+          )}
+
+          {loadingMore && (
+            <Box className="h-20 justify-center items-center mt-4">
+              <ActivityIndicator color="#eab308" />
+              <Text className="text-zinc-500 text-xs mt-2">Đang tải thêm...</Text>
+            </Box>
           )}
         </Box>
 

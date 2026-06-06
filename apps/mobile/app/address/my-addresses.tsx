@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { ScrollView, SafeAreaView, Alert } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { ScrollView, SafeAreaView, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { useRouter, Stack, useFocusEffect } from 'expo-router';
 import Header from '@/components/Header';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
@@ -9,68 +9,73 @@ import { VStack } from '@/components/ui/vstack';
 import { Icon } from '@/components/ui/icon';
 import { Pressable } from '@/components/ui/pressable';
 import { Button, ButtonText, ButtonIcon } from '@/components/ui/button';
-import { 
-  ChevronLeft, 
-  Plus, 
-  MapPin, 
-  Edit3, 
-  Trash2, 
-  CheckCircle2, 
-  Phone, 
+import {
+  Plus,
+  MapPin,
+  Edit3,
+  Trash2,
+  CheckCircle2,
+  Phone,
   User,
   Home,
-  Briefcase
+  Briefcase,
+  Package,
 } from 'lucide-react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { getAddresses, deleteAddress, type Address } from '@/services/address.service';
 
-// Mock data for addresses
-const initialAddresses = [
-  {
-    id: '1',
-    name: 'Nguyễn Văn A',
-    phone: '0901234567',
-    street: '123 Đường ABC',
-    ward: 'Phường 1',
-    district: 'Quận 1',
-    city: 'Hồ Chí Minh',
-    type: 'Home',
-    isDefault: true
-  },
-  {
-    id: '2',
-    name: 'Nguyễn Văn A (Work)',
-    phone: '0901234567',
-    street: '456 Đường XYZ',
-    ward: 'Phường 5',
-    district: 'Quận Tân Bình',
-    city: 'Hồ Chí Minh',
-    type: 'Work',
-    isDefault: false
-  }
-];
+const typeConfig = {
+  HOME: { label: 'Nhà riêng', icon: Home, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+  OFFICE: { label: 'Văn phòng', icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+  OTHER: { label: 'Khác', icon: Package, color: 'text-zinc-500', bg: 'bg-zinc-100 dark:bg-zinc-800' },
+};
 
 const MyAddressesScreen = () => {
   const router = useRouter();
-  const [addresses, setAddresses] = useState(initialAddresses);
+  const { user } = useAuth();
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleSetDefault = (id: string) => {
-    setAddresses(addresses.map(addr => ({
-      ...addr,
-      isDefault: addr.id === id
-    })));
-  };
+  const loadAddresses = useCallback(async () => {
+    if (!user?._id) return;
+    const data = await getAddresses(user._id);
+    setAddresses(data);
+    setLoading(false);
+    setRefreshing(false);
+  }, [user?._id]);
 
-  const handleDelete = (id: string) => {
+  // Reload khi quay lại từ form
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      loadAddresses();
+    }, [loadAddresses]),
+  );
+
+  const handleDelete = (id: string, isDefault: boolean) => {
+    if (isDefault) {
+      Alert.alert('Không thể xóa', 'Không thể xóa địa chỉ mặc định. Hãy chỉnh sửa và đặt địa chỉ khác làm mặc định trước.');
+      return;
+    }
     Alert.alert(
-      "Xác nhận",
-      "Bạn có chắc muốn xóa địa chỉ này?",
+      'Xác nhận',
+      'Bạn có chắc muốn xóa địa chỉ này?',
       [
-        { text: "Hủy", style: "cancel" },
-        { 
-          text: "Xóa", 
-          style: "destructive", 
-          onPress: () => setAddresses(addresses.filter(addr => addr.id !== id)) 
-        }
-      ]
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            const ok = await deleteAddress(id, user!._id);
+            if (ok) {
+              setAddresses((prev) => prev.filter((a) => a._id !== id));
+            } else {
+              Alert.alert('Lỗi', 'Xóa địa chỉ thất bại. Vui lòng thử lại.');
+            }
+          },
+        },
+      ],
     );
   };
 
@@ -79,87 +84,121 @@ const MyAddressesScreen = () => {
       <Stack.Screen options={{ headerShown: false }} />
       <Header title="Địa chỉ nhận hàng" />
 
-      <ScrollView showsVerticalScrollIndicator={false} className="flex-1 px-5 pt-6">
-        <VStack className="space-y-4 gap-4 mb-10">
-          {addresses.map((address) => (
-            <Pressable 
-              key={address.id}
-              onPress={() => handleSetDefault(address.id)}
-              className={`bg-white dark:bg-zinc-900 p-5 rounded-3xl border ${
-                address.isDefault ? 'border-yellow-500 shadow-md' : 'border-zinc-100 dark:border-zinc-800 shadow-sm'
-              }`}
-            >
-              <HStack className="justify-between items-start mb-3">
-                <HStack className="items-center space-x-2 gap-2">
-                  <Box className={`w-8 h-8 rounded-full items-center justify-center ${
-                    address.type === 'Home' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-purple-50 dark:bg-purple-900/20'
-                  }`}>
-                    <Icon 
-                      as={address.type === 'Home' ? Home : Briefcase} 
-                      className={address.type === 'Home' ? 'text-blue-500' : 'text-purple-500'} 
-                      size="xs" 
-                    />
-                  </Box>
-                  <Text className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tighter">
-                    {address.type === 'Home' ? 'Nhà riêng' : 'Văn phòng'}
-                  </Text>
-                  {address.isDefault && (
-                    <Box className="bg-yellow-500 px-2 py-0.5 rounded-md">
-                      <Text className="text-[10px] font-bold text-zinc-900 uppercase">Mặc định</Text>
-                    </Box>
-                  )}
-                </HStack>
-                
-                <HStack className="space-x-3 gap-3">
-                  <Pressable onPress={() => router.push(`/address/address-form?id=${address.id}` as any)}>
-                    <Icon as={Edit3} className="text-zinc-400 w-5 h-5" />
-                  </Pressable>
-                  <Pressable onPress={() => handleDelete(address.id)}>
-                    <Icon as={Trash2} className="text-red-500 w-5 h-5" />
-                  </Pressable>
-                </HStack>
-              </HStack>
-
-              <VStack className="space-y-1 gap-1 mb-4">
-                <HStack className="items-center space-x-2 gap-2">
-                  <Icon as={User} className="text-zinc-400 w-4 h-4" />
-                  <Text className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{address.name}</Text>
-                </HStack>
-                <HStack className="items-center space-x-2 gap-2">
-                  <Icon as={Phone} className="text-zinc-400 w-4 h-4" />
-                  <Text className="text-sm text-zinc-500">{address.phone}</Text>
-                </HStack>
-                <HStack className="items-start space-x-2 gap-2 mt-1">
-                  <Icon as={MapPin} className="text-yellow-500 w-4 h-4 mt-0.5" />
-                  <Text className="text-sm text-zinc-600 dark:text-zinc-400 flex-1 leading-relaxed">
-                    {address.street}, {address.ward}, {address.city}
-                  </Text>
-                </HStack>
+      {loading ? (
+        <Box className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#EAB308" />
+        </Box>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          className="flex-1 px-5 pt-6"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => { setRefreshing(true); loadAddresses(); }}
+              tintColor="#EAB308"
+            />
+          }
+        >
+          <VStack className="space-y-4 gap-4 mb-10">
+            {addresses.length === 0 ? (
+              <VStack className="items-center justify-center py-20 space-y-4 gap-4">
+                <Box className="w-20 h-20 rounded-full bg-zinc-100 dark:bg-zinc-800 items-center justify-center">
+                  <Icon as={MapPin} className="text-zinc-300 dark:text-zinc-600 w-10 h-10" />
+                </Box>
+                <Text className="text-zinc-400 font-medium text-center">
+                  Bạn chưa có địa chỉ nào.{'\n'}Hãy thêm địa chỉ giao hàng!
+                </Text>
               </VStack>
+            ) : (
+              addresses.map((address) => {
+                const cfg = typeConfig[address.type] ?? typeConfig.OTHER;
+                return (
+                  <Box
+                    key={address._id}
+                    className={`bg-white dark:bg-zinc-900 p-5 rounded-3xl border ${
+                      address.isDefault
+                        ? 'border-yellow-500 shadow-md'
+                        : 'border-zinc-100 dark:border-zinc-800 shadow-sm'
+                    }`}
+                  >
+                    {/* Header row */}
+                    <HStack className="justify-between items-start mb-3">
+                      <HStack className="items-center space-x-2 gap-2">
+                        <Box className={`w-8 h-8 rounded-full items-center justify-center ${cfg.bg}`}>
+                          <Icon as={cfg.icon} className={`${cfg.color} w-4 h-4`} size="xs" />
+                        </Box>
+                        <Text className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tighter">
+                          {cfg.label}
+                        </Text>
+                        {address.isDefault && (
+                          <Box className="bg-yellow-500 px-2 py-0.5 rounded-md">
+                            <Text className="text-[10px] font-bold text-zinc-900 uppercase">Mặc định</Text>
+                          </Box>
+                        )}
+                      </HStack>
 
-              {address.isDefault ? (
-                <HStack className="items-center space-x-2 gap-2 pt-3 border-t border-zinc-50 dark:border-zinc-800">
-                  <Icon as={CheckCircle2} className="text-yellow-500 w-4 h-4" />
-                  <Text className="text-xs font-bold text-yellow-600">Đang được chọn làm mặc định</Text>
-                </HStack>
-              ) : (
-                <Pressable onPress={() => handleSetDefault(address.id)} className="pt-3 border-t border-zinc-50 dark:border-zinc-800">
-                  <Text className="text-xs font-bold text-zinc-400 italic">Nhấn để chọn làm mặc định</Text>
-                </Pressable>
-              )}
-            </Pressable>
-          ))}
-        </VStack>
-      </ScrollView>
+                      <HStack className="space-x-3 gap-3">
+                        <Pressable
+                          onPress={() =>
+                            router.push({
+                              pathname: '/address/address-form',
+                              params: { id: address._id },
+                            })
+                          }
+                          className="p-1"
+                        >
+                          <Icon as={Edit3} className="text-zinc-400 w-5 h-5" />
+                        </Pressable>
+                        <Pressable onPress={() => handleDelete(address._id, address.isDefault)} className="p-1">
+                          <Icon as={Trash2} className="text-red-500 w-5 h-5" />
+                        </Pressable>
+                      </HStack>
+                    </HStack>
 
-      {/* Add New Address Button */}
+                    {/* Address details */}
+                    <VStack className="space-y-1 gap-1 mb-3">
+                      <HStack className="items-center space-x-2 gap-2">
+                        <Icon as={User} className="text-zinc-400 w-4 h-4" />
+                        <Text className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{address.fullName}</Text>
+                      </HStack>
+                      <HStack className="items-center space-x-2 gap-2">
+                        <Icon as={Phone} className="text-zinc-400 w-4 h-4" />
+                        <Text className="text-sm text-zinc-500">{address.phone}</Text>
+                      </HStack>
+                      <HStack className="items-start space-x-2 gap-2 mt-1">
+                        <Icon as={MapPin} className="text-yellow-500 w-4 h-4 mt-0.5" />
+                        <Text className="text-sm text-zinc-600 dark:text-zinc-400 flex-1 leading-relaxed">
+                          {address.street}, {address.ward}, {address.city}
+                        </Text>
+                      </HStack>
+                    </VStack>
+
+                    {/* Default indicator */}
+                    {address.isDefault && (
+                      <HStack className="items-center space-x-2 gap-2 pt-3 border-t border-zinc-50 dark:border-zinc-800">
+                        <Icon as={CheckCircle2} className="text-yellow-500 w-4 h-4" />
+                        <Text className="text-xs font-bold text-yellow-600">Đang dùng làm địa chỉ mặc định</Text>
+                      </HStack>
+                    )}
+                  </Box>
+                );
+              })
+            )}
+          </VStack>
+        </ScrollView>
+      )}
+
+      {/* Add button */}
       <Box className="p-5 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800">
-        <Button 
+        <Button
           onPress={() => router.push('/address/address-form' as any)}
           className="bg-zinc-900 dark:bg-yellow-500 h-16 rounded-2xl shadow-xl active:opacity-90"
         >
           <ButtonIcon as={Plus} className="text-white dark:text-zinc-900 mr-2" />
-          <ButtonText className="text-white dark:text-zinc-900 font-black text-lg uppercase tracking-wider">Thêm địa chỉ mới</ButtonText>
+          <ButtonText className="text-white dark:text-zinc-900 font-black text-lg uppercase tracking-wider">
+            Thêm địa chỉ mới
+          </ButtonText>
         </Button>
       </Box>
     </SafeAreaView>

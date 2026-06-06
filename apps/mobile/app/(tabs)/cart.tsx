@@ -104,14 +104,6 @@ const CartScreen = () => {
 
           {/* --- STICKY FOOTER --- */}
           <Box className="bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 px-5 pt-4 pb-8 shadow-lg">
-            <Pressable className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 mb-4 border border-zinc-100 dark:border-zinc-800 flex-row items-center justify-between">
-              <HStack className="items-center space-x-3 gap-3">
-                <Icon as={Ticket} className="text-yellow-500 w-5 h-5" />
-                <Text className="text-sm font-medium text-zinc-900 dark:text-white">Nhập mã giảm giá</Text>
-              </HStack>
-              <Icon as={ChevronRight} className="text-zinc-400 w-5 h-5" />
-            </Pressable>
-
             <VStack className="space-y-2 gap-2 mb-4">
               <HStack className="justify-between">
                 <Text className="text-xs text-zinc-500">Tạm tính ({cartItems.length} món)</Text>

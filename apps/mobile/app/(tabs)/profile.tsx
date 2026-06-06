@@ -18,7 +18,8 @@ import {
   Bell,
   HelpCircle,
   ShieldCheck,
-  Star
+  Star,
+  Palette
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -43,6 +44,7 @@ const menuGroups = [
     title: 'Hỗ trợ',
     items: [
       { id: 'help', label: 'Trung tâm trợ giúp', icon: HelpCircle },
+      { id: 'appearance', label: 'Giao diện', icon: Palette },
       { id: 'settings', label: 'Cài đặt ứng dụng', icon: Settings },
     ]
   }
@@ -69,7 +71,10 @@ const ProfileScreen = () => {
                 source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop' }} 
                 className="w-28 h-28 rounded-full border-4 border-yellow-400"
               />
-              <Pressable className="absolute bottom-1 right-1 bg-zinc-900 dark:bg-zinc-100 p-2 rounded-full border-2 border-white dark:border-zinc-900">
+              <Pressable 
+                onPress={() => router.push('/profile/edit-profile' as any)}
+                className="absolute bottom-1 right-1 bg-zinc-900 dark:bg-zinc-100 p-2 rounded-full border-2 border-white dark:border-zinc-900"
+              >
                 <Icon as={Settings} className="text-white dark:text-zinc-900 w-4 h-4" />
               </Pressable>
             </Box>
@@ -115,7 +120,10 @@ const ProfileScreen = () => {
                     key={item.id}
                     onPress={() => {
                       if (item.id === 'address') router.push('/address/my-addresses');
-                      if (item.id === 'orders') router.push('/orders/my-orders');
+                      if (item.id === 'orders') router.push('/profile/order-history' as any);
+                      if (item.id === 'security') router.push('/profile/change-password' as any);
+                      if (item.id === 'appearance') router.push('/profile/appearance' as any);
+                      if (item.id === 'notifications') router.push('/notifications' as any);
                     }}
                     className={`flex-row items-center justify-between p-4 active:bg-zinc-50 dark:active:bg-zinc-800 ${
                       index < group.items.length - 1 ? 'border-b border-zinc-50 dark:border-zinc-800' : ''

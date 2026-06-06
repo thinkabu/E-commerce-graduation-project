@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, SafeAreaView, Dimensions, Image } from 'react-native';
+import { ScrollView, SafeAreaView, Dimensions, Image, ActivityIndicator } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Box } from '@/components/ui/box';
 import { Text } from '@/components/ui/text';
@@ -22,6 +22,7 @@ import {
   Gamepad2,
   Trash2
 } from 'lucide-react-native';
+import { getProducts, Product } from '@/services/product.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -29,6 +30,9 @@ const SearchScreen = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
 
   const recentSearches = ['iPhone 15 Pro', 'Sony Headphones', 'MacBook M3'];
   
@@ -39,25 +43,40 @@ const SearchScreen = () => {
     { id: '4', name: 'Gaming', icon: Gamepad2, color: 'bg-red-50 dark:bg-red-900/20', iconColor: 'text-red-500' },
   ];
 
-  const suggestedProducts = [
-    { id: 'p1', name: 'Apple Watch Series 9', price: 9500000, image: 'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?q=80&w=300&auto=format&fit=crop' },
-    { id: 'p2', name: 'iPad Pro M2', price: 21900000, image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=300&auto=format&fit=crop' },
-  ];
+  const fetchSuggestions = async () => {
+    try {
+      const data = await getProducts({ limit: 4 });
+      setSuggestedProducts(data.items);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-  const mockResults = [
-    { id: '1', name: "Sony WH-1000XM5", price: 8500000, rating: 4.8, image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?q=80&w=300&auto=format&fit=crop' },
-    { id: '2', name: "iPhone 15 Pro Max", price: 34990000, rating: 4.9, image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?q=80&w=300&auto=format&fit=crop' },
-    { id: '3', name: "MacBook Pro M3", price: 45900000, rating: 4.7, image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=300&auto=format&fit=crop' },
-    { id: '4', name: "Apple Watch Ultra 2", price: 21900000, rating: 4.8, image: 'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?q=80&w=300&auto=format&fit=crop' },
-  ];
+  React.useEffect(() => {
+    fetchSuggestions();
+  }, []);
 
   const formatPrice = (price: number) => {
     return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
-  const handleSearch = (text: string) => {
+  const handleSearch = async (text: string) => {
     setSearchQuery(text);
-    setIsSearching(text.length > 0);
+    if (text.length > 0) {
+      setIsSearching(true);
+      setLoading(true);
+      try {
+        const data = await getProducts({ search: text, limit: 10 });
+        setSearchResults(data.items);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setIsSearching(false);
+      setSearchResults([]);
+    }
   };
 
   return (
@@ -145,15 +164,15 @@ const SearchScreen = () => {
               <Text className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-widest">Gợi ý cho bạn</Text>
               {suggestedProducts.map((item) => (
                 <Pressable 
-                  key={item.id}
-                  onPress={() => router.push(`/product/productdetail?id=${item.id}` as any)}
+                  key={item._id}
+                  onPress={() => router.push({ pathname: '/product/productdetail', params: { id: item._id } })}
                   className="bg-white dark:bg-zinc-900 p-4 rounded-[32px] border border-zinc-100 dark:border-zinc-800 shadow-sm"
                 >
                   <HStack className="space-x-4 gap-4">
-                    <Image source={{ uri: item.image }} className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800" />
+                    <Image source={{ uri: item.images?.[0] || 'https://via.placeholder.com/300' }} className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800" />
                     <VStack className="flex-1 justify-center">
                       <Text className="text-sm font-bold text-zinc-900 dark:text-white" numberOfLines={1}>{item.name}</Text>
-                      <Text className="text-sm font-black text-yellow-600 mt-1">{formatPrice(item.price)}₫</Text>
+                      <Text className="text-sm font-black text-yellow-600 mt-1">{formatPrice(item.basePrice)}₫</Text>
                     </VStack>
                     <Icon as={ChevronRight} className="text-zinc-200 self-center" />
                   </HStack>
@@ -172,28 +191,37 @@ const SearchScreen = () => {
               </Pressable>
             </HStack>
 
-            {/* Grid Results */}
-            <HStack className="flex-wrap justify-between pb-10">
-              {mockResults.map((product) => (
-                <Pressable 
-                  key={product.id}
-                  onPress={() => router.push(`/product/productdetail?id=${product.id}` as any)}
-                  className="w-[48%] bg-white dark:bg-zinc-900 p-3 rounded-[32px] border border-zinc-100 dark:border-zinc-800 mb-4 shadow-sm"
-                >
-                  <Box className="w-full h-36 rounded-2xl bg-zinc-50 dark:bg-zinc-800 mb-3 items-center justify-center overflow-hidden">
-                    <Image source={{ uri: product.image }} className="w-full h-full object-cover" />
-                  </Box>
-                  <VStack className="px-1">
-                    <Text className="text-xs font-bold text-zinc-900 dark:text-white mb-1" numberOfLines={1}>{product.name}</Text>
-                    <HStack className="items-center space-x-1 gap-1 mb-2">
-                      <Icon as={Star} className="text-yellow-500 fill-yellow-500 w-3 h-3" />
-                      <Text className="text-[10px] font-bold text-zinc-500">{product.rating}</Text>
-                    </HStack>
-                    <Text className="text-sm font-black text-yellow-600 dark:text-yellow-500">{formatPrice(product.price)}₫</Text>
-                  </VStack>
-                </Pressable>
-              ))}
-            </HStack>
+            {loading ? (
+              <Box className="flex-1 justify-center items-center py-20">
+                <ActivityIndicator color="#EAB308" size="large" />
+              </Box>
+            ) : searchResults.length > 0 ? (
+              <HStack className="flex-wrap justify-between pb-10">
+                {searchResults.map((product) => (
+                  <Pressable 
+                    key={product._id}
+                    onPress={() => router.push({ pathname: '/product/productdetail', params: { id: product._id } })}
+                    className="w-[48%] bg-white dark:bg-zinc-900 p-3 rounded-[32px] border border-zinc-100 dark:border-zinc-800 mb-4 shadow-sm"
+                  >
+                    <Box className="w-full h-36 rounded-2xl bg-zinc-50 dark:bg-zinc-800 mb-3 items-center justify-center overflow-hidden">
+                      <Image source={{ uri: product.images?.[0] || 'https://via.placeholder.com/300' }} className="w-full h-full object-cover" />
+                    </Box>
+                    <VStack className="px-1">
+                      <Text className="text-xs font-bold text-zinc-900 dark:text-white mb-1" numberOfLines={1}>{product.name}</Text>
+                      <HStack className="items-center space-x-1 gap-1 mb-2">
+                        <Icon as={Star} className="text-yellow-500 fill-yellow-500 w-3 h-3" />
+                        <Text className="text-[10px] font-bold text-zinc-500">{product.averageRating || 0}</Text>
+                      </HStack>
+                      <Text className="text-sm font-black text-yellow-600 dark:text-yellow-500">{formatPrice(product.basePrice)}₫</Text>
+                    </VStack>
+                  </Pressable>
+                ))}
+              </HStack>
+            ) : (
+              <VStack className="flex-1 justify-center items-center py-20">
+                <Text className="text-zinc-400 font-medium">Không tìm thấy sản phẩm nào</Text>
+              </VStack>
+            )}
           </VStack>
         )}
       </ScrollView>
