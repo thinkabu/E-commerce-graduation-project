@@ -29,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { getCategories, Category } from "@/services/category.service";
 import { getProducts, Product } from "@/services/product.service";
+import { getUserRecommendations, logRecommendationClick } from "@/services/recommendation.service";
 
 // Banners giả lập (Vẫn giữ nguyên vì chưa có bảng Banners trong DB)
 
@@ -73,6 +74,7 @@ const HomeScreen = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [popularProducts, setPopularProducts] = useState<Product[]>([]);
   const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
+  const [recSessionId, setRecSessionId] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   // Pagination for suggested products
@@ -88,18 +90,18 @@ const HomeScreen = () => {
       setCategories(cats.filter((c) => c.isActive).slice(0, 5));
 
       // Fetch popular products (limit to 15)
-      // Assuming 'soldCount' or similar is used, we just fetch 15 for now
       const popData = await getProducts({ limit: 15 });
       setPopularProducts(popData.items);
 
-      // Fetch initial 30 suggested products
-      const sugData = await getProducts({ limit: 30, page: 1 });
-      setSuggestedProducts(sugData.items);
-
-      // Update hasMore
-      if (sugData.items.length < 30) {
-        setHasMore(false);
-      }
+      // Fetch AI Suggested products cá nhân hóa
+      const recData = await getUserRecommendations(user?._id || "guest");
+      setRecSessionId(recData.sessionId || "");
+      const recProducts = (recData.recommendations || [])
+        .map((r: any) => r.product)
+        .filter(Boolean);
+      
+      setSuggestedProducts(recProducts);
+      setHasMore(false); // AI suggestions trả về Top-N, không cần phân trang tiếp
     } catch (error) {
       console.error("Error fetching home data:", error);
     } finally {
@@ -492,12 +494,15 @@ const HomeScreen = () => {
                 return (
                   <Pressable
                     key={product._id}
-                    onPress={() =>
+                    onPress={() => {
+                      if (recSessionId) {
+                        logRecommendationClick(recSessionId, product._id);
+                      }
                       router.push({
                         pathname: "/product/productdetail",
                         params: { id: product._id },
-                      })
-                    }
+                      });
+                    }}
                     className="w-[48%] bg-white dark:bg-zinc-900 rounded-3xl p-3 mb-4 border border-zinc-100 dark:border-zinc-800 shadow-sm elevation-1 active:opacity-90"
                   >
                     <Box className="w-full h-40 bg-zinc-50 dark:bg-zinc-800 rounded-2xl mb-3 relative overflow-hidden">

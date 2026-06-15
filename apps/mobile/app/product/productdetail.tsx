@@ -40,6 +40,7 @@ import {
 } from "lucide-react-native";
 import { getProductById, getProducts } from "@/services/product.service";
 import { checkWishlist, toggleWishlist } from "@/services/wishlist.service";
+import { getSimilarProducts } from "@/services/recommendation.service";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -125,30 +126,32 @@ const ProductDetailScreen = () => {
             setSelectedAttributes(initialSelection);
           }
 
-          // Fetch suggested products (same category, fallback to all)
+          // Fetch AI Similar Products (Vector similarity search)
           try {
-            let catId: string | undefined;
-            if (data.categoryId) {
-              catId =
-                typeof data.categoryId === "string"
-                  ? data.categoryId
-                  : data.categoryId._id;
-            }
-            const related = await getProducts({ categoryId: catId, limit: 31 });
-            const filtered = related.items
-              .filter((p: any) => p._id !== id)
-              .slice(0, 30);
-            if (filtered.length > 0) {
-              setRelatedProducts(filtered);
+            const similarRecs = await getSimilarProducts(data._id);
+            const similarMapped = similarRecs
+              .map((r: any) => r.product)
+              .filter(Boolean)
+              .filter((p: any) => p._id !== data._id);
+
+            if (similarMapped.length > 0) {
+              setRelatedProducts(similarMapped);
             } else {
-              // Fallback: lấy sản phẩm bất kỳ nếu cùng danh mục không có kết quả
-              const fallback = await getProducts({ limit: 31 });
+              // Fallback: Lấy sản phẩm cùng danh mục nếu không tìm thấy vector tương đồng
+              let catId: string | undefined;
+              if (data.categoryId) {
+                catId =
+                  typeof data.categoryId === "string"
+                    ? data.categoryId
+                    : data.categoryId._id;
+              }
+              const related = await getProducts({ categoryId: catId, limit: 10 });
               setRelatedProducts(
-                fallback.items.filter((p: any) => p._id !== id).slice(0, 30),
+                related.items.filter((p: any) => p._id !== data._id),
               );
             }
           } catch (e) {
-            console.error("Error fetching related products:", e);
+            console.error("Error fetching similar products:", e);
           }
         }
       } catch (error) {

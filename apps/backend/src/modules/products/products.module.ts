@@ -7,6 +7,7 @@ import {
 } from './schemas/product-variant.schema';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
+import { RecommendationsModule } from '../recommendations/recommendations.module';
 
 @Module({
   imports: [
@@ -14,9 +15,11 @@ import { ProductsController } from './products.controller';
       { name: Product.name, schema: ProductSchema },
       { name: ProductVariant.name, schema: ProductVariantSchema },
     ]),
+    RecommendationsModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService],
   exports: [ProductsService],
 })
 export class ProductsModule {}
+

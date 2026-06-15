@@ -9,6 +9,9 @@ import { ProductRecommendationMetrics, ProductRecommendationMetricsSchema } from
 import { RecommendationFeedbackLog, RecommendationFeedbackLogSchema } from './schemas/recommendation-feedback-log.schema';
 import { UserBehavior, UserBehaviorSchema } from './schemas/user-behavior.schema';
 import { ProductEmbedding, ProductEmbeddingSchema } from './schemas/product-embedding.schema';
+import { Product, ProductSchema } from '../products/schemas/product.schema';
+import { AiEmbeddingService } from './ai-embedding.service';
+import { RecommendationsCronService } from './recommendations-cron.service';
 
 @Module({
   imports: [
@@ -20,11 +23,13 @@ import { ProductEmbedding, ProductEmbeddingSchema } from './schemas/product-embe
       { name: RecommendationFeedbackLog.name, schema: RecommendationFeedbackLogSchema },
       { name: UserBehavior.name, schema: UserBehaviorSchema },
       { name: ProductEmbedding.name, schema: ProductEmbeddingSchema },
+      { name: Product.name, schema: ProductSchema },
     ]),
   ],
   controllers: [RecommendationsController],
-  providers: [RecommendationsService],
-  exports: [RecommendationsService],
+  providers: [RecommendationsService, AiEmbeddingService, RecommendationsCronService],
+  exports: [RecommendationsService, AiEmbeddingService, RecommendationsCronService],
 })
 export class RecommendationsModule {}
+
 

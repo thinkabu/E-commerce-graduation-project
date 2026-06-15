@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
@@ -11,15 +11,21 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
+import { RecommendationsService } from '../recommendations/recommendations.service';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+
   constructor(
+
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
     @InjectModel(ProductVariant.name)
     private readonly variantModel: Model<ProductVariantDocument>,
+    private readonly recommendationsService: RecommendationsService,
   ) {}
+
 
   // ==========================================
   // Product CRUD
@@ -37,10 +43,16 @@ export class ProductsService {
       );
     }
 
+    // Tự động kích hoạt sinh vector embedding bất đồng bộ (không block API response)
+    this.recommendationsService.syncProductEmbedding(product._id.toString()).catch((err) => {
+      this.logger.error(`Lỗi kích hoạt sync product embedding khi tạo mới: ${err.message}`);
+    });
+
     return {
       ...product.toObject(),
       variants: createdVariants,
     };
+
   }
 
   async findAll(query: QueryProductDto) {
@@ -196,6 +208,11 @@ export class ProductsService {
         }
       }
     }
+
+    // Tự động kích hoạt sinh vector embedding bất đồng bộ khi cập nhật sản phẩm
+    this.recommendationsService.syncProductEmbedding(id).catch((err) => {
+      this.logger.error(`Lỗi kích hoạt sync product embedding khi cập nhật: ${err.message}`);
+    });
 
     return product;
   }
