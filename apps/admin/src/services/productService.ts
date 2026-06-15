@@ -24,7 +24,10 @@ export async function fetchProducts(params?: {
   categoryId?: string;
   sortBy?: string;
   sortOrder?: string;
-}): Promise<{ items: Product[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
+}): Promise<{
+  items: Product[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}> {
   const query = new URLSearchParams();
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
@@ -41,7 +44,9 @@ export async function fetchProducts(params?: {
 }
 
 // Lấy chi tiết sản phẩm
-export async function fetchProductById(id: string): Promise<Product & { variants: any[] }> {
+export async function fetchProductById(
+  id: string,
+): Promise<Product & { variants: any[] }> {
   const res = await fetch(`${API_BASE}/${id}`);
   if (!res.ok) throw new Error("Lỗi khi tải chi tiết sản phẩm");
   const json = await res.json();
@@ -64,7 +69,10 @@ export async function createProduct(data: Record<string, any>): Promise<any> {
 }
 
 // Cập nhật sản phẩm
-export async function updateProduct(id: string, data: Record<string, any>): Promise<any> {
+export async function updateProduct(
+  id: string,
+  data: Record<string, any>,
+): Promise<any> {
   const res = await fetch(`${API_BASE}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -97,13 +105,13 @@ export async function uploadImages(files: File[]): Promise<string[]> {
 
   const formData = new FormData();
   files.forEach((file) => {
-    formData.append('images', file);
+    formData.append("images", file);
   });
 
-  const uploadUrl = API_BASE.replace('/products', '/upload/images');
-  
+  const uploadUrl = API_BASE.replace("/products", "/upload/images");
+
   const res = await fetch(uploadUrl, {
-    method: 'POST',
+    method: "POST",
     body: formData,
   });
 
@@ -115,4 +123,3 @@ export async function uploadImages(files: File[]): Promise<string[]> {
   const json = await res.json();
   return json.data?.urls || json.urls || [];
 }
-

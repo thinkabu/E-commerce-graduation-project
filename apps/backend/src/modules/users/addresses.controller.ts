@@ -21,11 +21,12 @@ export class AddressesController {
   // TODO: Khi có Auth, lấy userId từ JWT token thay vì query param
   @Post()
   @ApiOperation({ summary: 'Thêm địa chỉ mới' })
-  @ApiQuery({ name: 'userId', required: true, description: 'ID user (tạm thời - sẽ lấy từ JWT)' })
-  create(
-    @Query('userId') userId: string,
-    @Body() dto: CreateAddressDto,
-  ) {
+  @ApiQuery({
+    name: 'userId',
+    required: true,
+    description: 'ID user (tạm thời - sẽ lấy từ JWT)',
+  })
+  create(@Query('userId') userId: string, @Body() dto: CreateAddressDto) {
     return this.addressesService.create(userId, dto);
   }
 

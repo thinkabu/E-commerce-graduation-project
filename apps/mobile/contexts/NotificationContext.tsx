@@ -6,20 +6,26 @@ import React, {
   useState,
   ReactNode,
   useCallback,
-} from 'react';
-import * as Notifications from 'expo-notifications';
-import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
-import { getUnreadCount } from '@/services/notification.service';
+} from "react";
+import * as Notifications from "expo-notifications";
+import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { getUnreadCount } from "@/services/notification.service";
 
 interface NotificationContextType {
   unreadCount: number;
   refreshUnreadCount: () => Promise<void>;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+  undefined,
+);
 
-export function NotificationContextProvider({ children }: { children: ReactNode }) {
+export function NotificationContextProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
 
@@ -29,7 +35,7 @@ export function NotificationContextProvider({ children }: { children: ReactNode 
 
   const refreshUnreadCount = useCallback(async () => {
     try {
-      const userData = await SecureStore.getItemAsync('user_data');
+      const userData = await SecureStore.getItemAsync("user_data");
       if (!userData) return;
       const user = JSON.parse(userData);
       if (!user?._id) return;
@@ -45,14 +51,16 @@ export function NotificationContextProvider({ children }: { children: ReactNode 
     refreshUnreadCount();
 
     // ── Listener 1: Nhận notification khi app đang mở (foreground) ──
-    notifReceivedRef.current = Notifications.addNotificationReceivedListener(() => {
-      // Khi nhận được push mới → tăng badge ngay
-      setUnreadCount((prev) => prev + 1);
-    });
+    notifReceivedRef.current = Notifications.addNotificationReceivedListener(
+      () => {
+        // Khi nhận được push mới → tăng badge ngay
+        setUnreadCount((prev) => prev + 1);
+      },
+    );
 
     // ── Listener 2: Xử lý khi user bấm vào notification ──
-    notifResponseRef.current = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
+    notifResponseRef.current =
+      Notifications.addNotificationResponseReceivedListener((response) => {
         const data = response.notification.request.content.data as any;
         const deepLink = data?.deepLink;
 
@@ -62,13 +70,12 @@ export function NotificationContextProvider({ children }: { children: ReactNode 
             router.push(deepLink as any);
           } catch {
             // Nếu deepLink không hợp lệ thì chuyển về màn thông báo
-            router.push('/notifications' as any);
+            router.push("/notifications" as any);
           }
         } else {
-          router.push('/notifications' as any);
+          router.push("/notifications" as any);
         }
-      },
-    );
+      });
 
     return () => {
       notifReceivedRef.current?.remove();
@@ -86,7 +93,9 @@ export function NotificationContextProvider({ children }: { children: ReactNode 
 export function useNotification() {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotification must be used within NotificationContextProvider');
+    throw new Error(
+      "useNotification must be used within NotificationContextProvider",
+    );
   }
   return context;
 }

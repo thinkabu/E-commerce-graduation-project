@@ -18,7 +18,9 @@ export class CouponsService {
 
   async create(dto: CreateCouponDto): Promise<Coupon> {
     // Kiểm tra code trùng
-    const existing = await this.couponModel.findOne({ code: dto.code.toUpperCase() });
+    const existing = await this.couponModel.findOne({
+      code: dto.code.toUpperCase(),
+    });
     if (existing) throw new ConflictException('Mã giảm giá đã tồn tại');
     return this.couponModel.create(dto);
   }
@@ -47,7 +49,9 @@ export class CouponsService {
   }
 
   async findByCode(code: string): Promise<Coupon> {
-    const coupon = await this.couponModel.findOne({ code: code.toUpperCase() }).lean();
+    const coupon = await this.couponModel
+      .findOne({ code: code.toUpperCase() })
+      .lean();
     if (!coupon) throw new NotFoundException('Mã giảm giá không tồn tại');
     return coupon;
   }
@@ -69,9 +73,14 @@ export class CouponsService {
   /**
    * Validate coupon — kiểm tra coupon có hợp lệ để áp dụng không
    */
-  async validate(code: string, orderAmount: number): Promise<{ valid: boolean; coupon?: any; message?: string }> {
-    const coupon = await this.couponModel.findOne({ code: code.toUpperCase() }).lean();
-    
+  async validate(
+    code: string,
+    orderAmount: number,
+  ): Promise<{ valid: boolean; coupon?: any; message?: string }> {
+    const coupon = await this.couponModel
+      .findOne({ code: code.toUpperCase() })
+      .lean();
+
     if (!coupon) {
       return { valid: false, message: 'Mã giảm giá không tồn tại' };
     }

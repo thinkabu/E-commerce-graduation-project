@@ -3,9 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { ProductFormData } from "@/types/addProductTypes";
 import { defaultFormData } from "@/types/addProductTypes";
-import { createProduct, updateProduct, generateSlug, uploadImages } from "@/services/productService";
+import {
+  createProduct,
+  updateProduct,
+  generateSlug,
+  uploadImages,
+} from "@/services/productService";
 
-export const useProductForm = (initialData: ProductFormData, mode: "add" | "edit" = "add") => {
+export const useProductForm = (
+  initialData: ProductFormData,
+  mode: "add" | "edit" = "add",
+) => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<ProductFormData>({
@@ -27,12 +35,15 @@ export const useProductForm = (initialData: ProductFormData, mode: "add" | "edit
   const handleChange = useCallback((field: string, value: any) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
-      
+
       // Tự động tính tổng tồn kho nếu thay đổi variants
       if (field === "variants" && Array.isArray(value) && value.length > 0) {
-        newData.stockQuantity = value.reduce((sum, v) => sum + (Number(v.stockQuantity) || 0), 0);
+        newData.stockQuantity = value.reduce(
+          (sum, v) => sum + (Number(v.stockQuantity) || 0),
+          0,
+        );
       }
-      
+
       return newData;
     });
   }, []);
@@ -67,7 +78,7 @@ export const useProductForm = (initialData: ProductFormData, mode: "add" | "edit
         return { ...prev, specs: newSpecs };
       });
     },
-    []
+    [],
   );
 
   const deleteSpec = useCallback((index: number) => {
@@ -102,7 +113,7 @@ export const useProductForm = (initialData: ProductFormData, mode: "add" | "edit
       // Reset input để có thể chọn lại cùng file
       e.target.value = "";
     },
-    []
+    [],
   );
 
   const removeImage = useCallback((index: number) => {
@@ -175,7 +186,11 @@ export const useProductForm = (initialData: ProductFormData, mode: "add" | "edit
       // Build variants for backend
       const hasVariants = formData.variants.length > 0;
       const variantAttributes = hasVariants
-        ? [...new Set(formData.variants.flatMap((v) => v.attributes.map((a) => a.name)))]
+        ? [
+            ...new Set(
+              formData.variants.flatMap((v) => v.attributes.map((a) => a.name)),
+            ),
+          ]
         : [];
 
       const variants = formData.variants.map((v) => {
@@ -195,9 +210,13 @@ export const useProductForm = (initialData: ProductFormData, mode: "add" | "edit
       });
 
       // Tải ảnh cho sản phẩm chính
-      const newFiles = formData.images.filter((img) => img && typeof img !== "string");
-      const existingUrls = formData.images.filter((img) => typeof img === "string");
-      
+      const newFiles = formData.images.filter(
+        (img) => img && typeof img !== "string",
+      );
+      const existingUrls = formData.images.filter(
+        (img) => typeof img === "string",
+      );
+
       let uploadedUrls: string[] = [];
       if (newFiles.length > 0) {
         toast.info(`Đang tải lên ${newFiles.length} ảnh sản phẩm...`);
@@ -209,15 +228,19 @@ export const useProductForm = (initialData: ProductFormData, mode: "add" | "edit
           throw uploadErr;
         }
       }
-      
+
       const finalImages = [...existingUrls, ...uploadedUrls];
 
       // Tải ảnh cho từng variant (nếu có File)
       for (let i = 0; i < variants.length; i++) {
         const v = variants[i];
-        const vNewFiles = v.images.filter((img: any) => img && typeof img !== "string");
-        const vExistingUrls = v.images.filter((img: any) => typeof img === "string");
-        
+        const vNewFiles = v.images.filter(
+          (img: any) => img && typeof img !== "string",
+        );
+        const vExistingUrls = v.images.filter(
+          (img: any) => typeof img === "string",
+        );
+
         if (vNewFiles.length > 0) {
           toast.info(`Đang tải ảnh cho biến thể ${v.variantName || i}...`);
           try {
@@ -225,7 +248,10 @@ export const useProductForm = (initialData: ProductFormData, mode: "add" | "edit
             v.images = [...vExistingUrls, ...vUploadedUrls];
             toast.success(`Tải ảnh biến thể ${v.variantName || i} thành công!`);
           } catch (uploadErr: any) {
-            toast.error(`Lỗi tải ảnh biến thể ${v.variantName || i}: ` + uploadErr.message);
+            toast.error(
+              `Lỗi tải ảnh biến thể ${v.variantName || i}: ` +
+                uploadErr.message,
+            );
             throw uploadErr;
           }
         } else {

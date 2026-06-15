@@ -4,7 +4,10 @@ import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
 import { Order, OrderSchema } from './schemas/order.schema';
 import { Product, ProductSchema } from '../products/schemas/product.schema';
-import { ProductVariant, ProductVariantSchema } from '../products/schemas/product-variant.schema';
+import {
+  ProductVariant,
+  ProductVariantSchema,
+} from '../products/schemas/product-variant.schema';
 import { Address, AddressSchema } from '../users/schemas/address.schema';
 import { Coupon, CouponSchema } from '../coupons/schemas/coupon.schema';
 import { NotificationsModule } from '../notifications/notifications.module';

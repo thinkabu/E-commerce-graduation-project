@@ -67,15 +67,11 @@ export class Notification {
   readAt: Date;
 }
 
-export const NotificationSchema =
-  SchemaFactory.createForClass(Notification);
+export const NotificationSchema = SchemaFactory.createForClass(Notification);
 
 // --- Indexes ---
 NotificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 }); // Thông báo chưa đọc, mới nhất trước
 NotificationSchema.index({ userId: 1, createdAt: -1 }); // Tất cả thông báo của user
 
 // TTL Index: Tự động xóa sau 90 ngày (7776000 giây)
-NotificationSchema.index(
-  { createdAt: 1 },
-  { expireAfterSeconds: 7776000 },
-);
+NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7776000 });

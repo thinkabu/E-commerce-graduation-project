@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   ScrollView,
   SafeAreaView,
@@ -7,17 +7,17 @@ import {
   Switch,
   Alert,
   ActivityIndicator,
-} from 'react-native';
-import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import Header from '@/components/Header';
-import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
-import { Icon } from '@/components/ui/icon';
-import { Pressable } from '@/components/ui/pressable';
-import { Input, InputField, InputSlot, InputIcon } from '@/components/ui/input';
-import { Button, ButtonText } from '@/components/ui/button';
+} from "react-native";
+import { useRouter, Stack, useLocalSearchParams } from "expo-router";
+import Header from "@/components/Header";
+import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
+import { HStack } from "@/components/ui/hstack";
+import { VStack } from "@/components/ui/vstack";
+import { Icon } from "@/components/ui/icon";
+import { Pressable } from "@/components/ui/pressable";
+import { Input, InputField, InputSlot, InputIcon } from "@/components/ui/input";
+import { Button, ButtonText } from "@/components/ui/button";
 import {
   User,
   Phone,
@@ -26,16 +26,16 @@ import {
   Briefcase,
   Globe,
   Package,
-} from 'lucide-react-native';
-import { useAuth } from '@/contexts/AuthContext';
+} from "lucide-react-native";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   getAddressById,
   createAddress,
   updateAddress,
   type CreateAddressPayload,
-} from '@/services/address.service';
+} from "@/services/address.service";
 
-type AddressType = 'HOME' | 'OFFICE' | 'OTHER';
+type AddressType = "HOME" | "OFFICE" | "OTHER";
 
 const AddressFormScreen = () => {
   const router = useRouter();
@@ -47,12 +47,12 @@ const AddressFormScreen = () => {
   const [saving, setSaving] = useState(false);
 
   // Form fields
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [street, setStreet] = useState('');
-  const [ward, setWard] = useState('');
-  const [city, setCity] = useState('');
-  const [type, setType] = useState<AddressType>('HOME');
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [street, setStreet] = useState("");
+  const [ward, setWard] = useState("");
+  const [city, setCity] = useState("");
+  const [type, setType] = useState<AddressType>("HOME");
   const [isDefault, setIsDefault] = useState(false);
 
   // Load existing address when editing
@@ -69,7 +69,7 @@ const AddressFormScreen = () => {
         setType(address.type);
         setIsDefault(address.isDefault);
       } else {
-        Alert.alert('Lỗi', 'Không tìm thấy địa chỉ');
+        Alert.alert("Lỗi", "Không tìm thấy địa chỉ");
         router.back();
       }
       setLoading(false);
@@ -80,8 +80,17 @@ const AddressFormScreen = () => {
   const handleSave = async () => {
     if (!user?._id) return;
 
-    if (!fullName.trim() || !phone.trim() || !street.trim() || !ward.trim() || !city.trim()) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng điền đầy đủ tất cả các trường bắt buộc.');
+    if (
+      !fullName.trim() ||
+      !phone.trim() ||
+      !street.trim() ||
+      !ward.trim() ||
+      !city.trim()
+    ) {
+      Alert.alert(
+        "Thiếu thông tin",
+        "Vui lòng điền đầy đủ tất cả các trường bắt buộc.",
+      );
       return;
     }
 
@@ -100,20 +109,20 @@ const AddressFormScreen = () => {
       if (isEditing) {
         const result = await updateAddress(id!, user._id, payload);
         if (result) {
-          Alert.alert('Thành công', 'Địa chỉ đã được cập nhật.', [
-            { text: 'OK', onPress: () => router.back() },
+          Alert.alert("Thành công", "Địa chỉ đã được cập nhật.", [
+            { text: "OK", onPress: () => router.back() },
           ]);
         } else {
-          Alert.alert('Lỗi', 'Cập nhật địa chỉ thất bại. Vui lòng thử lại.');
+          Alert.alert("Lỗi", "Cập nhật địa chỉ thất bại. Vui lòng thử lại.");
         }
       } else {
         const result = await createAddress(user._id, payload);
         if (result) {
-          Alert.alert('Thành công', 'Địa chỉ đã được thêm mới.', [
-            { text: 'OK', onPress: () => router.back() },
+          Alert.alert("Thành công", "Địa chỉ đã được thêm mới.", [
+            { text: "OK", onPress: () => router.back() },
           ]);
         } else {
-          Alert.alert('Lỗi', 'Thêm địa chỉ thất bại. Vui lòng thử lại.');
+          Alert.alert("Lỗi", "Thêm địa chỉ thất bại. Vui lòng thử lại.");
         }
       }
     } finally {
@@ -134,23 +143,25 @@ const AddressFormScreen = () => {
   }
 
   const typeOptions: { key: AddressType; label: string; icon: any }[] = [
-    { key: 'HOME', label: 'Nhà riêng', icon: Home },
-    { key: 'OFFICE', label: 'Văn phòng', icon: Briefcase },
-    { key: 'OTHER', label: 'Khác', icon: Package },
+    { key: "HOME", label: "Nhà riêng", icon: Home },
+    { key: "OFFICE", label: "Văn phòng", icon: Briefcase },
+    { key: "OTHER", label: "Khác", icon: Package },
   ];
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-zinc-50 dark:bg-zinc-950">
       <Stack.Screen options={{ headerShown: false }} />
-      <Header title={isEditing ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ mới'} />
+      <Header title={isEditing ? "Cập nhật địa chỉ" : "Thêm địa chỉ mới"} />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView showsVerticalScrollIndicator={false} className="flex-1 px-5 pt-6">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          className="flex-1 px-5 pt-6"
+        >
           <VStack className="space-y-6 gap-6 mb-10">
-
             {/* Section 1: Contact */}
             <VStack className="space-y-4 gap-4">
               <Text className="text-xs font-black text-zinc-400 uppercase tracking-widest ml-1">
@@ -262,18 +273,20 @@ const AddressFormScreen = () => {
                     onPress={() => setType(opt.key)}
                     className={`flex-1 flex-row items-center justify-center h-14 rounded-2xl border-2 ${
                       type === opt.key
-                        ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10'
-                        : 'border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'
+                        ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10"
+                        : "border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900"
                     }`}
                   >
                     <Icon
                       as={opt.icon}
-                      className={type === opt.key ? 'text-yellow-600' : 'text-zinc-400'}
+                      className={
+                        type === opt.key ? "text-yellow-600" : "text-zinc-400"
+                      }
                       size="sm"
                     />
                     <Text
                       className={`ml-2 text-xs font-bold ${
-                        type === opt.key ? 'text-yellow-700' : 'text-zinc-500'
+                        type === opt.key ? "text-yellow-700" : "text-zinc-500"
                       }`}
                     >
                       {opt.label}
@@ -295,12 +308,11 @@ const AddressFormScreen = () => {
                 <Switch
                   value={isDefault}
                   onValueChange={setIsDefault}
-                  trackColor={{ false: '#e4e4e7', true: '#EAB308' }}
+                  trackColor={{ false: "#e4e4e7", true: "#EAB308" }}
                   thumbColor="#fff"
                 />
               </HStack>
             </VStack>
-
           </VStack>
         </ScrollView>
 
@@ -315,7 +327,7 @@ const AddressFormScreen = () => {
               <ActivityIndicator color="#fff" />
             ) : (
               <ButtonText className="text-white dark:text-zinc-900 font-black text-lg uppercase tracking-wider">
-                {isEditing ? 'Lưu thay đổi' : 'Thêm địa chỉ'}
+                {isEditing ? "Lưu thay đổi" : "Thêm địa chỉ"}
               </ButtonText>
             )}
           </Button>

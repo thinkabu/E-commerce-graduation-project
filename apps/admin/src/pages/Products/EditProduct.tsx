@@ -430,13 +430,13 @@ const EditProduct: React.FC = () => {
                                 alt="Preview"
                                 className="w-full h-full object-cover"
                               />
-                              
+
                               {isCover && (
                                 <div className="absolute top-0 left-0 w-full bg-primary/90 text-primary-foreground text-xs font-semibold py-1 text-center">
                                   Ảnh Bìa
                                 </div>
                               )}
-                              
+
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center gap-2">
                                 {!isCover && (
                                   <Button

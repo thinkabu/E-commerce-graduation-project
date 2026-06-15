@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 export interface Product {
   _id: string;
@@ -21,16 +21,16 @@ export const getProducts = async (params?: {
   isFeatured?: boolean;
 }): Promise<{ items: Product[]; meta: any }> => {
   try {
-    const response = await api.get('/products', { params });
+    const response = await api.get("/products", { params });
     const data = response.data.data || response.data;
-    
+
     // Check if the response is paginated or direct array
     if (Array.isArray(data)) {
       return { items: data, meta: {} };
     }
     return { items: data.items || [], meta: data.meta || {} };
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error("Error fetching products:", error);
     return { items: [], meta: {} };
   }
 };

@@ -56,10 +56,14 @@ const AllProducts: React.FC = () => {
   }, []);
 
   const getCategoryName = (
-    categoryId: string | { _id: string; name: string; slug: string } | undefined
+    categoryId:
+      | string
+      | { _id: string; name: string; slug: string }
+      | undefined,
   ): string => {
     if (!categoryId) return "N/A";
-    if (typeof categoryId === "object" && categoryId.name) return categoryId.name;
+    if (typeof categoryId === "object" && categoryId.name)
+      return categoryId.name;
     // Lookup from categories list
     const found = categories.find((c) => c._id === categoryId);
     return found ? found.name : String(categoryId);
@@ -67,12 +71,12 @@ const AllProducts: React.FC = () => {
 
   let filteredProducts = products
     .filter((product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .filter(
       (product) =>
         categoryFilter === "all" ||
-        getCategoryName(product.categoryId) === categoryFilter
+        getCategoryName(product.categoryId) === categoryFilter,
     );
 
   if (sortOption !== "none") {
@@ -89,7 +93,7 @@ const AllProducts: React.FC = () => {
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const handlePageChange = (page: number) => {
@@ -132,7 +136,7 @@ const AllProducts: React.FC = () => {
         </Button>
         {Array.from(
           { length: endPage - startPage + 1 },
-          (_, i) => startPage + i
+          (_, i) => startPage + i,
         ).map((page) => (
           <Button
             key={page}
@@ -262,7 +266,10 @@ const AllProducts: React.FC = () => {
                     <TableCell className="w-24 text-right">
                       {product.discountPercentage || 0}%
                     </TableCell>
-                    <TableCell className="w-28 truncate" title={product.manufacturer}>
+                    <TableCell
+                      className="w-28 truncate"
+                      title={product.manufacturer}
+                    >
                       {product.manufacturer || "N/A"}
                     </TableCell>
                     <TableCell className="w-40 sticky right-0 z-10 bg-background">

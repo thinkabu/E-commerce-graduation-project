@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,10 +28,26 @@ const AddProduct: React.FC = () => {
   const [loadingCategories, setLoadingCategories] = useState(true);
 
   const {
-    formData, newTag, setNewTag, newSpecProperty, setNewSpecProperty,
-    newSpecValue, setNewSpecValue, isSubmitting, handleChange, addTag,
-    removeTag, updateSpec, deleteSpec, addNewSpec, handleImageUpload,
-    removeImage, setCoverImage, calculateFinalPrice, handleGoBack, handleSubmit,
+    formData,
+    newTag,
+    setNewTag,
+    newSpecProperty,
+    setNewSpecProperty,
+    newSpecValue,
+    setNewSpecValue,
+    isSubmitting,
+    handleChange,
+    addTag,
+    removeTag,
+    updateSpec,
+    deleteSpec,
+    addNewSpec,
+    handleImageUpload,
+    removeImage,
+    setCoverImage,
+    calculateFinalPrice,
+    handleGoBack,
+    handleSubmit,
   } = useProductForm(defaultFormData, "add");
 
   useEffect(() => {
@@ -50,17 +70,25 @@ const AddProduct: React.FC = () => {
       <div className="container mx-auto p-4 md:p-6 max-w-7xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <Button variant="outline" onClick={handleGoBack} className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            onClick={handleGoBack}
+            className="flex items-center space-x-2"
+          >
             <ArrowLeft className="h-4 w-4" />
             <span>Quay trở về</span>
           </Button>
-          <h1 className="text-3xl font-bold text-foreground">Thêm Sản Phẩm Mới</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Thêm Sản Phẩm Mới
+          </h1>
           <div className="w-32" />
         </div>
 
         <Card className="shadow-lg">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold">Thông Tin Sản Phẩm</CardTitle>
+            <CardTitle className="text-xl font-semibold">
+              Thông Tin Sản Phẩm
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-8">
             {/* Thông Tin Cơ Bản */}
@@ -73,28 +101,81 @@ const AddProduct: React.FC = () => {
                   <div className="lg:col-span-2 space-y-4">
                     <div className="space-y-2">
                       <div>
-                        <Label htmlFor="name">Tên sản phẩm: <span className="text-destructive">*</span></Label>
-                        <Input id="name" value={formData.name} onChange={(e) => handleChange("name", e.target.value)} className="mt-1" required />
+                        <Label htmlFor="name">
+                          Tên sản phẩm:{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => handleChange("name", e.target.value)}
+                          className="mt-1"
+                          required
+                        />
                       </div>
                       <div>
-                        <Label htmlFor="manufacturer">Nhà sản xuất: <span className="text-destructive">*</span></Label>
-                        <Input id="manufacturer" value={formData.manufacturer} onChange={(e) => handleChange("manufacturer", e.target.value)} className="mt-1" required />
+                        <Label htmlFor="manufacturer">
+                          Nhà sản xuất:{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="manufacturer"
+                          value={formData.manufacturer}
+                          onChange={(e) =>
+                            handleChange("manufacturer", e.target.value)
+                          }
+                          className="mt-1"
+                          required
+                        />
                       </div>
                       <div>
-                        <Label htmlFor="productId">Mã sản phẩm (SKU): <span className="text-destructive">*</span></Label>
-                        <Input id="productId" value={formData.productId} onChange={(e) => handleChange("productId", e.target.value)} className="mt-1" placeholder="VD: IP15-PRO-MAX" />
+                        <Label htmlFor="productId">
+                          Mã sản phẩm (SKU):{" "}
+                          <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="productId"
+                          value={formData.productId}
+                          onChange={(e) =>
+                            handleChange("productId", e.target.value)
+                          }
+                          className="mt-1"
+                          placeholder="VD: IP15-PRO-MAX"
+                        />
                       </div>
                       <div>
                         <Label>Thẻ tag:</Label>
                         <div className="flex space-x-2 mt-1">
-                          <Input value={newTag} onChange={(e) => setNewTag(e.target.value)} onKeyPress={(e) => e.key === "Enter" && addTag()} placeholder="Thêm từ khóa (Enter để thêm)" className="flex-1" />
-                          <Button type="button" onClick={addTag} variant="secondary">Thêm</Button>
+                          <Input
+                            value={newTag}
+                            onChange={(e) => setNewTag(e.target.value)}
+                            onKeyPress={(e) => e.key === "Enter" && addTag()}
+                            placeholder="Thêm từ khóa (Enter để thêm)"
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            onClick={addTag}
+                            variant="secondary"
+                          >
+                            Thêm
+                          </Button>
                         </div>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {formData.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="flex items-center space-x-1">
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="flex items-center space-x-1"
+                            >
                               {tag}
-                              <Button variant="ghost" size="sm" onClick={() => removeTag(tag)} className="h-4 w-4 p-0 hover:bg-destructive/10" type="button">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeTag(tag)}
+                                className="h-4 w-4 p-0 hover:bg-destructive/10"
+                                type="button"
+                              >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </Badge>
@@ -106,29 +187,67 @@ const AddProduct: React.FC = () => {
                   <div className="space-y-4">
                     <h4 className="text-md font-medium">Loại Sản Phẩm</h4>
                     <div>
-                      <Label>Danh mục: <span className="text-destructive">*</span></Label>
+                      <Label>
+                        Danh mục: <span className="text-destructive">*</span>
+                      </Label>
                       {loadingCategories ? (
-                        <div className="mt-1 text-sm text-muted-foreground">Đang tải danh mục...</div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          Đang tải danh mục...
+                        </div>
                       ) : (
-                        <Select value={formData.categoryId} onValueChange={(value) => handleChange("categoryId", value)}>
-                          <SelectTrigger className="mt-1"><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
+                        <Select
+                          value={formData.categoryId}
+                          onValueChange={(value) =>
+                            handleChange("categoryId", value)
+                          }
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Chọn danh mục" />
+                          </SelectTrigger>
                           <SelectContent>
-                            {categories.filter((cat) => cat.isActive).map((cat) => (
-                              <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
-                            ))}
+                            {categories
+                              .filter((cat) => cat.isActive)
+                              .map((cat) => (
+                                <SelectItem key={cat._id} value={cat._id}>
+                                  {cat.name}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="stockQuantity">Số lượng trong kho:</Label>
-                        <Input id="stockQuantity" type="number" min={0} value={formData.stockQuantity || ""} onChange={(e) => handleChange("stockQuantity", Number(e.target.value))} className="mt-1" placeholder="0" disabled={formData.variants?.length > 0} />
+                        <Label htmlFor="stockQuantity">
+                          Số lượng trong kho:
+                        </Label>
+                        <Input
+                          id="stockQuantity"
+                          type="number"
+                          min={0}
+                          value={formData.stockQuantity || ""}
+                          onChange={(e) =>
+                            handleChange(
+                              "stockQuantity",
+                              Number(e.target.value),
+                            )
+                          }
+                          className="mt-1"
+                          placeholder="0"
+                          disabled={formData.variants?.length > 0}
+                        />
                       </div>
                       <div>
                         <Label>Trạng thái kho:</Label>
-                        <Select value={formData.stockStatus} onValueChange={(value) => handleChange("stockStatus", value)}>
-                          <SelectTrigger className="mt-1"><SelectValue placeholder="Chọn" /></SelectTrigger>
+                        <Select
+                          value={formData.stockStatus}
+                          onValueChange={(value) =>
+                            handleChange("stockStatus", value)
+                          }
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Chọn" />
+                          </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Instock">Có sẵn</SelectItem>
                             <SelectItem value="Outofstock">Không có</SelectItem>
@@ -150,11 +269,30 @@ const AddProduct: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-end space-x-4">
                   <div className="flex-1 space-y-2">
-                    <Label htmlFor="basePrice" className="text-sm font-medium">Giá gốc: <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="basePrice" className="text-sm font-medium">
+                      Giá gốc: <span className="text-destructive">*</span>
+                    </Label>
                     <div className="flex items-center space-x-2">
-                      <Input id="basePrice" type="number" value={formData.basePrice || ""} onChange={(e) => handleChange("basePrice", Number(e.target.value))} className="flex-1" required placeholder="0" />
-                      <Select value={formData.currency} onValueChange={(value) => handleChange("currency", value)}>
-                        <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                      <Input
+                        id="basePrice"
+                        type="number"
+                        value={formData.basePrice || ""}
+                        onChange={(e) =>
+                          handleChange("basePrice", Number(e.target.value))
+                        }
+                        className="flex-1"
+                        required
+                        placeholder="0"
+                      />
+                      <Select
+                        value={formData.currency}
+                        onValueChange={(value) =>
+                          handleChange("currency", value)
+                        }
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="VND">VND</SelectItem>
                           <SelectItem value="USD">USD</SelectItem>
@@ -163,22 +301,49 @@ const AddProduct: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex-1 space-y-2">
-                    <Label htmlFor="discountPercentage" className="text-sm font-medium">Giảm giá (%):</Label>
-                    <Input id="discountPercentage" type="number" min={0} max={100} value={formData.discountPercentage || ""} onChange={(e) => handleChange("discountPercentage", Number(e.target.value))} className="w-full" placeholder="0" />
+                    <Label
+                      htmlFor="discountPercentage"
+                      className="text-sm font-medium"
+                    >
+                      Giảm giá (%):
+                    </Label>
+                    <Input
+                      id="discountPercentage"
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={formData.discountPercentage || ""}
+                      onChange={(e) =>
+                        handleChange(
+                          "discountPercentage",
+                          Number(e.target.value),
+                        )
+                      }
+                      className="w-full"
+                      placeholder="0"
+                    />
                   </div>
                   <div className="flex-1 space-y-2">
-                    <Label htmlFor="finalPrice" className="text-sm font-medium">Giá cuối:</Label>
-                    <Input id="finalPrice" type="number" value={calculateFinalPrice()} readOnly className="w-full bg-muted/50" />
+                    <Label htmlFor="finalPrice" className="text-sm font-medium">
+                      Giá cuối:
+                    </Label>
+                    <Input
+                      id="finalPrice"
+                      type="number"
+                      value={calculateFinalPrice()}
+                      readOnly
+                      className="w-full bg-muted/50"
+                    />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Biến Thể Sản Phẩm */}
-            <VariantSection 
-              variants={formData.variants || []} 
-              onChange={(variants) => handleChange("variants", variants)} 
-              basePrice={formData.basePrice || 0} 
+            <VariantSection
+              variants={formData.variants || []}
+              onChange={(variants) => handleChange("variants", variants)}
+              basePrice={formData.basePrice || 0}
             />
 
             {/* Hình Ảnh */}
@@ -189,42 +354,74 @@ const AddProduct: React.FC = () => {
               <CardContent className="p-6">
                 <div className="border-2 border-dashed border-input rounded-lg p-8 text-center hover:border-primary transition-colors">
                   <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-sm text-muted-foreground mb-2">Kéo thả hình ảnh vào đây hoặc</p>
-                  <Button type="button" variant="outline" asChild className="mt-2">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Kéo thả hình ảnh vào đây hoặc
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    asChild
+                    className="mt-2"
+                  >
                     <label htmlFor="image-upload">
                       Duyệt file
-                      <Input id="image-upload" type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
+                      <Input
+                        id="image-upload"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
                     </label>
                   </Button>
                   {formData.images.length > 0 && (
                     <div className="mb-6">
-                      <h5 className="text-sm font-medium mb-3">Hình ảnh đã chọn:</h5>
+                      <h5 className="text-sm font-medium mb-3">
+                        Hình ảnh đã chọn:
+                      </h5>
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                         {formData.images.map((img: any, idx: number) => {
                           const isCover = idx === 0;
                           return (
-                            <div key={idx} className={`relative w-40 h-40 rounded-md overflow-hidden group ${isCover ? 'ring-4 ring-primary ring-offset-2' : 'border border-border'}`}>
-                              <img src={typeof img === "string" ? img : URL.createObjectURL(img)} alt="Preview" className="w-full h-full object-cover" />
-                              
+                            <div
+                              key={idx}
+                              className={`relative w-40 h-40 rounded-md overflow-hidden group ${isCover ? "ring-4 ring-primary ring-offset-2" : "border border-border"}`}
+                            >
+                              <img
+                                src={
+                                  typeof img === "string"
+                                    ? img
+                                    : URL.createObjectURL(img)
+                                }
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                              />
+
                               {isCover && (
                                 <div className="absolute top-0 left-0 w-full bg-primary/90 text-primary-foreground text-xs font-semibold py-1 text-center">
                                   Ảnh Bìa
                                 </div>
                               )}
-                              
+
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center gap-2">
                                 {!isCover && (
-                                  <Button 
-                                    type="button" 
-                                    variant="secondary" 
-                                    size="sm" 
-                                    className="text-xs" 
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    className="text-xs"
                                     onClick={() => setCoverImage(idx)}
                                   >
                                     Đặt làm ảnh bìa
                                   </Button>
                                 )}
-                                <Button type="button" variant="destructive" size="sm" onClick={() => removeImage(idx)}>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeImage(idx)}
+                                >
                                   <Trash2 className="h-4 w-4 mr-1" /> Xóa
                                 </Button>
                               </div>
@@ -246,23 +443,45 @@ const AddProduct: React.FC = () => {
               <CardContent className="p-6 space-y-4">
                 <div>
                   <Label>Mô tả sản phẩm:</Label>
-                  <RichTextEditor value={formData.description} onChange={(value) => handleChange("description", value)} />
+                  <RichTextEditor
+                    value={formData.description}
+                    onChange={(value) => handleChange("description", value)}
+                  />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="importStatus">Trạng thái nhập khẩu:</Label>
-                    <Select value={formData.importStatus} onValueChange={(value) => handleChange("importStatus", value)}>
-                      <SelectTrigger className="mt-1"><SelectValue placeholder="Chọn" /></SelectTrigger>
+                    <Select
+                      value={formData.importStatus}
+                      onValueChange={(value) =>
+                        handleChange("importStatus", value)
+                      }
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Chọn" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Imported">Đã nhập khẩu</SelectItem>
-                        <SelectItem value="Processing">Hàng gia công</SelectItem>
+                        <SelectItem value="Processing">
+                          Hàng gia công
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="countryOfOrigin">Quốc gia xuất xứ: <span className="text-destructive">*</span></Label>
-                    <Select value={formData.countryOfOrigin} onValueChange={(value) => handleChange("countryOfOrigin", value)}>
-                      <SelectTrigger className="mt-1"><SelectValue placeholder="Chọn" /></SelectTrigger>
+                    <Label htmlFor="countryOfOrigin">
+                      Quốc gia xuất xứ:{" "}
+                      <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={formData.countryOfOrigin}
+                      onValueChange={(value) =>
+                        handleChange("countryOfOrigin", value)
+                      }
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Chọn" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Việt Nam">Việt Nam</SelectItem>
                         <SelectItem value="Trung Quốc">Trung Quốc</SelectItem>
@@ -277,11 +496,27 @@ const AddProduct: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="releaseDate">Ngày phát hành:</Label>
-                    <Input id="releaseDate" type="date" value={formData.releaseDate} onChange={(e) => handleChange("releaseDate", e.target.value)} className="mt-1" />
+                    <Input
+                      id="releaseDate"
+                      type="date"
+                      value={formData.releaseDate}
+                      onChange={(e) =>
+                        handleChange("releaseDate", e.target.value)
+                      }
+                      className="mt-1"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="warrantyLength">Độ dài bảo hành:</Label>
-                    <Input id="warrantyLength" value={formData.warrantyLength} onChange={(e) => handleChange("warrantyLength", e.target.value)} placeholder="e.g., 12 tháng" className="mt-1" />
+                    <Input
+                      id="warrantyLength"
+                      value={formData.warrantyLength}
+                      onChange={(e) =>
+                        handleChange("warrantyLength", e.target.value)
+                      }
+                      placeholder="e.g., 12 tháng"
+                      className="mt-1"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -295,31 +530,66 @@ const AddProduct: React.FC = () => {
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-0">
                   {formData.specs.map((spec, index) => (
-                    <SpecRow key={index} index={index} spec={spec} onUpdate={updateSpec} onDelete={deleteSpec} />
+                    <SpecRow
+                      key={index}
+                      index={index}
+                      spec={spec}
+                      onUpdate={updateSpec}
+                      onDelete={deleteSpec}
+                    />
                   ))}
                 </div>
                 <Separator className="my-4" />
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center space-x-2 mb-2">
-                    <Input placeholder="Thuộc tính (e.g., Processor)" value={newSpecProperty} onChange={(e) => setNewSpecProperty(e.target.value)} className="flex-1" />
-                    <Input placeholder="Giá trị (e.g., 2.3GHz quad-core)" value={newSpecValue} onChange={(e) => setNewSpecValue(e.target.value)} className="flex-1" />
-                    <Button type="button" variant="outline" size="sm" onClick={addNewSpec} disabled={!newSpecProperty.trim() || !newSpecValue.trim()}>
-                      <Plus className="h-4 w-4 mr-2" />Thêm
+                    <Input
+                      placeholder="Thuộc tính (e.g., Processor)"
+                      value={newSpecProperty}
+                      onChange={(e) => setNewSpecProperty(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Input
+                      placeholder="Giá trị (e.g., 2.3GHz quad-core)"
+                      value={newSpecValue}
+                      onChange={(e) => setNewSpecValue(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addNewSpec}
+                      disabled={!newSpecProperty.trim() || !newSpecValue.trim()}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Thêm
                     </Button>
                   </div>
-                  <div className="text-sm text-muted-foreground">Nhập thuộc tính và giá trị, sau đó nhấn Thêm để lưu vào danh sách.</div>
+                  <div className="text-sm text-muted-foreground">
+                    Nhập thuộc tính và giá trị, sau đó nhấn Thêm để lưu vào danh
+                    sách.
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            
-
             {/* Buttons */}
             <div className="flex justify-between pt-6 border-t">
-              <Button type="button" variant="outline" onClick={handleGoBack} className="px-6">
-                <ArrowLeft className="h-4 w-4 mr-2" />Hủy
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGoBack}
+                className="px-6"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Hủy
               </Button>
-              <Button type="button" onClick={handleSubmit} disabled={isSubmitting || loadingCategories} className="px-8 bg-primary hover:bg-primary/90">
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting || loadingCategories}
+                className="px-8 bg-primary hover:bg-primary/90"
+              >
                 {isSubmitting ? "Đang thêm..." : "Thêm Sản Phẩm"}
               </Button>
             </div>

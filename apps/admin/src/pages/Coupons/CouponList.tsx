@@ -1,14 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { usePageTitle } from "@/contexts/PageTitleContext";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Copy, ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
-import { fetchCoupons, deleteCoupon, type Coupon } from "@/services/couponService";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
+import {
+  fetchCoupons,
+  deleteCoupon,
+  type Coupon,
+} from "@/services/couponService";
 
 const CouponList: React.FC = () => {
   usePageTitle("Quản Lý Mã Giảm Giá");
@@ -30,9 +50,14 @@ const CouponList: React.FC = () => {
     setIsLoading(false);
   };
 
-  const filteredCoupons = coupons.filter(c => c.code.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredCoupons = coupons.filter((c) =>
+    c.code.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
   const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
-  const paginatedCoupons = filteredCoupons.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedCoupons = filteredCoupons.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   const handleCopy = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -52,9 +77,11 @@ const CouponList: React.FC = () => {
   };
 
   const isExpiredOrDepleted = (coupon: Coupon) => {
-    return !coupon.isActive ||
+    return (
+      !coupon.isActive ||
       (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) ||
-      new Date(coupon.endDate) < new Date();
+      new Date(coupon.endDate) < new Date()
+    );
   };
 
   const formatPrice = (value: number) => {
@@ -81,10 +108,15 @@ const CouponList: React.FC = () => {
                 className="rounded-xl h-11"
                 disabled={isLoading}
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                />
               </Button>
             </div>
-            <Button asChild className="rounded-xl h-11 bg-zinc-900 hover:bg-zinc-800">
+            <Button
+              asChild
+              className="rounded-xl h-11 bg-zinc-900 hover:bg-zinc-800"
+            >
               <Link to="/coupons/add">
                 <Plus className="mr-2 h-4 w-4" /> Tạo Mã
               </Link>
@@ -96,12 +128,24 @@ const CouponList: React.FC = () => {
             <Table>
               <TableHeader className="bg-zinc-50/50">
                 <TableRow>
-                  <TableHead className="py-4 font-bold text-zinc-900">Mã (Code)</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900">Chi tiết giảm</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900 text-center">Đã dùng</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900">Ngày hết hạn</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900">Trạng thái</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900 text-right pr-6">Hành động</TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">
+                    Mã (Code)
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">
+                    Chi tiết giảm
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900 text-center">
+                    Đã dùng
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">
+                    Ngày hết hạn
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">
+                    Trạng thái
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900 text-right pr-6">
+                    Hành động
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -110,27 +154,40 @@ const CouponList: React.FC = () => {
                     <TableCell colSpan={6} className="h-48 text-center">
                       <div className="flex flex-col items-center gap-2 text-zinc-400">
                         <Loader2 className="h-8 w-8 animate-spin" />
-                        <p className="text-sm font-medium">Đang tải dữ liệu...</p>
+                        <p className="text-sm font-medium">
+                          Đang tải dữ liệu...
+                        </p>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : paginatedCoupons.length > 0 ? (
                   paginatedCoupons.map((coupon) => (
-                    <TableRow key={coupon._id} className={`hover:bg-zinc-50/50 transition-colors ${isExpiredOrDepleted(coupon) ? "bg-zinc-50/30" : ""}`}>
-                      <TableCell className="font-bold text-blue-600 font-mono">{coupon.code}</TableCell>
+                    <TableRow
+                      key={coupon._id}
+                      className={`hover:bg-zinc-50/50 transition-colors ${isExpiredOrDepleted(coupon) ? "bg-zinc-50/30" : ""}`}
+                    >
+                      <TableCell className="font-bold text-blue-600 font-mono">
+                        {coupon.code}
+                      </TableCell>
                       <TableCell>
                         <span className="font-semibold">
-                          Giảm {coupon.discountValue}{coupon.discountType === "PERCENTAGE" ? "%" : "₫"}
+                          Giảm {coupon.discountValue}
+                          {coupon.discountType === "PERCENTAGE" ? "%" : "₫"}
                         </span>
                         {coupon.maxDiscountAmount ? (
                           <>
                             <br />
-                            <span className="text-xs text-zinc-500">Tối đa: {formatPrice(coupon.maxDiscountAmount)} ₫</span>
+                            <span className="text-xs text-zinc-500">
+                              Tối đa: {formatPrice(coupon.maxDiscountAmount)} ₫
+                            </span>
                           </>
                         ) : null}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="secondary" className="font-mono rounded-lg">
+                        <Badge
+                          variant="secondary"
+                          className="font-mono rounded-lg"
+                        >
                           {coupon.usedCount}/{coupon.usageLimit || "∞"}
                         </Badge>
                       </TableCell>
@@ -139,16 +196,36 @@ const CouponList: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         {isExpiredOrDepleted(coupon) ? (
-                          <Badge variant="destructive" className="rounded-lg px-3 py-1">Hết hiệu lực</Badge>
+                          <Badge
+                            variant="destructive"
+                            className="rounded-lg px-3 py-1"
+                          >
+                            Hết hiệu lực
+                          </Badge>
                         ) : (
-                          <Badge variant="outline" className="rounded-lg px-3 py-1 text-green-600 border-green-200 bg-green-50">Đang chạy</Badge>
+                          <Badge
+                            variant="outline"
+                            className="rounded-lg px-3 py-1 text-green-600 border-green-200 bg-green-50"
+                          >
+                            Đang chạy
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right space-x-2 pr-6">
-                        <Button variant="ghost" size="icon" onClick={() => handleCopy(coupon.code)} className="h-9 w-9 rounded-lg hover:bg-green-50 text-green-600">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleCopy(coupon.code)}
+                          className="h-9 w-9 rounded-lg hover:bg-green-50 text-green-600"
+                        >
                           <Copy className="h-4 w-4" />
                         </Button>
-                        <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-blue-50 text-blue-600">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-lg hover:bg-blue-50 text-blue-600"
+                        >
                           <Link to={`/coupons/edit/${coupon._id}`}>
                             <Edit className="h-4 w-4" />
                           </Link>
@@ -166,7 +243,10 @@ const CouponList: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-48 text-center text-zinc-400">
+                    <TableCell
+                      colSpan={6}
+                      className="h-48 text-center text-zinc-400"
+                    >
                       Không tìm thấy mã giảm giá nào.
                     </TableCell>
                   </TableRow>
@@ -181,10 +261,24 @@ const CouponList: React.FC = () => {
                 Hiển thị trang {currentPage} trên tổng số {totalPages}
               </p>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-lg">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg"
+                >
                   <ChevronLeft className="h-4 w-4 mr-1" /> Trước
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="rounded-lg">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg"
+                >
                   Sau <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>

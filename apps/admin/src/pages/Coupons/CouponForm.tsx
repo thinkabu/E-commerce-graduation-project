@@ -15,7 +15,11 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Ticket, CheckCircle2, Loader2 } from "lucide-react";
 import { usePageTitle } from "@/contexts/PageTitleContext";
 import { toast } from "sonner";
-import { fetchCouponById, createCoupon, updateCoupon } from "@/services/couponService";
+import {
+  fetchCouponById,
+  createCoupon,
+  updateCoupon,
+} from "@/services/couponService";
 
 const CouponForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,8 +58,12 @@ const CouponForm: React.FC = () => {
             maxDiscountAmount: coupon.maxDiscountAmount || 0,
             usageLimit: coupon.usageLimit || 100,
             usageLimitPerUser: coupon.usageLimitPerUser || 1,
-            startDate: coupon.startDate ? new Date(coupon.startDate).toISOString().slice(0, 16) : "",
-            endDate: coupon.endDate ? new Date(coupon.endDate).toISOString().slice(0, 16) : "",
+            startDate: coupon.startDate
+              ? new Date(coupon.startDate).toISOString().slice(0, 16)
+              : "",
+            endDate: coupon.endDate
+              ? new Date(coupon.endDate).toISOString().slice(0, 16)
+              : "",
             isActive: coupon.isActive ?? true,
           });
         } else {
@@ -83,8 +91,12 @@ const CouponForm: React.FC = () => {
     const payload = {
       ...formData,
       code: formData.code.toUpperCase(),
-      startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
-      endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
+      startDate: formData.startDate
+        ? new Date(formData.startDate).toISOString()
+        : undefined,
+      endDate: formData.endDate
+        ? new Date(formData.endDate).toISOString()
+        : undefined,
     };
 
     const result = isEdit
@@ -111,7 +123,11 @@ const CouponForm: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      <Button variant="ghost" onClick={() => navigate("/coupons")} className="mb-4 hover:bg-zinc-100">
+      <Button
+        variant="ghost"
+        onClick={() => navigate("/coupons")}
+        className="mb-4 hover:bg-zinc-100"
+      >
         <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại danh sách
       </Button>
 
@@ -123,8 +139,12 @@ const CouponForm: React.FC = () => {
                 <Ticket size={20} />
               </div>
               <div>
-                <h3 className="text-lg font-bold">{isEdit ? "Chỉnh sửa mã giảm giá" : "Tạo mã giảm giá mới"}</h3>
-                <p className="text-zinc-400 text-xs">Thiết lập thông tin khuyến mãi</p>
+                <h3 className="text-lg font-bold">
+                  {isEdit ? "Chỉnh sửa mã giảm giá" : "Tạo mã giảm giá mới"}
+                </h3>
+                <p className="text-zinc-400 text-xs">
+                  Thiết lập thông tin khuyến mãi
+                </p>
               </div>
             </div>
           </CardHeader>
@@ -132,7 +152,9 @@ const CouponForm: React.FC = () => {
             {/* Row 1: Code + Type */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-700">Mã giảm giá *</Label>
+                <Label className="text-sm font-bold text-zinc-700">
+                  Mã giảm giá *
+                </Label>
                 <Input
                   name="code"
                   value={formData.code}
@@ -143,17 +165,23 @@ const CouponForm: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-700">Loại giảm giá *</Label>
+                <Label className="text-sm font-bold text-zinc-700">
+                  Loại giảm giá *
+                </Label>
                 <Select
                   value={formData.discountType}
-                  onValueChange={(v) => setFormData((prev) => ({ ...prev, discountType: v as any }))}
+                  onValueChange={(v) =>
+                    setFormData((prev) => ({ ...prev, discountType: v as any }))
+                  }
                 >
                   <SelectTrigger className="h-12 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PERCENTAGE">Phần trăm (%)</SelectItem>
-                    <SelectItem value="FIXED_AMOUNT">Số tiền cố định (₫)</SelectItem>
+                    <SelectItem value="FIXED_AMOUNT">
+                      Số tiền cố định (₫)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -162,48 +190,117 @@ const CouponForm: React.FC = () => {
             {/* Description */}
             <div className="space-y-2">
               <Label className="text-sm font-bold text-zinc-700">Mô tả</Label>
-              <Input name="description" value={formData.description} onChange={handleChange} placeholder="Giảm giá mùa hè cho tất cả sản phẩm" className="h-12 rounded-xl" />
+              <Input
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Giảm giá mùa hè cho tất cả sản phẩm"
+                className="h-12 rounded-xl"
+              />
             </div>
 
             {/* Row 2: Value + Max Discount */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-bold text-zinc-700">
-                  Giá trị giảm {formData.discountType === "PERCENTAGE" ? "(%)" : "(₫)"} *
+                  Giá trị giảm{" "}
+                  {formData.discountType === "PERCENTAGE" ? "(%)" : "(₫)"} *
                 </Label>
-                <Input name="discountValue" type="number" value={formData.discountValue} onChange={handleChange} min={0} required className="h-12 rounded-xl" />
+                <Input
+                  name="discountValue"
+                  type="number"
+                  value={formData.discountValue}
+                  onChange={handleChange}
+                  min={0}
+                  required
+                  className="h-12 rounded-xl"
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-700">Giảm tối đa (₫)</Label>
-                <Input name="maxDiscountAmount" type="number" value={formData.maxDiscountAmount} onChange={handleChange} min={0} className="h-12 rounded-xl" />
+                <Label className="text-sm font-bold text-zinc-700">
+                  Giảm tối đa (₫)
+                </Label>
+                <Input
+                  name="maxDiscountAmount"
+                  type="number"
+                  value={formData.maxDiscountAmount}
+                  onChange={handleChange}
+                  min={0}
+                  className="h-12 rounded-xl"
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-700">Đơn tối thiểu (₫)</Label>
-                <Input name="minOrderAmount" type="number" value={formData.minOrderAmount} onChange={handleChange} min={0} className="h-12 rounded-xl" />
+                <Label className="text-sm font-bold text-zinc-700">
+                  Đơn tối thiểu (₫)
+                </Label>
+                <Input
+                  name="minOrderAmount"
+                  type="number"
+                  value={formData.minOrderAmount}
+                  onChange={handleChange}
+                  min={0}
+                  className="h-12 rounded-xl"
+                />
               </div>
             </div>
 
             {/* Row 3: Usage limits */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-700">Tổng lượt sử dụng tối đa</Label>
-                <Input name="usageLimit" type="number" value={formData.usageLimit} onChange={handleChange} min={0} className="h-12 rounded-xl" />
+                <Label className="text-sm font-bold text-zinc-700">
+                  Tổng lượt sử dụng tối đa
+                </Label>
+                <Input
+                  name="usageLimit"
+                  type="number"
+                  value={formData.usageLimit}
+                  onChange={handleChange}
+                  min={0}
+                  className="h-12 rounded-xl"
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-700">Giới hạn/người dùng</Label>
-                <Input name="usageLimitPerUser" type="number" value={formData.usageLimitPerUser} onChange={handleChange} min={1} className="h-12 rounded-xl" />
+                <Label className="text-sm font-bold text-zinc-700">
+                  Giới hạn/người dùng
+                </Label>
+                <Input
+                  name="usageLimitPerUser"
+                  type="number"
+                  value={formData.usageLimitPerUser}
+                  onChange={handleChange}
+                  min={1}
+                  className="h-12 rounded-xl"
+                />
               </div>
             </div>
 
             {/* Row 4: Dates */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-700">Ngày bắt đầu *</Label>
-                <Input name="startDate" type="datetime-local" value={formData.startDate} onChange={handleChange} required className="h-12 rounded-xl" />
+                <Label className="text-sm font-bold text-zinc-700">
+                  Ngày bắt đầu *
+                </Label>
+                <Input
+                  name="startDate"
+                  type="datetime-local"
+                  value={formData.startDate}
+                  onChange={handleChange}
+                  required
+                  className="h-12 rounded-xl"
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-700">Ngày kết thúc *</Label>
-                <Input name="endDate" type="datetime-local" value={formData.endDate} onChange={handleChange} required className="h-12 rounded-xl" />
+                <Label className="text-sm font-bold text-zinc-700">
+                  Ngày kết thúc *
+                </Label>
+                <Input
+                  name="endDate"
+                  type="datetime-local"
+                  value={formData.endDate}
+                  onChange={handleChange}
+                  required
+                  className="h-12 rounded-xl"
+                />
               </div>
             </div>
 
@@ -211,11 +308,15 @@ const CouponForm: React.FC = () => {
             <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
               <div>
                 <p className="font-bold text-zinc-800">Kích hoạt mã giảm giá</p>
-                <p className="text-xs text-zinc-500">Mã chỉ hoạt động khi được bật</p>
+                <p className="text-xs text-zinc-500">
+                  Mã chỉ hoạt động khi được bật
+                </p>
               </div>
               <Switch
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: checked }))}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, isActive: checked }))
+                }
               />
             </div>
 

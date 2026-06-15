@@ -21,7 +21,11 @@ export class CartController {
   // TODO: Khi có Auth, lấy userId từ JWT token thay vì query param
   @Get()
   @ApiOperation({ summary: 'Lấy giỏ hàng (populate product info)' })
-  @ApiQuery({ name: 'userId', required: true, description: 'Tạm thời - sẽ lấy từ JWT' })
+  @ApiQuery({
+    name: 'userId',
+    required: true,
+    description: 'Tạm thời - sẽ lấy từ JWT',
+  })
   getCart(@Query('userId') userId: string) {
     return this.cartService.getCart(userId);
   }
@@ -47,10 +51,7 @@ export class CartController {
   @Delete('items/:itemId')
   @ApiOperation({ summary: 'Xóa sản phẩm khỏi giỏ hàng' })
   @ApiQuery({ name: 'userId', required: true })
-  removeItem(
-    @Query('userId') userId: string,
-    @Param('itemId') itemId: string,
-  ) {
+  removeItem(@Query('userId') userId: string, @Param('itemId') itemId: string) {
     return this.cartService.removeItem(userId, itemId);
   }
 

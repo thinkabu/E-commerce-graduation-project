@@ -1,19 +1,11 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Param,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 
 @ApiTags('Notifications')
 @Controller('notifications')
 export class NotificationsController {
-  constructor(
-    private readonly notificationsService: NotificationsService,
-  ) {}
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get('user/:userId')
   @ApiOperation({ summary: 'Lấy danh sách thông báo của user (paginated)' })
@@ -24,7 +16,11 @@ export class NotificationsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.notificationsService.findByUser(userId, Number(page) || 1, Number(limit) || 20);
+    return this.notificationsService.findByUser(
+      userId,
+      Number(page) || 1,
+      Number(limit) || 20,
+    );
   }
 
   @Get('user/:userId/unread-count')
@@ -36,10 +32,7 @@ export class NotificationsController {
   @Patch(':id/read')
   @ApiOperation({ summary: 'Đánh dấu 1 thông báo đã đọc' })
   @ApiQuery({ name: 'userId', required: true })
-  markAsRead(
-    @Param('id') id: string,
-    @Query('userId') userId: string,
-  ) {
+  markAsRead(@Param('id') id: string, @Query('userId') userId: string) {
     return this.notificationsService.markAsRead(id, userId);
   }
 

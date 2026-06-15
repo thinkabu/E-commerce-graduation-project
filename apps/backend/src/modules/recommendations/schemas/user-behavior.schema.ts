@@ -64,8 +64,7 @@ export class UserBehavior {
   timestamp: Date;
 }
 
-export const UserBehaviorSchema =
-  SchemaFactory.createForClass(UserBehavior);
+export const UserBehaviorSchema = SchemaFactory.createForClass(UserBehavior);
 
 // --- Indexes ---
 UserBehaviorSchema.index({ userId: 1, timestamp: -1 }); // Lịch sử hành vi user
@@ -74,7 +73,4 @@ UserBehaviorSchema.index({ userId: 1, productId: 1, actionType: 1 }); // Tra c�
 UserBehaviorSchema.index({ actionType: 1, timestamp: -1 }); // Analytics
 
 // TTL Index: Tự động xóa sau 180 ngày (15552000 giây)
-UserBehaviorSchema.index(
-  { timestamp: 1 },
-  { expireAfterSeconds: 15552000 },
-);
+UserBehaviorSchema.index({ timestamp: 1 }, { expireAfterSeconds: 15552000 });

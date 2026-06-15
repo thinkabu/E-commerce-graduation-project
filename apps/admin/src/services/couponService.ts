@@ -2,7 +2,7 @@ export interface Coupon {
   _id: string;
   code: string;
   description?: string;
-  discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountType: "PERCENTAGE" | "FIXED_AMOUNT";
   discountValue: number;
   minOrderAmount: number;
   maxDiscountAmount?: number;
@@ -49,14 +49,17 @@ export const fetchCouponById = async (id: string): Promise<Coupon | null> => {
   }
 };
 
-export const createCoupon = async (data: Partial<Coupon>): Promise<{ success: boolean; message: string }> => {
+export const createCoupon = async (
+  data: Partial<Coupon>,
+): Promise<{ success: boolean; message: string }> => {
   try {
     const res = await fetch(`${BASE_URL}/coupons`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (res.ok) return { success: true, message: "Tạo mã giảm giá thành công!" };
+    if (res.ok)
+      return { success: true, message: "Tạo mã giảm giá thành công!" };
     const json = await res.json();
     return { success: false, message: json.message || "Lỗi tạo mã giảm giá." };
   } catch (error) {
@@ -64,16 +67,23 @@ export const createCoupon = async (data: Partial<Coupon>): Promise<{ success: bo
   }
 };
 
-export const updateCoupon = async (id: string, data: Partial<Coupon>): Promise<{ success: boolean; message: string }> => {
+export const updateCoupon = async (
+  id: string,
+  data: Partial<Coupon>,
+): Promise<{ success: boolean; message: string }> => {
   try {
     const res = await fetch(`${BASE_URL}/coupons/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (res.ok) return { success: true, message: "Cập nhật mã giảm giá thành công!" };
+    if (res.ok)
+      return { success: true, message: "Cập nhật mã giảm giá thành công!" };
     const json = await res.json();
-    return { success: false, message: json.message || "Lỗi cập nhật mã giảm giá." };
+    return {
+      success: false,
+      message: json.message || "Lỗi cập nhật mã giảm giá.",
+    };
   } catch (error) {
     return { success: false, message: "Không thể kết nối đến server." };
   }

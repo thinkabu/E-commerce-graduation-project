@@ -3,8 +3,8 @@ import {
   PaymentMethod,
   PaymentStatus,
   Currency,
-} from '../constants/enums';
-import { IVariantAttribute } from './product.types';
+} from "../constants/enums";
+import { IVariantAttribute } from "./product.types";
 
 // --- Cart Interfaces ---
 export interface ICartItem {

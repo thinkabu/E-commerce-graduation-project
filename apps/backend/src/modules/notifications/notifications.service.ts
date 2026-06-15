@@ -41,9 +41,7 @@ export class NotificationsService {
     if (!tokens || tokens.length === 0) return;
 
     // Lọc token hợp lệ (phải bắt đầu bằng ExponentPushToken)
-    const validTokens = tokens.filter((t) =>
-      t.startsWith('ExponentPushToken'),
-    );
+    const validTokens = tokens.filter((t) => t.startsWith('ExponentPushToken'));
     if (validTokens.length === 0) return;
 
     // Chia thành chunks để tránh vượt giới hạn Expo API
@@ -143,7 +141,9 @@ export class NotificationsService {
       // Map free-form data vào các field có sẵn trong NotificationData schema
       data: {
         orderId: data?.orderId ? new Types.ObjectId(data.orderId) : undefined,
-        productId: data?.productId ? new Types.ObjectId(data.productId) : undefined,
+        productId: data?.productId
+          ? new Types.ObjectId(data.productId)
+          : undefined,
         txHash: data?.txHash,
         deepLink: data?.deepLink,
       },

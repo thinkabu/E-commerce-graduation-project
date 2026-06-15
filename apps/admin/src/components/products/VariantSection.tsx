@@ -50,19 +50,22 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
   const handleAddValue = (index: number) => {
     const val = (inputValue[index] || "").trim();
     if (!val) return;
-    
+
     const newOptions = [...options];
     if (newOptions[index].values.includes(val)) {
       toast.warning("Giá trị đã tồn tại");
       return;
     }
-    
+
     newOptions[index].values.push(val);
     setOptions(newOptions);
     setInputValue({ ...inputValue, [index]: "" });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+  ) => {
     if (e.key === "Enter") {
       e.preventDefault();
       handleAddValue(index);
@@ -78,7 +81,7 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
   const generateVariants = () => {
     // Filter out empty options
     const validOptions = options.filter(
-      (opt) => opt.name.trim() !== "" && opt.values.length > 0
+      (opt) => opt.name.trim() !== "" && opt.values.length > 0,
     );
 
     if (validOptions.length === 0) {
@@ -90,7 +93,7 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
     const cartesian = (arrays: any[][]): any[][] => {
       return arrays.reduce(
         (a, b) => a.flatMap((d) => b.map((e) => [d, e].flat())),
-        [[]]
+        [[]],
       );
     };
 
@@ -129,7 +132,7 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
   const handleVariantChange = (
     index: number,
     field: keyof ProductVariant,
-    value: any
+    value: any,
   ) => {
     const updated = [...variants];
     updated[index] = { ...updated[index], [field]: value };
@@ -143,7 +146,10 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
   };
 
   // Compute totals
-  const totalStock = variants.reduce((sum, v) => sum + (Number(v.stockQuantity) || 0), 0);
+  const totalStock = variants.reduce(
+    (sum, v) => sum + (Number(v.stockQuantity) || 0),
+    0,
+  );
 
   return (
     <Card className="overflow-hidden">
@@ -162,20 +168,30 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h4 className="font-medium">Tùy chọn thuộc tính</h4>
-            <Button variant="outline" size="sm" onClick={handleAddOption} type="button">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddOption}
+              type="button"
+            >
               <Plus className="w-4 h-4 mr-2" /> Thêm tùy chọn
             </Button>
           </div>
 
           <div className="space-y-4">
             {options.map((opt, i) => (
-              <div key={i} className="flex flex-col gap-2 p-4 bg-muted/30 rounded-lg">
+              <div
+                key={i}
+                className="flex flex-col gap-2 p-4 bg-muted/30 rounded-lg"
+              >
                 <div className="flex items-center gap-4">
                   <div className="w-1/3">
                     <Label>Tên thuộc tính</Label>
                     <Input
                       value={opt.name}
-                      onChange={(e) => handleOptionNameChange(i, e.target.value)}
+                      onChange={(e) =>
+                        handleOptionNameChange(i, e.target.value)
+                      }
                       placeholder="VD: Màu sắc, Dung lượng..."
                       className="mt-1 bg-background"
                     />
@@ -192,7 +208,11 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
                         placeholder="VD: Đen, Trắng..."
                         className="bg-background"
                       />
-                      <Button type="button" variant="secondary" onClick={() => handleAddValue(i)}>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => handleAddValue(i)}
+                      >
                         Thêm
                       </Button>
                     </div>
@@ -207,11 +227,14 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-                
+
                 {opt.values.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {opt.values.map((v, vIdx) => (
-                      <div key={vIdx} className="flex items-center bg-background border px-3 py-1 rounded-full text-sm">
+                      <div
+                        key={vIdx}
+                        className="flex items-center bg-background border px-3 py-1 rounded-full text-sm"
+                      >
                         {v}
                         <button
                           type="button"
@@ -245,7 +268,10 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
                 <h4 className="font-medium">Danh sách biến thể</h4>
                 <div className="flex items-center gap-3">
                   <Badge variant="outline" className="text-sm">
-                    Tổng tồn kho: <span className="font-bold ml-1">{totalStock.toLocaleString()}</span>
+                    Tổng tồn kho:{" "}
+                    <span className="font-bold ml-1">
+                      {totalStock.toLocaleString()}
+                    </span>
                   </Badge>
                 </div>
               </div>
@@ -253,34 +279,47 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
                 <table className="w-full text-sm text-left">
                   <thead className="bg-muted text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-3 font-medium">Tên / Thuộc tính</th>
+                      <th className="px-4 py-3 font-medium">
+                        Tên / Thuộc tính
+                      </th>
                       <th className="px-4 py-3 font-medium">SKU</th>
                       <th className="px-4 py-3 font-medium w-50">Giá (₫)</th>
-                      <th className="px-4 py-3 font-medium w-28">Giảm giá (%)</th>
+                      <th className="px-4 py-3 font-medium w-28">
+                        Giảm giá (%)
+                      </th>
                       <th className="px-4 py-3 font-medium w-20">Số lượng</th>
                       <th className="px-4 py-3 font-medium w-16"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {variants.map((variant, i) => {
-                      const finalPrice = variant.price * (1 - (variant.discountPercentage || 0) / 100);
+                      const finalPrice =
+                        variant.price *
+                        (1 - (variant.discountPercentage || 0) / 100);
                       return (
                         <tr key={i} className="hover:bg-muted/50">
                           <td className="px-4 py-3">
-                            <div className="font-medium">{variant.variantName}</div>
+                            <div className="font-medium">
+                              {variant.variantName}
+                            </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              {variant.attributes.map(a => `${a.name}: ${a.value}`).join(" | ")}
+                              {variant.attributes
+                                .map((a) => `${a.name}: ${a.value}`)
+                                .join(" | ")}
                             </div>
                             {variant.discountPercentage > 0 && (
                               <div className="text-xs text-green-600 mt-0.5">
-                                Giá sau giảm: {Math.round(finalPrice).toLocaleString()}₫
+                                Giá sau giảm:{" "}
+                                {Math.round(finalPrice).toLocaleString()}₫
                               </div>
                             )}
                           </td>
                           <td className="px-4 py-3">
                             <Input
                               value={variant.sku}
-                              onChange={(e) => handleVariantChange(i, "sku", e.target.value)}
+                              onChange={(e) =>
+                                handleVariantChange(i, "sku", e.target.value)
+                              }
                               className="h-8 text-sm"
                             />
                           </td>
@@ -288,7 +327,13 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
                             <Input
                               type="number"
                               value={variant.price || ""}
-                              onChange={(e) => handleVariantChange(i, "price", Number(e.target.value))}
+                              onChange={(e) =>
+                                handleVariantChange(
+                                  i,
+                                  "price",
+                                  Number(e.target.value),
+                                )
+                              }
                               className="h-8 text-sm"
                               placeholder="0"
                             />
@@ -299,7 +344,13 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
                               min={0}
                               max={100}
                               value={variant.discountPercentage || ""}
-                              onChange={(e) => handleVariantChange(i, "discountPercentage", Number(e.target.value))}
+                              onChange={(e) =>
+                                handleVariantChange(
+                                  i,
+                                  "discountPercentage",
+                                  Number(e.target.value),
+                                )
+                              }
                               className="h-8 text-sm"
                               placeholder="0"
                             />
@@ -309,7 +360,13 @@ export const VariantSection: React.FC<VariantSectionProps> = ({
                               type="number"
                               min={0}
                               value={variant.stockQuantity || ""}
-                              onChange={(e) => handleVariantChange(i, "stockQuantity", Number(e.target.value))}
+                              onChange={(e) =>
+                                handleVariantChange(
+                                  i,
+                                  "stockQuantity",
+                                  Number(e.target.value),
+                                )
+                              }
                               className="h-8 text-sm"
                               placeholder="0"
                             />

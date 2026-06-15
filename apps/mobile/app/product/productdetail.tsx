@@ -58,9 +58,9 @@ const mockReviews = [
     user: "Trần Thị B",
     avatar: "https://i.pravatar.cc/150?u=b",
     rating: 4,
-    date: '2024-03-10',
-    comment: 'Dùng rất thích, nhân viên tư vấn nhiệt tình.'
-  }
+    date: "2024-03-10",
+    comment: "Dùng rất thích, nhân viên tư vấn nhiệt tình.",
+  },
 ];
 const ProductDetailScreen = () => {
   const router = useRouter();
@@ -129,19 +129,26 @@ const ProductDetailScreen = () => {
           try {
             let catId: string | undefined;
             if (data.categoryId) {
-              catId = typeof data.categoryId === 'string' ? data.categoryId : data.categoryId._id;
+              catId =
+                typeof data.categoryId === "string"
+                  ? data.categoryId
+                  : data.categoryId._id;
             }
             const related = await getProducts({ categoryId: catId, limit: 31 });
-            const filtered = related.items.filter((p: any) => p._id !== id).slice(0, 30);
+            const filtered = related.items
+              .filter((p: any) => p._id !== id)
+              .slice(0, 30);
             if (filtered.length > 0) {
               setRelatedProducts(filtered);
             } else {
               // Fallback: lấy sản phẩm bất kỳ nếu cùng danh mục không có kết quả
               const fallback = await getProducts({ limit: 31 });
-              setRelatedProducts(fallback.items.filter((p: any) => p._id !== id).slice(0, 30));
+              setRelatedProducts(
+                fallback.items.filter((p: any) => p._id !== id).slice(0, 30),
+              );
             }
           } catch (e) {
-            console.error('Error fetching related products:', e);
+            console.error("Error fetching related products:", e);
           }
         }
       } catch (error) {
@@ -417,7 +424,7 @@ const ProductDetailScreen = () => {
                 </Text>
               )}
             </VStack>
-            
+
             <HStack className="items-center space-x-2 gap-2">
               <HStack className="items-center">
                 {[...Array(5)].map((_, i) => (
@@ -597,12 +604,20 @@ const ProductDetailScreen = () => {
                 {relatedProducts.map((p) => (
                   <Pressable
                     key={p._id}
-                    onPress={() => router.push({ pathname: '/product/productdetail', params: { id: p._id } })}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/product/productdetail",
+                        params: { id: p._id },
+                      })
+                    }
                     className="w-[48%] bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-3xl border border-zinc-100 dark:border-zinc-800 mb-4 shadow-sm"
                   >
                     <Box className="w-full h-32 rounded-2xl bg-white dark:bg-zinc-800 mb-3 items-center justify-center overflow-hidden">
                       <Image
-                        source={{ uri: p.images?.[0] || "https://via.placeholder.com/300" }}
+                        source={{
+                          uri:
+                            p.images?.[0] || "https://via.placeholder.com/300",
+                        }}
                         className="w-full h-full object-cover"
                       />
                     </Box>

@@ -28,8 +28,7 @@ export class Participant {
   isActive: boolean; // Đã rời cuộc chat hay chưa
 }
 
-export const ParticipantSchema =
-  SchemaFactory.createForClass(Participant);
+export const ParticipantSchema = SchemaFactory.createForClass(Participant);
 
 // --- LastMessage Subdocument (cache) ---
 @Schema({ _id: false })
@@ -47,8 +46,7 @@ export class LastMessage {
   type: string; // MessageType
 }
 
-export const LastMessageSchema =
-  SchemaFactory.createForClass(LastMessage);
+export const LastMessageSchema = SchemaFactory.createForClass(LastMessage);
 
 // --- Conversation Main Document ---
 @Schema({ timestamps: true })
@@ -93,8 +91,7 @@ export class Conversation {
   resolvedBy: Types.ObjectId;
 }
 
-export const ConversationSchema =
-  SchemaFactory.createForClass(Conversation);
+export const ConversationSchema = SchemaFactory.createForClass(Conversation);
 
 // --- Indexes ---
 ConversationSchema.index({ 'participants.userId': 1, updatedAt: -1 }); // Danh sách chat của user, mới nhất trước

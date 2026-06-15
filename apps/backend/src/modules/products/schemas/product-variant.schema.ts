@@ -38,7 +38,12 @@ export class ProductVariant {
   variantName: string; // 'Đen - 128GB'
 
   @Prop({
-    type: [{ name: { type: String, required: true }, value: { type: String, required: true } }],
+    type: [
+      {
+        name: { type: String, required: true },
+        value: { type: String, required: true },
+      },
+    ],
     required: [true, 'Thuộc tính biến thể là bắt buộc'],
     _id: false,
   })

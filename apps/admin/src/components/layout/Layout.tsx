@@ -98,7 +98,8 @@ const Layout: React.FC = () => {
     if (path === "/users") return location.pathname.startsWith("/users");
     if (path === "/banners") return location.pathname.startsWith("/banners");
     if (path === "/category") return location.pathname.startsWith("/category");
-    if (path === "/campaigns") return location.pathname.startsWith("/campaigns");
+    if (path === "/campaigns")
+      return location.pathname.startsWith("/campaigns");
     return location.pathname === path;
   };
 

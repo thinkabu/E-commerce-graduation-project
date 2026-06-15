@@ -1,4 +1,4 @@
-import { BehaviorAction } from '../constants/enums';
+import { BehaviorAction } from "../constants/enums";
 
 // --- UserBehavior Interface ---
 export interface IBehaviorMetadata {

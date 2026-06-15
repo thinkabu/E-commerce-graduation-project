@@ -1,4 +1,4 @@
-import { StockStatus, ImportStatus, Currency } from '../constants/enums';
+import { StockStatus, ImportStatus, Currency } from "../constants/enums";
 
 // --- Category Interface ---
 export interface ICategory {

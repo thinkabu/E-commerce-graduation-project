@@ -1,7 +1,7 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
-import api from './api';
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import { Platform } from "react-native";
+import api from "./api";
 
 // ─────────────────────── Setup Handler ───────────────────────────
 
@@ -13,8 +13,8 @@ import api from './api';
 export function initNotificationHandler(): void {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowBanner: true,  // Heads-up alert (thay shouldShowAlert từ v0.29+)
-      shouldShowList: true,    // Hiện trong notification center
+      shouldShowBanner: true, // Heads-up alert (thay shouldShowAlert từ v0.29+)
+      shouldShowList: true, // Hiện trong notification center
       shouldPlaySound: true,
       shouldSetBadge: true,
     }),
@@ -29,7 +29,9 @@ export function initNotificationHandler(): void {
  */
 export async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) {
-    console.warn('[Push] Chỉ hoạt động trên thiết bị thật (Development Build).');
+    console.warn(
+      "[Push] Chỉ hoạt động trên thiết bị thật (Development Build).",
+    );
     return null;
   }
 
@@ -37,23 +39,23 @@ export async function registerForPushNotifications(): Promise<string | null> {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
-  if (existingStatus !== 'granted') {
+  if (existingStatus !== "granted") {
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
 
-  if (finalStatus !== 'granted') {
-    console.warn('[Push] Người dùng từ chối quyền push notification.');
+  if (finalStatus !== "granted") {
+    console.warn("[Push] Người dùng từ chối quyền push notification.");
     return null;
   }
 
   // Cấu hình Android notification channel trước khi lấy token
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Thông báo',
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "Thông báo",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#eab308',
+      lightColor: "#eab308",
     });
   }
 
@@ -61,10 +63,10 @@ export async function registerForPushNotifications(): Promise<string | null> {
   try {
     const tokenData = await Notifications.getExpoPushTokenAsync();
     const token = tokenData.data;
-    console.log('[Push] ✅ Expo Push Token:', token);
+    console.log("[Push] ✅ Expo Push Token:", token);
     return token;
   } catch (error) {
-    console.error('[Push] ❌ Lỗi lấy token:', error);
+    console.error("[Push] ❌ Lỗi lấy token:", error);
     return null;
   }
 }
@@ -80,9 +82,9 @@ export async function savePushTokenToServer(
 ): Promise<void> {
   try {
     await api.patch(`/users/${userId}/push-token`, { token });
-    console.log('[Push] ✅ Đã lưu Push Token lên server.');
+    console.log("[Push] ✅ Đã lưu Push Token lên server.");
   } catch (error) {
-    console.error('[Push] ❌ Lỗi lưu push token:', error);
+    console.error("[Push] ❌ Lỗi lưu push token:", error);
   }
 }
 
@@ -95,9 +97,9 @@ export async function removePushTokenFromServer(
 ): Promise<void> {
   try {
     await api.delete(`/users/${userId}/push-token`, { data: { token } });
-    console.log('[Push] ✅ Đã xóa Push Token khỏi server.');
+    console.log("[Push] ✅ Đã xóa Push Token khỏi server.");
   } catch (error) {
-    console.error('[Push] ❌ Lỗi xóa push token:', error);
+    console.error("[Push] ❌ Lỗi xóa push token:", error);
   }
 }
 
@@ -146,7 +148,7 @@ export async function getNotifications(
       meta: payload?.meta ?? { page, limit, total: 0, totalPages: 0 },
     };
   } catch (error) {
-    console.error('[Notifications] Lỗi lấy danh sách:', error);
+    console.error("[Notifications] Lỗi lấy danh sách:", error);
     return { items: [], meta: { page, limit, total: 0, totalPages: 0 } };
   }
 }
@@ -155,8 +157,8 @@ export async function getUnreadCount(userId: string): Promise<number> {
   try {
     const res = await api.get(`/notifications/user/${userId}/unread-count`);
     const payload = res.data?.data ?? res.data;
-    if (typeof payload === 'number') return payload;
-    if (typeof payload?.count === 'number') return payload.count;
+    if (typeof payload === "number") return payload;
+    if (typeof payload?.count === "number") return payload.count;
     return 0;
   } catch {
     return 0;
@@ -168,18 +170,24 @@ export async function markNotificationAsRead(
   userId: string,
 ): Promise<void> {
   try {
-    await api.patch(`/notifications/${notifId}/read`, {}, {
-      params: { userId },
-    });
+    await api.patch(
+      `/notifications/${notifId}/read`,
+      {},
+      {
+        params: { userId },
+      },
+    );
   } catch (error) {
-    console.error('[Notifications] Lỗi đánh dấu đã đọc:', error);
+    console.error("[Notifications] Lỗi đánh dấu đã đọc:", error);
   }
 }
 
-export async function markAllNotificationsAsRead(userId: string): Promise<void> {
+export async function markAllNotificationsAsRead(
+  userId: string,
+): Promise<void> {
   try {
     await api.patch(`/notifications/user/${userId}/read-all`);
   } catch (error) {
-    console.error('[Notifications] Lỗi đánh dấu tất cả đã đọc:', error);
+    console.error("[Notifications] Lỗi đánh dấu tất cả đã đọc:", error);
   }
 }

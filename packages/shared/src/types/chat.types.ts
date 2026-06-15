@@ -1,9 +1,13 @@
-import { ConversationType, ConversationStatus, MessageType } from '../constants/enums';
+import {
+  ConversationType,
+  ConversationStatus,
+  MessageType,
+} from "../constants/enums";
 
 // --- Conversation Interfaces ---
 export interface IParticipant {
   userId: string;
-  role: 'buyer' | 'seller' | 'admin';
+  role: "buyer" | "seller" | "admin";
   joinedAt: string;
   isActive: boolean;
 }
@@ -33,7 +37,7 @@ export interface IConversation {
 // --- Message Interfaces ---
 export interface IAttachment {
   url: string;
-  type: 'image' | 'file';
+  type: "image" | "file";
   fileName?: string;
   fileSize?: number;
 }

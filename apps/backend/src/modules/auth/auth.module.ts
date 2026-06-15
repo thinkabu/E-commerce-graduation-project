@@ -15,9 +15,9 @@ import { UsersModule } from '../users/users.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { 
+        signOptions: {
           // YÊU CẦU: Lưu lại trong vòng 3 ngày sẽ tự đăng xuất
-          expiresIn: '3d', 
+          expiresIn: '3d',
         },
       }),
     }),

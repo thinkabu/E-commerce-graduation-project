@@ -82,8 +82,7 @@ export class StatusHistory {
   note: string;
 }
 
-export const StatusHistorySchema =
-  SchemaFactory.createForClass(StatusHistory);
+export const StatusHistorySchema = SchemaFactory.createForClass(StatusHistory);
 
 // --- ShippingAddressSnapshot Subdocument ---
 @Schema({ _id: false })
@@ -113,6 +112,34 @@ export class ShippingAddressSnapshot {
 export const ShippingAddressSnapshotSchema = SchemaFactory.createForClass(
   ShippingAddressSnapshot,
 );
+
+// --- BlockchainPayment Subdocument ---
+@Schema({ _id: false })
+export class BlockchainPayment {
+  @Prop({ required: true })
+  transactionHash: string;
+
+  @Prop({ required: true })
+  walletAddress: string;
+
+  @Prop({ required: true })
+  cryptoAmount: number;
+
+  @Prop({ default: 'ETH' })
+  cryptoSymbol: string;
+
+  @Prop({ required: true })
+  exchangeRate: number;
+
+  @Prop({ default: 'hardhat' })
+  network: string;
+
+  @Prop({ type: Date, default: Date.now })
+  verifiedAt: Date;
+}
+
+export const BlockchainPaymentSchema =
+  SchemaFactory.createForClass(BlockchainPayment);
 
 // --- Order Main Document ---
 @Schema({ timestamps: true })
@@ -184,6 +211,12 @@ export class Order {
 
   @Prop({ type: [StatusHistorySchema], default: [] })
   statusHistory: StatusHistory[];
+
+  @Prop({ type: BlockchainPaymentSchema })
+  blockchainPayment?: BlockchainPayment;
+
+  @Prop({ type: Date })
+  paidAt?: Date;
 
   @Prop({ trim: true })
   note: string; // Ghi chú đơn hàng

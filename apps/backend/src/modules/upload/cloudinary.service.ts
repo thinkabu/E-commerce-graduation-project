@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+import {
+  v2 as cloudinary,
+  UploadApiResponse,
+  UploadApiErrorResponse,
+} from 'cloudinary';
 import * as streamifier from 'streamifier';
 
 @Injectable()
@@ -15,7 +19,10 @@ export class CloudinaryService {
     });
   }
 
-  async uploadImage(file: any, folder: string = 'products'): Promise<UploadApiResponse> {
+  async uploadImage(
+    file: any,
+    folder: string = 'products',
+  ): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -34,12 +41,15 @@ export class CloudinaryService {
     });
   }
 
-  async uploadMultipleImages(files: any[], folder: string = 'products'): Promise<string[]> {
+  async uploadMultipleImages(
+    files: any[],
+    folder: string = 'products',
+  ): Promise<string[]> {
     if (!files || files.length === 0) return [];
-    
+
     const uploadPromises = files.map((file) => this.uploadImage(file, folder));
     const results = await Promise.all(uploadPromises);
-    
+
     return results.map((res) => res.secure_url);
   }
 }

@@ -1,10 +1,16 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
-import * as SecureStore from 'expo-secure-store';
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useState,
+  useEffect,
+} from "react";
+import * as SecureStore from "expo-secure-store";
 import {
   registerForPushNotifications,
   savePushTokenToServer,
   removePushTokenFromServer,
-} from '@/services/notification.service';
+} from "@/services/notification.service";
 
 interface AuthContextType {
   isLoading: boolean;
@@ -28,8 +34,8 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const token = await SecureStore.getItemAsync('user_token');
-      const userData = await SecureStore.getItemAsync('user_data');
+      const token = await SecureStore.getItemAsync("user_token");
+      const userData = await SecureStore.getItemAsync("user_data");
       if (token && userData) {
         setIsAuthenticated(true);
         setUser(JSON.parse(userData));
@@ -42,8 +48,8 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (token: string, userData: any) => {
-    await SecureStore.setItemAsync('user_token', token);
-    await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+    await SecureStore.setItemAsync("user_token", token);
+    await SecureStore.setItemAsync("user_data", JSON.stringify(userData));
     setIsAuthenticated(true);
     setUser(userData);
 
@@ -53,18 +59,18 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       if (pushToken && userData?._id) {
         await savePushTokenToServer(userData._id, pushToken);
         // Lưu token vào SecureStore để dùng khi logout
-        await SecureStore.setItemAsync('expo_push_token', pushToken);
+        await SecureStore.setItemAsync("expo_push_token", pushToken);
       }
     } catch (err) {
-      console.warn('Không đăng ký được push token:', err);
+      console.warn("Không đăng ký được push token:", err);
     }
   };
 
   const logout = async () => {
     // ── Xóa Push Token khỏi server trước khi logout ──
     try {
-      const pushToken = await SecureStore.getItemAsync('expo_push_token');
-      const userData = await SecureStore.getItemAsync('user_data');
+      const pushToken = await SecureStore.getItemAsync("expo_push_token");
+      const userData = await SecureStore.getItemAsync("user_data");
       if (pushToken && userData) {
         const parsed = JSON.parse(userData);
         if (parsed?._id) {
@@ -72,23 +78,25 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (err) {
-      console.warn('Không xóa được push token khi logout:', err);
+      console.warn("Không xóa được push token khi logout:", err);
     }
 
-    await SecureStore.deleteItemAsync('user_token');
-    await SecureStore.deleteItemAsync('user_data');
-    await SecureStore.deleteItemAsync('expo_push_token');
+    await SecureStore.deleteItemAsync("user_token");
+    await SecureStore.deleteItemAsync("user_data");
+    await SecureStore.deleteItemAsync("expo_push_token");
     setIsAuthenticated(false);
     setUser(null);
   };
 
   const updateUser = async (userData: any) => {
-    await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
+    await SecureStore.setItemAsync("user_data", JSON.stringify(userData));
     setUser(userData);
   };
 
   return (
-    <AuthContext.Provider value={{ isLoading, isAuthenticated, user, login, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{ isLoading, isAuthenticated, user, login, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

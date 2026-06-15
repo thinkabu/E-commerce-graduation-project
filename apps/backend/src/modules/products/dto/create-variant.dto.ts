@@ -24,7 +24,9 @@ export class VariantAttributeDto {
 }
 
 export class CreateVariantDto {
-  @ApiPropertyOptional({ description: 'Chỉ dùng khi update để đồng bộ variant' })
+  @ApiPropertyOptional({
+    description: 'Chỉ dùng khi update để đồng bộ variant',
+  })
   @IsOptional()
   @IsString()
   _id?: string;

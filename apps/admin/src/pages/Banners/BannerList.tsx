@@ -1,14 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { usePageTitle } from "@/contexts/PageTitleContext";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Loader2, RefreshCw, ImageIcon } from "lucide-react";
-import { fetchBanners, deleteBanner, type Banner } from "@/services/bannerService";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Loader2,
+  RefreshCw,
+  ImageIcon,
+} from "lucide-react";
+import {
+  fetchBanners,
+  deleteBanner,
+  type Banner,
+} from "@/services/bannerService";
 
 const BannerList: React.FC = () => {
   usePageTitle("Quản Lý Banner");
@@ -41,7 +59,7 @@ const BannerList: React.FC = () => {
   };
 
   const filteredBanners = banners.filter((b) =>
-    b.title.toLowerCase().includes(searchTerm.toLowerCase())
+    b.title.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const formatDate = (dateStr?: string) => {
@@ -69,10 +87,15 @@ const BannerList: React.FC = () => {
                 className="rounded-xl h-11"
                 disabled={isLoading}
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                />
               </Button>
             </div>
-            <Button asChild className="rounded-xl h-11 bg-zinc-900 hover:bg-zinc-800">
+            <Button
+              asChild
+              className="rounded-xl h-11 bg-zinc-900 hover:bg-zinc-800"
+            >
               <Link to="/banners/add">
                 <Plus className="mr-2 h-4 w-4" /> Thêm Banner
               </Link>
@@ -84,13 +107,27 @@ const BannerList: React.FC = () => {
             <Table>
               <TableHeader className="bg-zinc-50/50">
                 <TableRow>
-                  <TableHead className="py-4 font-bold text-zinc-900 w-16">Ảnh</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900">Tiêu đề</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900">Phụ đề</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900 text-center">Vị trí</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900">Hiệu lực</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900">Trạng thái</TableHead>
-                  <TableHead className="py-4 font-bold text-zinc-900 text-right pr-6">Hành động</TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900 w-16">
+                    Ảnh
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">
+                    Tiêu đề
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">
+                    Phụ đề
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900 text-center">
+                    Vị trí
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">
+                    Hiệu lực
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900">
+                    Trạng thái
+                  </TableHead>
+                  <TableHead className="py-4 font-bold text-zinc-900 text-right pr-6">
+                    Hành động
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -99,13 +136,18 @@ const BannerList: React.FC = () => {
                     <TableCell colSpan={7} className="h-48 text-center">
                       <div className="flex flex-col items-center gap-2 text-zinc-400">
                         <Loader2 className="h-8 w-8 animate-spin" />
-                        <p className="text-sm font-medium">Đang tải dữ liệu...</p>
+                        <p className="text-sm font-medium">
+                          Đang tải dữ liệu...
+                        </p>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : filteredBanners.length > 0 ? (
                   filteredBanners.map((banner) => (
-                    <TableRow key={banner._id} className="hover:bg-zinc-50/50 transition-colors">
+                    <TableRow
+                      key={banner._id}
+                      className="hover:bg-zinc-50/50 transition-colors"
+                    >
                       <TableCell>
                         {banner.image ? (
                           <img
@@ -119,15 +161,23 @@ const BannerList: React.FC = () => {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="font-semibold text-zinc-900">{banner.title}</TableCell>
-                      <TableCell className="text-zinc-500 text-sm">{banner.subtitle || "—"}</TableCell>
+                      <TableCell className="font-semibold text-zinc-900">
+                        {banner.title}
+                      </TableCell>
+                      <TableCell className="text-zinc-500 text-sm">
+                        {banner.subtitle || "—"}
+                      </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="secondary" className="font-mono rounded-lg">
+                        <Badge
+                          variant="secondary"
+                          className="font-mono rounded-lg"
+                        >
                           {banner.position}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-zinc-500">
-                        {formatDate(banner.startDate)} - {formatDate(banner.endDate)}
+                        {formatDate(banner.startDate)} -{" "}
+                        {formatDate(banner.endDate)}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -138,7 +188,12 @@ const BannerList: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-2 pr-6">
-                        <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-blue-50 text-blue-600">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-lg hover:bg-blue-50 text-blue-600"
+                        >
                           <Link to={`/banners/edit/${banner._id}`}>
                             <Edit className="h-4 w-4" />
                           </Link>
@@ -156,7 +211,10 @@ const BannerList: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-48 text-center text-zinc-400">
+                    <TableCell
+                      colSpan={7}
+                      className="h-48 text-center text-zinc-400"
+                    >
                       Chưa có banner nào.
                     </TableCell>
                   </TableRow>

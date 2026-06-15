@@ -74,19 +74,13 @@ export class UsersController {
 
   @Patch(':id/push-token')
   @ApiOperation({ summary: 'Lưu Expo Push Token khi đăng nhập' })
-  savePushToken(
-    @Param('id') id: string,
-    @Body('token') token: string,
-  ) {
+  savePushToken(@Param('id') id: string, @Body('token') token: string) {
     return this.usersService.savePushToken(id, token);
   }
 
   @Delete(':id/push-token')
   @ApiOperation({ summary: 'Xóa Expo Push Token khi đăng xuất' })
-  removePushToken(
-    @Param('id') id: string,
-    @Body('token') token: string,
-  ) {
+  removePushToken(@Param('id') id: string, @Body('token') token: string) {
     return this.usersService.removePushToken(id, token);
   }
 }

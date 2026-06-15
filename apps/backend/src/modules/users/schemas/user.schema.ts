@@ -101,7 +101,7 @@ export class User {
       manageUsers: false,
       viewReports: false,
       manageCoupons: false,
-    }
+    },
   })
   permissions: {
     manageProducts: boolean;

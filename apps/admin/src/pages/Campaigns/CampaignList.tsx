@@ -19,12 +19,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { usePageTitle } from "@/contexts/PageTitleContext";
-import { Bell, Plus, Loader2, CheckCircle2, XCircle, FileText, X, Clock } from "lucide-react";
 import {
-  getCampaigns,
-  createCampaign,
+  Bell,
+  Plus,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  FileText,
+  X,
+  Clock,
+} from "lucide-react";
+import { getCampaigns, createCampaign } from "@/services/campaignService";
+import type {
+  Campaign,
+  CreateCampaignPayload,
 } from "@/services/campaignService";
-import type { Campaign, CreateCampaignPayload } from "@/services/campaignService";
 
 // ── Status Badge ───────────────────────────────────────────────────
 
@@ -83,8 +92,8 @@ const CreateCampaignModal: React.FC<CreateModalProps> = ({ onCreated }) => {
   };
 
   const getLocalDatetimeString = () => {
-    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
-    return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 16);
+    const tzoffset = new Date().getTimezoneOffset() * 60000;
+    return new Date(Date.now() - tzoffset).toISOString().slice(0, 16);
   };
 
   const handleSubmit = async () => {
@@ -108,7 +117,14 @@ const CreateCampaignModal: React.FC<CreateModalProps> = ({ onCreated }) => {
     try {
       await createCampaign(form);
       setOpen(false);
-      setForm({ title: "", body: "", targetType: "ALL_USERS", targetUserIds: [], sendType: "IMMEDIATE", scheduledAt: "" });
+      setForm({
+        title: "",
+        body: "",
+        targetType: "ALL_USERS",
+        targetUserIds: [],
+        sendType: "IMMEDIATE",
+        scheduledAt: "",
+      });
       onCreated();
     } catch (e: any) {
       setError(e?.message ?? "Có lỗi xảy ra, thử lại sau");
@@ -141,8 +157,12 @@ const CreateCampaignModal: React.FC<CreateModalProps> = ({ onCreated }) => {
                   <Bell className="w-5 h-5 text-yellow-600" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-zinc-900">Tạo Campaign</h2>
-                  <p className="text-xs text-zinc-500">Push notification tới người dùng</p>
+                  <h2 className="text-base font-bold text-zinc-900">
+                    Tạo Campaign
+                  </h2>
+                  <p className="text-xs text-zinc-500">
+                    Push notification tới người dùng
+                  </p>
                 </div>
               </div>
               <button
@@ -163,10 +183,14 @@ const CreateCampaignModal: React.FC<CreateModalProps> = ({ onCreated }) => {
                 <Input
                   placeholder="VD: 🎉 Flash Sale 50% hôm nay!"
                   value={form.title}
-                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, title: e.target.value }))
+                  }
                   maxLength={200}
                 />
-                <p className="text-[11px] text-zinc-400">{form.title.length}/200 ký tự</p>
+                <p className="text-[11px] text-zinc-400">
+                  {form.title.length}/200 ký tự
+                </p>
               </div>
 
               {/* Nội dung – dùng textarea HTML thuần */}
@@ -178,16 +202,22 @@ const CreateCampaignModal: React.FC<CreateModalProps> = ({ onCreated }) => {
                   className="w-full min-h-[90px] px-3 py-2 text-sm border border-zinc-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent placeholder:text-zinc-400"
                   placeholder="VD: Giảm đến 50% tất cả sản phẩm hôm nay. Nhanh tay mua ngay!"
                   value={form.body}
-                  onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, body: e.target.value }))
+                  }
                   maxLength={500}
                   rows={3}
                 />
-                <p className="text-[11px] text-zinc-400">{form.body.length}/500 ký tự</p>
+                <p className="text-[11px] text-zinc-400">
+                  {form.body.length}/500 ký tự
+                </p>
               </div>
 
               {/* Đối tượng */}
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-zinc-700">Đối tượng nhận</label>
+                <label className="text-sm font-semibold text-zinc-700">
+                  Đối tượng nhận
+                </label>
                 <Select
                   value={form.targetType}
                   onValueChange={(v) =>
@@ -201,15 +231,21 @@ const CreateCampaignModal: React.FC<CreateModalProps> = ({ onCreated }) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL_USERS">🌐 Tất cả người dùng</SelectItem>
-                    <SelectItem value="SPECIFIC_USERS">👥 Chọn người dùng cụ thể</SelectItem>
+                    <SelectItem value="ALL_USERS">
+                      🌐 Tất cả người dùng
+                    </SelectItem>
+                    <SelectItem value="SPECIFIC_USERS">
+                      👥 Chọn người dùng cụ thể
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Chế độ gửi */}
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-zinc-700">Chế độ gửi</label>
+                <label className="text-sm font-semibold text-zinc-700">
+                  Chế độ gửi
+                </label>
                 <Select
                   value={form.sendType}
                   onValueChange={(v) =>
@@ -223,8 +259,12 @@ const CreateCampaignModal: React.FC<CreateModalProps> = ({ onCreated }) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="IMMEDIATE">⚡ Gửi ngay lập tức</SelectItem>
-                    <SelectItem value="SCHEDULED">📅 Đặt lịch gửi theo ngày giờ</SelectItem>
+                    <SelectItem value="IMMEDIATE">
+                      ⚡ Gửi ngay lập tức
+                    </SelectItem>
+                    <SelectItem value="SCHEDULED">
+                      📅 Đặt lịch gửi theo ngày giờ
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -251,11 +291,13 @@ const CreateCampaignModal: React.FC<CreateModalProps> = ({ onCreated }) => {
                 <strong>Lưu ý:</strong>{" "}
                 {form.sendType === "SCHEDULED" ? (
                   <>
-                    Thông báo sẽ được tự động gửi đến người dùng vào đúng thời gian đã đặt lịch.
+                    Thông báo sẽ được tự động gửi đến người dùng vào đúng thời
+                    gian đã đặt lịch.
                   </>
                 ) : (
                   <>
-                    Thông báo sẽ được gửi <strong>ngay lập tức</strong> đến tất cả thiết bị đã đăng ký push notification.
+                    Thông báo sẽ được gửi <strong>ngay lập tức</strong> đến tất
+                    cả thiết bị đã đăng ký push notification.
                   </>
                 )}
               </div>
@@ -284,7 +326,9 @@ const CreateCampaignModal: React.FC<CreateModalProps> = ({ onCreated }) => {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    {form.sendType === "SCHEDULED" ? "Đang đặt lịch..." : "Đang gửi..."}
+                    {form.sendType === "SCHEDULED"
+                      ? "Đang đặt lịch..."
+                      : "Đang gửi..."}
                   </>
                 ) : (
                   <>
@@ -338,7 +382,9 @@ const CampaignList: React.FC = () => {
 
   const getCreatorName = (createdBy: Campaign["createdBy"]): string => {
     if (typeof createdBy === "string") return "Admin";
-    return (createdBy as { fullName?: string; email?: string })?.fullName ?? "Admin";
+    return (
+      (createdBy as { fullName?: string; email?: string })?.fullName ?? "Admin"
+    );
   };
 
   return (
@@ -431,7 +477,9 @@ const CampaignList: React.FC = () => {
                   <TableRow key={campaign._id}>
                     <TableCell>
                       <div className="max-w-[220px]">
-                        <p className="font-semibold text-sm truncate">{campaign.title}</p>
+                        <p className="font-semibold text-sm truncate">
+                          {campaign.title}
+                        </p>
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
                           {campaign.body}
                         </p>
@@ -440,7 +488,9 @@ const CampaignList: React.FC = () => {
 
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
-                        {campaign.targetType === "ALL_USERS" ? "🌐 Tất cả" : "👥 Chọn lọc"}
+                        {campaign.targetType === "ALL_USERS"
+                          ? "🌐 Tất cả"
+                          : "👥 Chọn lọc"}
                       </Badge>
                     </TableCell>
 
@@ -453,9 +503,13 @@ const CampaignList: React.FC = () => {
                     </TableCell>
 
                     <TableCell className="text-sm text-muted-foreground">
-                      {campaign.status === "SCHEDULED" && campaign.scheduledAt ? (
+                      {campaign.status === "SCHEDULED" &&
+                      campaign.scheduledAt ? (
                         <span className="text-blue-600 font-medium">
-                          Lịch gửi: {new Date(campaign.scheduledAt).toLocaleString("vi-VN")}
+                          Lịch gửi:{" "}
+                          {new Date(campaign.scheduledAt).toLocaleString(
+                            "vi-VN",
+                          )}
                         </span>
                       ) : campaign.sentAt ? (
                         new Date(campaign.sentAt).toLocaleString("vi-VN")
@@ -474,7 +528,9 @@ const CampaignList: React.FC = () => {
                   <TableCell colSpan={6} className="h-32 text-center">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Bell className="h-8 w-8 opacity-30" />
-                      <p className="text-sm">Chưa có campaign nào. Tạo campaign đầu tiên!</p>
+                      <p className="text-sm">
+                        Chưa có campaign nào. Tạo campaign đầu tiên!
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>

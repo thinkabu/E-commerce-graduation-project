@@ -33,7 +33,9 @@ export class ReviewsService {
 
     // 2. Kiểm tra đơn hàng đã giao (DELIVERED)
     if (order.orderStatus !== OrderStatus.DELIVERED) {
-      throw new BadRequestException('Chỉ có thể đánh giá đơn hàng đã giao thành công');
+      throw new BadRequestException(
+        'Chỉ có thể đánh giá đơn hàng đã giao thành công',
+      );
     }
 
     // 3. Kiểm tra sản phẩm nằm trong đơn hàng

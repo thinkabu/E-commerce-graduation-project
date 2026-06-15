@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, Mail, Eye, EyeOff, LayoutDashboard, ArrowRight } from "lucide-react";
+import {
+  Lock,
+  Mail,
+  Eye,
+  EyeOff,
+  LayoutDashboard,
+  ArrowRight,
+} from "lucide-react";
 import { loginAdmin } from "@/services/authService";
 import { toast } from "sonner";
 
@@ -14,9 +21,9 @@ const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     const result = await loginAdmin(email, password);
-    
+
     if (result.success) {
       toast.success(result.message);
       navigate("/dashboard");
@@ -37,7 +44,9 @@ const Login: React.FC = () => {
           <h1 className="text-3xl font-black text-zinc-900 mb-2 uppercase tracking-tighter italic">
             Think <span className="text-yellow-600">hearT</span>
           </h1>
-          <p className="text-zinc-500 font-medium">Hệ thống quản lý thiết bị công nghệ</p>
+          <p className="text-zinc-500 font-medium">
+            Hệ thống quản lý thiết bị công nghệ
+          </p>
         </div>
 
         {/* --- LOGIN CARD --- */}
@@ -45,7 +54,9 @@ const Login: React.FC = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email Field */}
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700 ml-1">Email quản trị</label>
+              <label className="text-sm font-bold text-zinc-700 ml-1">
+                Email quản trị
+              </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-zinc-400 group-focus-within:text-yellow-600 transition-colors" />
@@ -64,8 +75,15 @@ const Login: React.FC = () => {
             {/* Password Field */}
             <div className="space-y-2">
               <div className="flex justify-between items-center px-1">
-                <label className="text-sm font-bold text-zinc-700">Mật khẩu</label>
-                <a href="#" className="text-sm font-bold text-yellow-600 hover:text-yellow-700 transition-colors">Quên mật khẩu?</a>
+                <label className="text-sm font-bold text-zinc-700">
+                  Mật khẩu
+                </label>
+                <a
+                  href="#"
+                  className="text-sm font-bold text-yellow-600 hover:text-yellow-700 transition-colors"
+                >
+                  Quên mật khẩu?
+                </a>
               </div>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -110,7 +128,8 @@ const Login: React.FC = () => {
         {/* --- FOOTER --- */}
         <div className="mt-10 text-center">
           <p className="text-sm text-zinc-400 font-medium">
-            &copy; 2026 TechShop Admin Panel. Bảo mật bởi <span className="text-zinc-600 font-bold">SafeShield</span>
+            &copy; 2026 TechShop Admin Panel. Bảo mật bởi{" "}
+            <span className="text-zinc-600 font-bold">SafeShield</span>
           </p>
         </div>
       </div>

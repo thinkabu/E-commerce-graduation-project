@@ -9,12 +9,20 @@ import { Model, Types } from 'mongoose';
 import { Order, OrderDocument } from './schemas/order.schema';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Product, ProductDocument } from '../products/schemas/product.schema';
-import { ProductVariant, ProductVariantDocument } from '../products/schemas/product-variant.schema';
+import {
+  ProductVariant,
+  ProductVariantDocument,
+} from '../products/schemas/product-variant.schema';
 import { Address, AddressDocument } from '../users/schemas/address.schema';
 import { Coupon, CouponDocument } from '../coupons/schemas/coupon.schema';
-import { OrderStatus, PaymentStatus, NotificationType } from '../../common/enums';
+import {
+  OrderStatus,
+  PaymentStatus,
+  NotificationType,
+  PaymentMethod,
+} from '../../common/enums';
 import { NotificationsService } from '../notifications/notifications.service';
- 
+
 // Nhãn trạng thái đơn hàng tiếng Việt cho push notification
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.PENDING]: 'đang chờ xác nhận',
@@ -65,9 +73,14 @@ export class OrdersService {
     let discountAmount = 0;
     let couponDoc: any = null;
     if (dto.couponId) {
-      couponDoc = await this.couponModel.findOne({ code: dto.couponId, isActive: true });
+      couponDoc = await this.couponModel.findOne({
+        code: dto.couponId,
+        isActive: true,
+      });
       if (!couponDoc) {
-        throw new BadRequestException('Mã giảm giá không hợp lệ hoặc đã hết hạn');
+        throw new BadRequestException(
+          'Mã giảm giá không hợp lệ hoặc đã hết hạn',
+        );
       }
     }
 
@@ -78,16 +91,18 @@ export class OrdersService {
     for (const item of dto.items) {
       const product = await this.productModel.findById(item.productId);
       if (!product || !product.isActive) {
-        throw new BadRequestException(`Sản phẩm ${item.productId} không tồn tại hoặc đã ngừng bán`);
+        throw new BadRequestException(
+          `Sản phẩm ${item.productId} không tồn tại hoặc đã ngừng bán`,
+        );
       }
 
       let variantName = '';
       let variantSku = '';
       let unitPrice = product.basePrice;
-      
+
       // Nếu có giảm giá trên sản phẩm
       if (product.discountPercentage && product.discountPercentage > 0) {
-          unitPrice = unitPrice * (1 - product.discountPercentage / 100);
+        unitPrice = unitPrice * (1 - product.discountPercentage / 100);
       }
 
       if (item.variantId) {
@@ -96,36 +111,45 @@ export class OrdersService {
           productId: product._id,
         });
         if (!variant) {
-          throw new BadRequestException(`Biến thể ${item.variantId} không tồn tại`);
+          throw new BadRequestException(
+            `Biến thể ${item.variantId} không tồn tại`,
+          );
         }
         // Check stock
         if (variant.stockQuantity < item.quantity) {
-          throw new BadRequestException(`Sản phẩm ${product.name} không đủ số lượng`);
+          throw new BadRequestException(
+            `Sản phẩm ${product.name} không đủ số lượng`,
+          );
         }
-        
+
         variantName = variant.variantName || '';
         variantSku = variant.sku || '';
         if (variant.price !== undefined) {
-           unitPrice = variant.price;
-           if (product.discountPercentage && product.discountPercentage > 0) {
-               unitPrice = unitPrice * (1 - product.discountPercentage / 100);
-           }
+          unitPrice = variant.price;
+          if (product.discountPercentage && product.discountPercentage > 0) {
+            unitPrice = unitPrice * (1 - product.discountPercentage / 100);
+          }
         }
 
         // Giảm stock biến thể
         await this.variantModel.updateOne(
           { _id: variant._id },
-          { $inc: { stockQuantity: -item.quantity } }
+          { $inc: { stockQuantity: -item.quantity } },
         );
       } else {
         // Check stock sản phẩm gốc
-        if (((product as any).stockQuantity || 0) > 0 && (product as any).stockQuantity < item.quantity) {
-          throw new BadRequestException(`Sản phẩm ${product.name} không đủ số lượng`);
+        if (
+          ((product as any).stockQuantity || 0) > 0 &&
+          (product as any).stockQuantity < item.quantity
+        ) {
+          throw new BadRequestException(
+            `Sản phẩm ${product.name} không đủ số lượng`,
+          );
         }
         // Giảm stock sản phẩm
         await this.productModel.updateOne(
           { _id: product._id },
-          { $inc: { soldCount: item.quantity } }
+          { $inc: { soldCount: item.quantity } },
         );
       }
 
@@ -154,7 +178,10 @@ export class OrdersService {
       if (couponDoc.discountType === 'PERCENTAGE') {
         discountAmount = (subtotal * couponDoc.discountValue) / 100;
         if (couponDoc.maxDiscountAmount) {
-          discountAmount = Math.min(discountAmount, couponDoc.maxDiscountAmount);
+          discountAmount = Math.min(
+            discountAmount,
+            couponDoc.maxDiscountAmount,
+          );
         }
       } else {
         discountAmount = couponDoc.discountValue;
@@ -166,16 +193,26 @@ export class OrdersService {
 
     // 5. Tạo đơn hàng
     const orderId = this.generateOrderId();
-    
+
     const shippingAddressSnapshot = {
-        fullName: address.fullName,
-        phone: address.phone,
-        province: address.province?.name || '',
-        district: (address as any).district?.name || address.province?.name || '',
-        ward: address.ward?.name || '',
-        street: address.street,
-        note: dto.note || address.note || '',
+      fullName: address.fullName,
+      phone: address.phone,
+      province: address.province?.name || '',
+      district: (address as any).district?.name || address.province?.name || '',
+      ward: address.ward?.name || '',
+      street: address.street,
+      note: dto.note || address.note || '',
     };
+
+    const isCryptoPaid =
+      dto.paymentMethod === PaymentMethod.CRYPTO && dto.blockchainPayment;
+    const paymentStatus = isCryptoPaid
+      ? PaymentStatus.COMPLETED
+      : PaymentStatus.PENDING;
+    const orderStatus = isCryptoPaid
+      ? OrderStatus.PROCESSING
+      : OrderStatus.PENDING;
+    const paidAt = isCryptoPaid ? new Date() : undefined;
 
     const newOrder = await this.orderModel.create({
       orderId,
@@ -189,15 +226,19 @@ export class OrdersService {
       totalAmount,
       couponId: couponDoc ? couponDoc._id : undefined,
       paymentMethod: dto.paymentMethod,
-      paymentStatus: PaymentStatus.PENDING,
-      orderStatus: OrderStatus.PENDING,
+      paymentStatus,
+      orderStatus,
+      paidAt,
+      blockchainPayment: dto.blockchainPayment,
       note: dto.note,
       statusHistory: [
         {
           status: OrderStatus.PENDING,
           changedAt: new Date(),
           changedBy: new Types.ObjectId(userId),
-          note: 'Đơn hàng được tạo mới',
+          note: isCryptoPaid
+            ? 'Đơn hàng được tạo mới và thanh toán thành công qua Blockchain'
+            : 'Đơn hàng được tạo mới',
         },
       ],
     });
@@ -216,7 +257,7 @@ export class OrdersService {
     const order = await this.orderModel
       .findOne({ _id: id, userId: new Types.ObjectId(userId) })
       .lean();
-      
+
     if (!order) {
       throw new NotFoundException('Đơn hàng không tồn tại');
     }
@@ -225,7 +266,9 @@ export class OrdersService {
 
   // --- ADMIN METHODS ---
 
-  async findAllForAdmin(query: any): Promise<{ data: any[]; total: number; page: number; limit: number }> {
+  async findAllForAdmin(
+    query: any,
+  ): Promise<{ data: any[]; total: number; page: number; limit: number }> {
     const { page = 1, limit = 10, status, search, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
@@ -233,11 +276,13 @@ export class OrdersService {
     if (status && status !== 'all') {
       filter.orderStatus = status;
     }
-    
+
     if (search) {
       filter['$or'] = [
         { orderId: { $regex: search, $options: 'i' } },
-        { 'shippingAddressSnapshot.fullName': { $regex: search, $options: 'i' } }
+        {
+          'shippingAddressSnapshot.fullName': { $regex: search, $options: 'i' },
+        },
       ];
     }
 
@@ -262,20 +307,27 @@ export class OrdersService {
         .skip(skip)
         .limit(Number(limit))
         .lean(),
-      this.orderModel.countDocuments(filter)
+      this.orderModel.countDocuments(filter),
     ]);
 
     return {
       data: orders,
       total,
       page: Number(page),
-      limit: Number(limit)
+      limit: Number(limit),
     };
   }
 
-  async getAdminOrderSummary(startDate?: string, endDate?: string): Promise<{ totalOrders: number; totalRevenue: number; pendingOrders: number }> {
+  async getAdminOrderSummary(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<{
+    totalOrders: number;
+    totalRevenue: number;
+    pendingOrders: number;
+  }> {
     const matchStage: any = {};
-    
+
     if (startDate || endDate) {
       matchStage.createdAt = {};
       if (startDate) {
@@ -296,16 +348,20 @@ export class OrdersService {
           totalOrders: { $sum: 1 },
           totalRevenue: {
             $sum: {
-              $cond: [{ $ne: ["$orderStatus", OrderStatus.CANCELLED] }, "$totalAmount", 0]
-            }
+              $cond: [
+                { $ne: ['$orderStatus', OrderStatus.CANCELLED] },
+                '$totalAmount',
+                0,
+              ],
+            },
           },
           pendingOrders: {
             $sum: {
-              $cond: [{ $eq: ["$orderStatus", OrderStatus.PENDING] }, 1, 0]
-            }
-          }
-        }
-      }
+              $cond: [{ $eq: ['$orderStatus', OrderStatus.PENDING] }, 1, 0],
+            },
+          },
+        },
+      },
     ]);
 
     if (!summary) {
@@ -315,11 +371,16 @@ export class OrdersService {
     return {
       totalOrders: summary.totalOrders,
       totalRevenue: summary.totalRevenue,
-      pendingOrders: summary.pendingOrders
+      pendingOrders: summary.pendingOrders,
     };
   }
 
-  async updateOrderStatus(id: string, status: OrderStatus, adminId?: string, note?: string): Promise<Order> {
+  async updateOrderStatus(
+    id: string,
+    status: OrderStatus,
+    adminId?: string,
+    note?: string,
+  ): Promise<Order> {
     const order = await this.orderModel.findById(id);
     if (!order) {
       throw new NotFoundException('Đơn hàng không tồn tại');

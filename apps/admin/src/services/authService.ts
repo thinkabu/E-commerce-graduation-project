@@ -11,7 +11,10 @@ export interface LoginResponse {
   };
 }
 
-export const loginAdmin = async (email: string, password: string): Promise<{ success: boolean; data?: LoginResponse; message: string }> => {
+export const loginAdmin = async (
+  email: string,
+  password: string,
+): Promise<{ success: boolean; data?: LoginResponse; message: string }> => {
   try {
     const res = await fetch(`${BASE_URL}/auth/login/admin`, {
       method: "POST",
@@ -29,10 +32,17 @@ export const loginAdmin = async (email: string, password: string): Promise<{ suc
       localStorage.setItem("admin_token", json.data.access_token);
       localStorage.setItem("admin_user", JSON.stringify(json.data.user));
       localStorage.setItem("admin_expiry", expiry.toString());
-      
-      return { success: true, data: json.data, message: "Đăng nhập thành công!" };
+
+      return {
+        success: true,
+        data: json.data,
+        message: "Đăng nhập thành công!",
+      };
     } else {
-      return { success: false, message: json.message || "Email hoặc mật khẩu không đúng" };
+      return {
+        success: false,
+        message: json.message || "Email hoặc mật khẩu không đúng",
+      };
     }
   } catch (error) {
     console.error("Login error:", error);
@@ -50,15 +60,15 @@ export const logout = () => {
 export const isAuthenticated = (): boolean => {
   const token = localStorage.getItem("admin_token");
   const expiry = localStorage.getItem("admin_expiry");
-  
+
   if (!token || !expiry) return false;
-  
+
   // Kiểm tra nếu đã quá 3 ngày
   if (new Date().getTime() > parseInt(expiry)) {
     logout();
     return false;
   }
-  
+
   return true;
 };
 

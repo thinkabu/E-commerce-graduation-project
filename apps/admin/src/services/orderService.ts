@@ -1,6 +1,6 @@
 import { getAdminUser } from "./authService";
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export interface OrderQuery {
   page?: number;
@@ -20,12 +20,13 @@ export interface OrderQuery {
 export const getAdminOrders = async (query: OrderQuery = {}) => {
   try {
     const params = new URLSearchParams();
-    if (query.page) params.append('page', query.page.toString());
-    if (query.limit) params.append('limit', query.limit.toString());
-    if (query.status && query.status !== 'all') params.append('status', query.status);
-    if (query.search) params.append('search', query.search);
-    if (query.startDate) params.append('startDate', query.startDate);
-    if (query.endDate) params.append('endDate', query.endDate);
+    if (query.page) params.append("page", query.page.toString());
+    if (query.limit) params.append("limit", query.limit.toString());
+    if (query.status && query.status !== "all")
+      params.append("status", query.status);
+    if (query.search) params.append("search", query.search);
+    if (query.startDate) params.append("startDate", query.startDate);
+    if (query.endDate) params.append("endDate", query.endDate);
 
     const res = await fetch(`${BASE_URL}/orders/admin?${params.toString()}`);
     if (!res.ok) {
@@ -41,13 +42,18 @@ export const getAdminOrders = async (query: OrderQuery = {}) => {
   }
 };
 
-export const getAdminOrderSummary = async (startDate?: string, endDate?: string) => {
+export const getAdminOrderSummary = async (
+  startDate?: string,
+  endDate?: string,
+) => {
   try {
     const params = new URLSearchParams();
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
 
-    const res = await fetch(`${BASE_URL}/orders/admin/summary?${params.toString()}`);
+    const res = await fetch(
+      `${BASE_URL}/orders/admin/summary?${params.toString()}`,
+    );
     if (!res.ok) {
       throw new Error("Failed to fetch order summary");
     }
@@ -61,21 +67,25 @@ export const getAdminOrderSummary = async (startDate?: string, endDate?: string)
   }
 };
 
-export const updateOrderStatus = async (orderId: string, status: string, note?: string) => {
+export const updateOrderStatus = async (
+  orderId: string,
+  status: string,
+  note?: string,
+) => {
   try {
     const admin = getAdminUser();
     const res = await fetch(`${BASE_URL}/orders/admin/${orderId}/status`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ status, adminId: admin?._id, note }),
     });
-    
+
     if (!res.ok) {
       throw new Error("Failed to update status");
     }
-    
+
     const json = await res.json();
     return json.data || json;
   } catch (error) {

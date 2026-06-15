@@ -32,7 +32,9 @@ export class ProductsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lấy danh sách sản phẩm (search, filter, paginate)' })
+  @ApiOperation({
+    summary: 'Lấy danh sách sản phẩm (search, filter, paginate)',
+  })
   findAll(@Query() query: QueryProductDto) {
     return this.productsService.findAll(query);
   }
@@ -69,10 +71,7 @@ export class ProductsController {
 
   @Post(':id/variants')
   @ApiOperation({ summary: 'Thêm biến thể cho sản phẩm (Admin)' })
-  createVariant(
-    @Param('id') productId: string,
-    @Body() dto: CreateVariantDto,
-  ) {
+  createVariant(@Param('id') productId: string, @Body() dto: CreateVariantDto) {
     return this.productsService.createVariant(productId, dto);
   }
 

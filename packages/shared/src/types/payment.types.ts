@@ -1,4 +1,9 @@
-import { PaymentMethod, PaymentStatus, Currency, CryptoTxStatus } from '../constants/enums';
+import {
+  PaymentMethod,
+  PaymentStatus,
+  Currency,
+  CryptoTxStatus,
+} from "../constants/enums";
 
 // --- Payment Interfaces ---
 export interface IBankingInfo {

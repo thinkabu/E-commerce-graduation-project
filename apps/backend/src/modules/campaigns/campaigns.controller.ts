@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Param,
-  Body,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CampaignsService, CreateCampaignDto } from './campaigns.service';
 
@@ -16,20 +9,17 @@ export class CampaignsController {
 
   @Post()
   @ApiOperation({ summary: 'Admin tạo và gửi campaign push notification' })
-  create(
-    @Body() dto: CreateCampaignDto,
-    @Query('adminId') adminId: string,
-  ) {
+  create(@Body() dto: CreateCampaignDto, @Query('adminId') adminId: string) {
     return this.campaignsService.create(dto, adminId);
   }
 
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách campaigns (Admin)' })
-  findAll(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return this.campaignsService.findAll(Number(page) || 1, Number(limit) || 20);
+  findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.campaignsService.findAll(
+      Number(page) || 1,
+      Number(limit) || 20,
+    );
   }
 
   @Get(':id')

@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, ReactNode } from 'react';
+﻿import React, { createContext, useContext, ReactNode } from "react";
 
 interface NFTContextType {
   isLoading: boolean;
@@ -17,8 +17,7 @@ export function NFTContextProvider({ children }: { children: ReactNode }) {
 export function useNFT() {
   const context = useContext(NFTContext);
   if (context === undefined) {
-    throw new Error('useNFT must be used within a NFTContextProvider');
+    throw new Error("useNFT must be used within a NFTContextProvider");
   }
   return context;
 }
-

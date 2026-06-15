@@ -43,7 +43,9 @@ export const fetchBannerById = async (id: string): Promise<Banner | null> => {
   }
 };
 
-export const createBanner = async (data: Partial<Banner>): Promise<{ success: boolean; message: string }> => {
+export const createBanner = async (
+  data: Partial<Banner>,
+): Promise<{ success: boolean; message: string }> => {
   try {
     const res = await fetch(`${BASE_URL}/banners`, {
       method: "POST",
@@ -58,14 +60,18 @@ export const createBanner = async (data: Partial<Banner>): Promise<{ success: bo
   }
 };
 
-export const updateBanner = async (id: string, data: Partial<Banner>): Promise<{ success: boolean; message: string }> => {
+export const updateBanner = async (
+  id: string,
+  data: Partial<Banner>,
+): Promise<{ success: boolean; message: string }> => {
   try {
     const res = await fetch(`${BASE_URL}/banners/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (res.ok) return { success: true, message: "Cập nhật banner thành công!" };
+    if (res.ok)
+      return { success: true, message: "Cập nhật banner thành công!" };
     const json = await res.json();
     return { success: false, message: json.message || "Lỗi cập nhật banner." };
   } catch (error) {

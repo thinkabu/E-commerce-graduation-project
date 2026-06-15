@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Campaign, CampaignDocument } from './schemas/campaign.schema';
-import { NotificationsService, PushPayload } from '../notifications/notifications.service';
+import {
+  NotificationsService,
+  PushPayload,
+} from '../notifications/notifications.service';
 import { NotificationType } from '../../common/enums';
 
 export interface CreateCampaignDto {
@@ -40,7 +43,8 @@ export class CampaignsService {
           : [],
       data: dto.data ?? {},
       status: isScheduled ? 'SCHEDULED' : 'DRAFT',
-      scheduledAt: isScheduled && dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
+      scheduledAt:
+        isScheduled && dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
       sentCount: 0,
       createdBy: new Types.ObjectId(adminId),
     });
@@ -50,7 +54,9 @@ export class CampaignsService {
       try {
         await this.executeCampaign(campaign._id.toString());
       } catch (error: any) {
-        this.logger.error(`Lỗi thực thi campaign ${campaign._id}: ${error?.message}`);
+        this.logger.error(
+          `Lỗi thực thi campaign ${campaign._id}: ${error?.message}`,
+        );
         await this.campaignModel.updateOne(
           { _id: campaign._id },
           { status: 'FAILED' },
@@ -62,7 +68,10 @@ export class CampaignsService {
       );
     }
 
-    return this.campaignModel.findById(campaign._id).populate('createdBy', 'fullName email').lean() as Promise<Campaign>;
+    return this.campaignModel
+      .findById(campaign._id)
+      .populate('createdBy', 'fullName email')
+      .lean() as Promise<Campaign>;
   }
 
   async executeCampaign(campaignId: string): Promise<void> {
@@ -86,7 +95,10 @@ export class CampaignsService {
       sentCount = result.sentCount;
     } else {
       const userIds = campaign.targetUserIds.map((id) => id.toString());
-      const result = await this.notificationsService.sendToMany(userIds, payload);
+      const result = await this.notificationsService.sendToMany(
+        userIds,
+        payload,
+      );
       sentCount = result.sentCount;
 
       // Lưu thông báo in-app cho từng user được chọn
@@ -111,10 +123,15 @@ export class CampaignsService {
       { status: 'SENT', sentCount, sentAt: new Date() },
     );
 
-    this.logger.log(`✅ Campaign "${campaign.title}" đã gửi đến ${sentCount} thiết bị`);
+    this.logger.log(
+      `✅ Campaign "${campaign.title}" đã gửi đến ${sentCount} thiết bị`,
+    );
   }
 
-  async findAll(page = 1, limit = 20): Promise<{ data: Campaign[]; total: number }> {
+  async findAll(
+    page = 1,
+    limit = 20,
+  ): Promise<{ data: Campaign[]; total: number }> {
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
       this.campaignModel
@@ -148,15 +165,21 @@ export class CampaignsService {
     });
 
     if (pendingCampaigns.length > 0) {
-      this.logger.log(`Tìm thấy ${pendingCampaigns.length} campaign(s) đã đến lịch gửi.`);
+      this.logger.log(
+        `Tìm thấy ${pendingCampaigns.length} campaign(s) đã đến lịch gửi.`,
+      );
     }
 
     for (const campaign of pendingCampaigns) {
       try {
-        this.logger.log(`Bắt đầu thực thi campaign lên lịch: "${campaign.title}" (${campaign._id})`);
+        this.logger.log(
+          `Bắt đầu thực thi campaign lên lịch: "${campaign.title}" (${campaign._id})`,
+        );
         await this.executeCampaign(campaign._id.toString());
       } catch (error: any) {
-        this.logger.error(`Lỗi thực thi campaign lên lịch ${campaign._id}: ${error?.message}`);
+        this.logger.error(
+          `Lỗi thực thi campaign lên lịch ${campaign._id}: ${error?.message}`,
+        );
         await this.campaignModel.updateOne(
           { _id: campaign._id },
           { status: 'FAILED' },

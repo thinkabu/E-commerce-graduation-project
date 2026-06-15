@@ -18,8 +18,7 @@ export class ReadReceipt {
   readAt: Date;
 }
 
-export const ReadReceiptSchema =
-  SchemaFactory.createForClass(ReadReceipt);
+export const ReadReceiptSchema = SchemaFactory.createForClass(ReadReceipt);
 
 // --- Attachment Subdocument ---
 @Schema({ _id: false })

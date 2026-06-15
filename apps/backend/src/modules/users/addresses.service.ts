@@ -55,11 +55,10 @@ export class AddressesService {
     dto: UpdateAddressDto,
   ): Promise<Address> {
     const address = await this.addressModel
-      .findOneAndUpdate(
-        { _id: id, userId: new Types.ObjectId(userId) },
-        dto,
-        { new: true, runValidators: true },
-      )
+      .findOneAndUpdate({ _id: id, userId: new Types.ObjectId(userId) }, dto, {
+        new: true,
+        runValidators: true,
+      })
       .lean();
     if (!address) throw new NotFoundException('Địa chỉ không tồn tại');
     return address;

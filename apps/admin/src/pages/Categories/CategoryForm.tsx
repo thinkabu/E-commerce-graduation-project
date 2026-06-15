@@ -5,7 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Upload, Trash2, ArrowLeft, Save } from "lucide-react";
 import { usePageTitle } from "@/contexts/PageTitleContext";
@@ -147,14 +153,22 @@ const CategoryForm: React.FC = () => {
   };
 
   if (loading && isEditMode && !formData.name) {
-    return <div className="p-8 text-center text-muted-foreground">Đang tải dữ liệu...</div>;
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        Đang tải dữ liệu...
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate("/category")}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigate("/category")}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h2 className="text-2xl font-bold tracking-tight">
@@ -180,7 +194,9 @@ const CategoryForm: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Tên danh mục <span className="text-destructive">*</span></Label>
+                <Label htmlFor="name">
+                  Tên danh mục <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -233,7 +249,9 @@ const CategoryForm: React.FC = () => {
                       <SelectValue placeholder="Chọn danh mục cha" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">-- Không có (Danh mục gốc) --</SelectItem>
+                      <SelectItem value="none">
+                        -- Không có (Danh mục gốc) --
+                      </SelectItem>
                       {categories.map((cat) => (
                         <SelectItem key={cat._id} value={cat._id}>
                           {cat.name}
@@ -250,7 +268,9 @@ const CategoryForm: React.FC = () => {
                     type="number"
                     min={0}
                     value={formData.sortOrder || ""}
-                    onChange={(e) => handleChange("sortOrder", Number(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("sortOrder", Number(e.target.value))
+                    }
                     placeholder="0"
                     className="mt-1"
                   />
@@ -290,7 +310,9 @@ const CategoryForm: React.FC = () => {
                 {!formData.image ? (
                   <>
                     <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-4">Tải lên ảnh minh họa</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Tải lên ảnh minh họa
+                    </p>
                     <Button type="button" variant="outline" size="sm" asChild>
                       <label htmlFor="category-image">
                         Chọn file

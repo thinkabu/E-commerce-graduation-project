@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, ReactNode } from 'react';
+﻿import React, { createContext, useContext, ReactNode } from "react";
 
 interface AddressContextType {
   isLoading: boolean;
@@ -17,8 +17,7 @@ export function AddressContextProvider({ children }: { children: ReactNode }) {
 export function useAddress() {
   const context = useContext(AddressContext);
   if (context === undefined) {
-    throw new Error('useAddress must be used within a AddressContextProvider');
+    throw new Error("useAddress must be used within a AddressContextProvider");
   }
   return context;
 }
-

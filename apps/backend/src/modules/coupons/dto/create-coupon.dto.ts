@@ -23,7 +23,10 @@ export class CreateCouponDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ enum: CouponDiscountType, example: CouponDiscountType.PERCENTAGE })
+  @ApiProperty({
+    enum: CouponDiscountType,
+    example: CouponDiscountType.PERCENTAGE,
+  })
   @IsEnum(CouponDiscountType)
   discountType: CouponDiscountType;
 

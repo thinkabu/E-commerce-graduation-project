@@ -4,7 +4,7 @@ export interface User {
   email: string;
   phone?: string;
   avatar?: string;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   isActive: boolean;
   walletAddress?: string;
   permissions?: {
@@ -60,7 +60,10 @@ export const deleteUser = async (id: string): Promise<boolean> => {
   }
 };
 
-export const updateUserStatus = async (id: string, isActive: boolean): Promise<boolean> => {
+export const updateUserStatus = async (
+  id: string,
+  isActive: boolean,
+): Promise<boolean> => {
   try {
     const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: "PATCH",
@@ -76,7 +79,10 @@ export const updateUserStatus = async (id: string, isActive: boolean): Promise<b
   }
 };
 
-export const updateUser = async (id: string, userData: Partial<User>): Promise<{ success: boolean; message: string }> => {
+export const updateUser = async (
+  id: string,
+  userData: Partial<User>,
+): Promise<{ success: boolean; message: string }> => {
   try {
     const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: "PATCH",
@@ -90,7 +96,10 @@ export const updateUser = async (id: string, userData: Partial<User>): Promise<{
     if (res.ok) {
       return { success: true, message: "Cập nhật người dùng thành công!" };
     } else {
-      return { success: false, message: json.message || "Lỗi không xác định từ server." };
+      return {
+        success: false,
+        message: json.message || "Lỗi không xác định từ server.",
+      };
     }
   } catch (error) {
     console.error("Error updating user:", error);
@@ -98,7 +107,9 @@ export const updateUser = async (id: string, userData: Partial<User>): Promise<{
   }
 };
 
-export const createUser = async (userData: any): Promise<{ success: boolean; message: string }> => {
+export const createUser = async (
+  userData: any,
+): Promise<{ success: boolean; message: string }> => {
   try {
     const res = await fetch(`${BASE_URL}/users`, {
       method: "POST",
@@ -108,11 +119,14 @@ export const createUser = async (userData: any): Promise<{ success: boolean; mes
       body: JSON.stringify(userData),
     });
     const json = await res.json();
-    
+
     if (res.ok) {
       return { success: true, message: "Thêm người dùng mới thành công!" };
     } else {
-      return { success: false, message: json.message || "Lỗi không xác định từ server." };
+      return {
+        success: false,
+        message: json.message || "Lỗi không xác định từ server.",
+      };
     }
   } catch (error) {
     console.error("Error creating user:", error);

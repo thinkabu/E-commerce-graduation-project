@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 export interface OrderItemPayload {
   productId: string;
@@ -12,6 +12,14 @@ export interface CreateOrderPayload {
   paymentMethod: string;
   couponId?: string;
   note?: string;
+  blockchainPayment?: {
+    transactionHash: string;
+    walletAddress: string;
+    cryptoAmount: number;
+    cryptoSymbol?: string;
+    exchangeRate: number;
+    network?: string;
+  };
 }
 
 export interface Order {
@@ -31,33 +39,39 @@ export interface Order {
   createdAt: string;
 }
 
-export const createOrder = async (userId: string, payload: CreateOrderPayload): Promise<Order | null> => {
+export const createOrder = async (
+  userId: string,
+  payload: CreateOrderPayload,
+): Promise<Order | null> => {
   try {
-    const response = await api.post('/orders', payload, { params: { userId } });
+    const response = await api.post("/orders", payload, { params: { userId } });
     return response.data?.data ?? response.data;
   } catch (error) {
-    console.error('Error creating order:', error);
+    console.error("Error creating order:", error);
     throw error;
   }
 };
 
 export const getUserOrders = async (userId: string): Promise<Order[]> => {
   try {
-    const response = await api.get('/orders/user', { params: { userId } });
+    const response = await api.get("/orders/user", { params: { userId } });
     const data = response.data?.data ?? response.data;
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('Error fetching user orders:', error);
+    console.error("Error fetching user orders:", error);
     return [];
   }
 };
 
-export const getOrderById = async (id: string, userId: string): Promise<Order | null> => {
+export const getOrderById = async (
+  id: string,
+  userId: string,
+): Promise<Order | null> => {
   try {
     const response = await api.get(`/orders/${id}`, { params: { userId } });
     return response.data?.data ?? response.data;
   } catch (error) {
-    console.error('Error fetching order by id:', error);
+    console.error("Error fetching order by id:", error);
     return null;
   }
 };

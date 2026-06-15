@@ -1,53 +1,53 @@
-import React from 'react';
-import { ScrollView, Image, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
-import { Icon } from '@/components/ui/icon';
-import { Pressable } from '@/components/ui/pressable';
-import { 
-  User, 
-  Settings, 
-  LogOut, 
-  Package, 
-  MapPin, 
-  CreditCard, 
+import React from "react";
+import { ScrollView, Image, SafeAreaView } from "react-native";
+import { useRouter } from "expo-router";
+import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
+import { HStack } from "@/components/ui/hstack";
+import { VStack } from "@/components/ui/vstack";
+import { Icon } from "@/components/ui/icon";
+import { Pressable } from "@/components/ui/pressable";
+import {
+  User,
+  Settings,
+  LogOut,
+  Package,
+  MapPin,
+  CreditCard,
   ChevronRight,
   Bell,
   HelpCircle,
   ShieldCheck,
   Star,
-  Palette
-} from 'lucide-react-native';
-import { useAuth } from '@/contexts/AuthContext';
+  Palette,
+} from "lucide-react-native";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuGroups = [
   {
-    title: 'Đơn hàng & Giao dịch',
+    title: "Đơn hàng & Giao dịch",
     items: [
-      { id: 'orders', label: 'Lịch sử đơn hàng', icon: Package },
-      { id: 'reviews', label: 'Đánh giá của tôi', icon: Star },
-      { id: 'payment', label: 'Phương thức thanh toán', icon: CreditCard },
-    ]
+      { id: "orders", label: "Lịch sử đơn hàng", icon: Package },
+      { id: "reviews", label: "Đánh giá của tôi", icon: Star },
+      { id: "payment", label: "Phương thức thanh toán", icon: CreditCard },
+    ],
   },
   {
-    title: 'Cá nhân',
+    title: "Cá nhân",
     items: [
-      { id: 'address', label: 'Địa chỉ nhận hàng', icon: MapPin },
-      { id: 'notifications', label: 'Thông báo', icon: Bell },
-      { id: 'security', label: 'Bảo mật tài khoản', icon: ShieldCheck },
-    ]
+      { id: "address", label: "Địa chỉ nhận hàng", icon: MapPin },
+      { id: "notifications", label: "Thông báo", icon: Bell },
+      { id: "security", label: "Bảo mật tài khoản", icon: ShieldCheck },
+    ],
   },
   {
-    title: 'Hỗ trợ',
+    title: "Hỗ trợ",
     items: [
-      { id: 'help', label: 'Trung tâm trợ giúp', icon: HelpCircle },
-      { id: 'appearance', label: 'Giao diện', icon: Palette },
-      { id: 'settings', label: 'Cài đặt ứng dụng', icon: Settings },
-    ]
-  }
+      { id: "help", label: "Trung tâm trợ giúp", icon: HelpCircle },
+      { id: "appearance", label: "Giao diện", icon: Palette },
+      { id: "settings", label: "Cài đặt ứng dụng", icon: Settings },
+    ],
+  },
 ];
 
 const ProfileScreen = () => {
@@ -56,51 +56,69 @@ const ProfileScreen = () => {
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/login' as any);
+    router.replace("/login" as any);
   };
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-zinc-50 dark:bg-zinc-950">
       <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        
         {/* Header Profile */}
         <Box className="bg-white dark:bg-zinc-900 px-5 pt-10 pb-8 rounded-b-[40px] shadow-sm elevation-2">
           <VStack className="items-center">
             <Box className="relative">
-              <Image 
-                source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop' }} 
+              <Image
+                source={{
+                  uri:
+                    user?.avatar ||
+                    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
+                }}
                 className="w-28 h-28 rounded-full border-4 border-yellow-400"
               />
-              <Pressable 
-                onPress={() => router.push('/profile/edit-profile' as any)}
+              <Pressable
+                onPress={() => router.push("/profile/edit-profile" as any)}
                 className="absolute bottom-1 right-1 bg-zinc-900 dark:bg-zinc-100 p-2 rounded-full border-2 border-white dark:border-zinc-900"
               >
-                <Icon as={Settings} className="text-white dark:text-zinc-900 w-4 h-4" />
+                <Icon
+                  as={Settings}
+                  className="text-white dark:text-zinc-900 w-4 h-4"
+                />
               </Pressable>
             </Box>
-            
+
             <Text className="text-2xl font-bold text-zinc-900 dark:text-white mt-4">
-              {user?.fullName || 'Người dùng'}
+              {user?.fullName || "Người dùng"}
             </Text>
             <Text className="text-sm text-zinc-500 font-medium">
-              {user?.email || 'email@example.com'}
+              {user?.email || "email@example.com"}
             </Text>
-            
+
             <HStack className="mt-6 space-x-8 gap-8 bg-zinc-50 dark:bg-zinc-800 px-8 py-4 rounded-3xl">
               {/* ... (stats keep as is for now) */}
               <VStack className="items-center">
-                <Text className="text-lg font-bold text-zinc-900 dark:text-white">12</Text>
-                <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Đơn hàng</Text>
+                <Text className="text-lg font-bold text-zinc-900 dark:text-white">
+                  12
+                </Text>
+                <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">
+                  Đơn hàng
+                </Text>
               </VStack>
               <Box className="w-px h-full bg-zinc-200 dark:bg-zinc-700" />
               <VStack className="items-center">
-                <Text className="text-lg font-bold text-zinc-900 dark:text-white">850</Text>
-                <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Điểm tích lũy</Text>
+                <Text className="text-lg font-bold text-zinc-900 dark:text-white">
+                  850
+                </Text>
+                <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">
+                  Điểm tích lũy
+                </Text>
               </VStack>
               <Box className="w-px h-full bg-zinc-200 dark:bg-zinc-700" />
               <VStack className="items-center">
-                <Text className="text-lg font-bold text-zinc-900 dark:text-white">5</Text>
-                <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">Mã giảm giá</Text>
+                <Text className="text-lg font-bold text-zinc-900 dark:text-white">
+                  5
+                </Text>
+                <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">
+                  Mã giảm giá
+                </Text>
               </VStack>
             </HStack>
           </VStack>
@@ -116,26 +134,41 @@ const ProfileScreen = () => {
               </Text>
               <Box className="bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-100 dark:border-zinc-800 shadow-sm elevation-1">
                 {group.items.map((item, index) => (
-                  <Pressable 
+                  <Pressable
                     key={item.id}
                     onPress={() => {
-                      if (item.id === 'address') router.push('/address/my-addresses');
-                      if (item.id === 'orders') router.push('/profile/order-history' as any);
-                      if (item.id === 'security') router.push('/profile/change-password' as any);
-                      if (item.id === 'appearance') router.push('/profile/appearance' as any);
-                      if (item.id === 'notifications') router.push('/notifications' as any);
+                      if (item.id === "address")
+                        router.push("/address/my-addresses");
+                      if (item.id === "orders")
+                        router.push("/profile/order-history" as any);
+                      if (item.id === "security")
+                        router.push("/profile/change-password" as any);
+                      if (item.id === "appearance")
+                        router.push("/profile/appearance" as any);
+                      if (item.id === "notifications")
+                        router.push("/notifications" as any);
                     }}
                     className={`flex-row items-center justify-between p-4 active:bg-zinc-50 dark:active:bg-zinc-800 ${
-                      index < group.items.length - 1 ? 'border-b border-zinc-50 dark:border-zinc-800' : ''
+                      index < group.items.length - 1
+                        ? "border-b border-zinc-50 dark:border-zinc-800"
+                        : ""
                     }`}
                   >
                     <HStack className="items-center space-x-3 gap-3">
                       <Box className="w-10 h-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 items-center justify-center">
-                        <Icon as={item.icon} className="text-zinc-600 dark:text-zinc-400 w-5 h-5" />
+                        <Icon
+                          as={item.icon}
+                          className="text-zinc-600 dark:text-zinc-400 w-5 h-5"
+                        />
                       </Box>
-                      <Text className="text-sm font-medium text-zinc-900 dark:text-white">{item.label}</Text>
+                      <Text className="text-sm font-medium text-zinc-900 dark:text-white">
+                        {item.label}
+                      </Text>
                     </HStack>
-                    <Icon as={ChevronRight} className="text-zinc-300 dark:text-zinc-600 w-5 h-5" />
+                    <Icon
+                      as={ChevronRight}
+                      className="text-zinc-300 dark:text-zinc-600 w-5 h-5"
+                    />
                   </Pressable>
                 ))}
               </Box>
@@ -143,7 +176,7 @@ const ProfileScreen = () => {
           ))}
 
           {/* Logout Button */}
-          <Pressable 
+          <Pressable
             onPress={handleLogout}
             className="flex-row items-center justify-center bg-red-50 dark:bg-red-900/20 p-5 rounded-3xl border border-red-100 dark:border-red-900/30 mb-10 active:opacity-80"
           >

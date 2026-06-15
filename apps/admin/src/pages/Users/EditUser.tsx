@@ -36,7 +36,7 @@ const EditUser: React.FC = () => {
     fullName: string;
     email: string;
     phone: string;
-    role: 'user' | 'admin';
+    role: "user" | "admin";
     isActive: boolean;
   }>({
     fullName: "",
@@ -91,7 +91,7 @@ const EditUser: React.FC = () => {
   };
 
   const handleRoleChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, role: value as 'user' | 'admin' }));
+    setFormData((prev) => ({ ...prev, role: value as "user" | "admin" }));
     if (value === "admin") {
       setPermissions({
         manageProducts: true,

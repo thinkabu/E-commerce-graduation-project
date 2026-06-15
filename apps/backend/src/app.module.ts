@@ -21,6 +21,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { CampaignsModule } from './modules/campaigns/campaigns.module';
     ReviewsModule,
     NotificationsModule,
     CampaignsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

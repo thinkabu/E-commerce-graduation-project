@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 export interface Category {
   _id: string;
@@ -14,10 +14,10 @@ export interface Category {
 
 export const getCategories = async (): Promise<Category[]> => {
   try {
-    const response = await api.get('/categories');
+    const response = await api.get("/categories");
     return response.data.data || response.data;
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    console.error("Error fetching categories:", error);
     return [];
   }
 };

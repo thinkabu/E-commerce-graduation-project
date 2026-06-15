@@ -175,7 +175,9 @@ export class ProductsService {
       // Xóa các variants cũ của sản phẩm này mà không nằm trong danh sách giữ lại
       await this.variantModel.deleteMany({
         productId: new Types.ObjectId(id),
-        _id: { $nin: variantIdsToKeep.map((vId: string) => new Types.ObjectId(vId)) },
+        _id: {
+          $nin: variantIdsToKeep.map((vId: string) => new Types.ObjectId(vId)),
+        },
       });
 
       // Upsert (Cập nhật hoặc Tạo mới) từng variant
@@ -212,7 +214,6 @@ export class ProductsService {
 
     return product;
   }
-
 
   // Variant CRUD
   async createVariant(

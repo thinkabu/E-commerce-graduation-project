@@ -1,4 +1,4 @@
-import api from './api';
+import api from "./api";
 
 export interface Address {
   _id: string;
@@ -8,7 +8,7 @@ export interface Address {
   street: string;
   ward: string;
   city: string;
-  type: 'HOME' | 'OFFICE' | 'OTHER';
+  type: "HOME" | "OFFICE" | "OTHER";
   isDefault: boolean;
   isActive: boolean;
   createdAt?: string;
@@ -20,9 +20,9 @@ const mapAddressFromApi = (data: any): Address => ({
   fullName: data.fullName,
   phone: data.phone,
   street: data.street,
-  ward: data.ward?.name || '',
-  city: data.province?.name || '',
-  type: data.addressType || 'HOME',
+  ward: data.ward?.name || "",
+  city: data.province?.name || "",
+  type: data.addressType || "HOME",
   isDefault: data.isDefault,
   isActive: data.isActive,
   createdAt: data.createdAt,
@@ -34,18 +34,21 @@ export const getAddresses = async (userId: string): Promise<Address[]> => {
     const data = res.data?.data ?? res.data;
     return Array.isArray(data) ? data.map(mapAddressFromApi) : [];
   } catch (error) {
-    console.error('getAddresses error:', error);
+    console.error("getAddresses error:", error);
     return [];
   }
 };
 
-export const getAddressById = async (id: string, userId: string): Promise<Address | null> => {
+export const getAddressById = async (
+  id: string,
+  userId: string,
+): Promise<Address | null> => {
   try {
     const res = await api.get(`/addresses/${id}?userId=${userId}`);
     const data = res.data?.data ?? res.data;
     return data ? mapAddressFromApi(data) : null;
   } catch (error) {
-    console.error('getAddressById error:', error);
+    console.error("getAddressById error:", error);
     return null;
   }
 };
@@ -56,7 +59,7 @@ export interface CreateAddressPayload {
   street: string;
   ward: string;
   city: string;
-  type: 'HOME' | 'OFFICE' | 'OTHER';
+  type: "HOME" | "OFFICE" | "OTHER";
   isDefault?: boolean;
 }
 
@@ -74,7 +77,7 @@ const mapPayloadToApi = (payload: Partial<CreateAddressPayload>) => {
   }
   if (payload.type !== undefined) apiPayload.addressType = payload.type;
   if (payload.isDefault !== undefined) apiPayload.isDefault = payload.isDefault;
-  
+
   return apiPayload;
 };
 
@@ -88,7 +91,7 @@ export const createAddress = async (
     const data = res.data?.data ?? res.data;
     return data ? mapAddressFromApi(data) : null;
   } catch (error) {
-    console.error('createAddress error:', error);
+    console.error("createAddress error:", error);
     return null;
   }
 };
@@ -100,21 +103,27 @@ export const updateAddress = async (
 ): Promise<Address | null> => {
   try {
     const apiPayload = mapPayloadToApi(payload);
-    const res = await api.patch(`/addresses/${id}?userId=${userId}`, apiPayload);
+    const res = await api.patch(
+      `/addresses/${id}?userId=${userId}`,
+      apiPayload,
+    );
     const data = res.data?.data ?? res.data;
     return data ? mapAddressFromApi(data) : null;
   } catch (error) {
-    console.error('updateAddress error:', error);
+    console.error("updateAddress error:", error);
     return null;
   }
 };
 
-export const deleteAddress = async (id: string, userId: string): Promise<boolean> => {
+export const deleteAddress = async (
+  id: string,
+  userId: string,
+): Promise<boolean> => {
   try {
     await api.delete(`/addresses/${id}?userId=${userId}`);
     return true;
   } catch (error) {
-    console.error('deleteAddress error:', error);
+    console.error("deleteAddress error:", error);
     return false;
   }
 };

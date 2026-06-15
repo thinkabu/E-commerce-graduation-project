@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { HStack } from '@/components/ui/hstack';
-import { VStack } from '@/components/ui/vstack';
-import { Pressable } from '@/components/ui/pressable';
-import { Icon } from '@/components/ui/icon';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
+import { HStack } from "@/components/ui/hstack";
+import { VStack } from "@/components/ui/vstack";
+import { Pressable } from "@/components/ui/pressable";
+import { Icon } from "@/components/ui/icon";
 import {
   ChevronLeft,
   Package,
@@ -20,26 +20,57 @@ import {
   Gift,
   Bell,
   CheckCheck,
-} from 'lucide-react-native';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNotification } from '@/contexts/NotificationContext';
+} from "lucide-react-native";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNotification } from "@/contexts/NotificationContext";
 import {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   NotificationItem,
-} from '@/services/notification.service';
+} from "@/services/notification.service";
 
 // ── Icon & màu theo loại thông báo ────────────────────────────────
 
-const TYPE_CONFIG: Record<string, { icon: any; bg: string; iconColor: string }> = {
-  ORDER:        { icon: Package,    bg: 'bg-blue-100 dark:bg-blue-900/30',   iconColor: 'text-blue-600 dark:text-blue-400' },
-  PAYMENT:      { icon: CreditCard, bg: 'bg-green-100 dark:bg-green-900/30', iconColor: 'text-green-600 dark:text-green-400' },
-  PROMOTION:    { icon: Gift,       bg: 'bg-yellow-100 dark:bg-yellow-900/30', iconColor: 'text-yellow-600 dark:text-yellow-500' },
-  SYSTEM:       { icon: Bell,       bg: 'bg-zinc-100 dark:bg-zinc-800',      iconColor: 'text-zinc-600 dark:text-zinc-400' },
-  RECOMMENDATION: { icon: Gift,     bg: 'bg-purple-100 dark:bg-purple-900/30', iconColor: 'text-purple-600 dark:text-purple-400' },
-  CRYPTO:       { icon: CreditCard, bg: 'bg-orange-100 dark:bg-orange-900/30', iconColor: 'text-orange-600 dark:text-orange-400' },
-  CHAT:         { icon: Bell,       bg: 'bg-pink-100 dark:bg-pink-900/30',   iconColor: 'text-pink-600 dark:text-pink-400' },
+const TYPE_CONFIG: Record<
+  string,
+  { icon: any; bg: string; iconColor: string }
+> = {
+  ORDER: {
+    icon: Package,
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    iconColor: "text-blue-600 dark:text-blue-400",
+  },
+  PAYMENT: {
+    icon: CreditCard,
+    bg: "bg-green-100 dark:bg-green-900/30",
+    iconColor: "text-green-600 dark:text-green-400",
+  },
+  PROMOTION: {
+    icon: Gift,
+    bg: "bg-yellow-100 dark:bg-yellow-900/30",
+    iconColor: "text-yellow-600 dark:text-yellow-500",
+  },
+  SYSTEM: {
+    icon: Bell,
+    bg: "bg-zinc-100 dark:bg-zinc-800",
+    iconColor: "text-zinc-600 dark:text-zinc-400",
+  },
+  RECOMMENDATION: {
+    icon: Gift,
+    bg: "bg-purple-100 dark:bg-purple-900/30",
+    iconColor: "text-purple-600 dark:text-purple-400",
+  },
+  CRYPTO: {
+    icon: CreditCard,
+    bg: "bg-orange-100 dark:bg-orange-900/30",
+    iconColor: "text-orange-600 dark:text-orange-400",
+  },
+  CHAT: {
+    icon: Bell,
+    bg: "bg-pink-100 dark:bg-pink-900/30",
+    iconColor: "text-pink-600 dark:text-pink-400",
+  },
 };
 
 // ── Format thời gian tương đối ─────────────────────────────────────
@@ -47,14 +78,14 @@ const TYPE_CONFIG: Record<string, { icon: any; bg: string; iconColor: string }> 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Vừa xong';
+  if (mins < 1) return "Vừa xong";
   if (mins < 60) return `${mins} phút trước`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours} giờ trước`;
   const days = Math.floor(hours / 24);
-  if (days === 1) return 'Hôm qua';
+  if (days === 1) return "Hôm qua";
   if (days < 7) return `${days} ngày trước`;
-  return new Date(dateStr).toLocaleDateString('vi-VN');
+  return new Date(dateStr).toLocaleDateString("vi-VN");
 }
 
 // ── Notification Item Component ────────────────────────────────────
@@ -73,18 +104,20 @@ const NotifItem = ({
     <Pressable
       onPress={() => onPress(item)}
       className={`flex-row items-start p-4 border-b border-zinc-50 dark:border-zinc-800 active:opacity-70 ${
-        !item.isRead ? 'bg-yellow-50/60 dark:bg-yellow-900/10' : 'bg-white dark:bg-zinc-900'
+        !item.isRead
+          ? "bg-yellow-50/60 dark:bg-yellow-900/10"
+          : "bg-white dark:bg-zinc-900"
       }`}
     >
       {/* Unread dot */}
       <Box className="w-2 h-2 mt-3 mr-2">
-        {!item.isRead && (
-          <Box className="w-2 h-2 rounded-full bg-yellow-500" />
-        )}
+        {!item.isRead && <Box className="w-2 h-2 rounded-full bg-yellow-500" />}
       </Box>
 
       {/* Icon */}
-      <Box className={`w-11 h-11 rounded-2xl ${cfg.bg} items-center justify-center mr-3 shrink-0`}>
+      <Box
+        className={`w-11 h-11 rounded-2xl ${cfg.bg} items-center justify-center mr-3 shrink-0`}
+      >
         <Icon as={IconComp} className={`w-5 h-5 ${cfg.iconColor}`} />
       </Box>
 
@@ -94,14 +127,16 @@ const NotifItem = ({
           <Text
             className={`text-sm flex-1 mr-2 leading-tight ${
               !item.isRead
-                ? 'font-bold text-zinc-900 dark:text-white'
-                : 'font-semibold text-zinc-700 dark:text-zinc-300'
+                ? "font-bold text-zinc-900 dark:text-white"
+                : "font-semibold text-zinc-700 dark:text-zinc-300"
             }`}
             numberOfLines={1}
           >
             {item.title}
           </Text>
-          <Text className="text-[11px] text-zinc-400 shrink-0">{timeAgo(item.createdAt)}</Text>
+          <Text className="text-[11px] text-zinc-400 shrink-0">
+            {timeAgo(item.createdAt)}
+          </Text>
         </HStack>
         <Text
           className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed"
@@ -172,7 +207,10 @@ export default function NotificationsScreen() {
 
   const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 100) {
+    if (
+      layoutMeasurement.height + contentOffset.y >=
+      contentSize.height - 100
+    ) {
       loadMore();
     }
   };
@@ -218,12 +256,19 @@ export default function NotificationsScreen() {
               onPress={() => router.back()}
               className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 items-center justify-center"
             >
-              <Icon as={ChevronLeft} className="text-zinc-700 dark:text-zinc-300 w-5 h-5" />
+              <Icon
+                as={ChevronLeft}
+                className="text-zinc-700 dark:text-zinc-300 w-5 h-5"
+              />
             </Pressable>
             <VStack>
-              <Text className="text-xl font-bold text-zinc-900 dark:text-white">Thông báo</Text>
+              <Text className="text-xl font-bold text-zinc-900 dark:text-white">
+                Thông báo
+              </Text>
               {unreadCount > 0 && (
-                <Text className="text-xs text-zinc-400">{unreadCount} chưa đọc</Text>
+                <Text className="text-xs text-zinc-400">
+                  {unreadCount} chưa đọc
+                </Text>
               )}
             </VStack>
           </HStack>
@@ -237,7 +282,10 @@ export default function NotificationsScreen() {
               {markingAll ? (
                 <ActivityIndicator size="small" color="#eab308" />
               ) : (
-                <Icon as={CheckCheck} className="text-yellow-600 dark:text-yellow-500 w-4 h-4" />
+                <Icon
+                  as={CheckCheck}
+                  className="text-yellow-600 dark:text-yellow-500 w-4 h-4"
+                />
               )}
               <Text className="text-xs font-semibold text-yellow-600 dark:text-yellow-500">
                 Đọc tất cả
@@ -255,7 +303,10 @@ export default function NotificationsScreen() {
       ) : notifications.length === 0 ? (
         <Box className="flex-1 items-center justify-center px-8">
           <Box className="w-20 h-20 rounded-full bg-zinc-100 dark:bg-zinc-800 items-center justify-center mb-4">
-            <Icon as={Bell} className="text-zinc-300 dark:text-zinc-600 w-10 h-10" />
+            <Icon
+              as={Bell}
+              className="text-zinc-300 dark:text-zinc-600 w-10 h-10"
+            />
           </Box>
           <Text className="text-lg font-bold text-zinc-700 dark:text-zinc-300 text-center">
             Chưa có thông báo
@@ -275,7 +326,7 @@ export default function NotificationsScreen() {
               refreshing={refreshing}
               onRefresh={onRefresh}
               tintColor="#eab308"
-              colors={['#eab308']}
+              colors={["#eab308"]}
             />
           }
         >
@@ -288,7 +339,9 @@ export default function NotificationsScreen() {
           {loadingMore && (
             <Box className="py-6 items-center">
               <ActivityIndicator color="#eab308" />
-              <Text className="text-xs text-zinc-400 mt-2">Đang tải thêm...</Text>
+              <Text className="text-xs text-zinc-400 mt-2">
+                Đang tải thêm...
+              </Text>
             </Box>
           )}
 

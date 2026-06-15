@@ -167,6 +167,9 @@ importers:
       '@repo/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      axios:
+        specifier: ^1.14.0
+        version: 1.14.0
       bcrypt:
         specifier: ^5.1.1
         version: 5.1.1
@@ -185,6 +188,9 @@ importers:
       dotenv:
         specifier: ^17.4.0
         version: 17.4.0
+      ethers:
+        specifier: ^6.16.0
+        version: 6.16.0
       mongoose:
         specifier: ^9.3.3
         version: 9.3.3

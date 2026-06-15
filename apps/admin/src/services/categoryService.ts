@@ -47,7 +47,9 @@ export const getCategoryById = async (id: string): Promise<Category | null> => {
   }
 };
 
-export const createCategory = async (payload: Record<string, any>): Promise<any> => {
+export const createCategory = async (
+  payload: Record<string, any>,
+): Promise<any> => {
   const res = await fetch(API_BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -60,7 +62,10 @@ export const createCategory = async (payload: Record<string, any>): Promise<any>
   return res.json();
 };
 
-export const updateCategory = async (id: string, payload: Record<string, any>): Promise<any> => {
+export const updateCategory = async (
+  id: string,
+  payload: Record<string, any>,
+): Promise<any> => {
   const res = await fetch(`${API_BASE}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -83,4 +88,3 @@ export const deleteCategory = async (id: string): Promise<any> => {
   }
   return res.json();
 };
-

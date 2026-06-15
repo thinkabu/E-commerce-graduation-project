@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsMongoId, IsNumber, IsArray, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsMongoId,
+  IsNumber,
+  IsArray,
+  IsBoolean,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 

@@ -34,7 +34,15 @@ export class UsersService {
   }
 
   async findAll(query: QueryUserDto) {
-    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', search, role, isActive } = query;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search,
+      role,
+      isActive,
+    } = query;
     const skip = (page - 1) * limit;
 
     const filter: any = {};
@@ -91,7 +99,10 @@ export class UsersService {
     return user;
   }
 
-  async changePassword(id: string, dto: ChangePasswordDto): Promise<{ message: string }> {
+  async changePassword(
+    id: string,
+    dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
     const user = await this.userModel.findById(id).select('+passwordHash');
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
 

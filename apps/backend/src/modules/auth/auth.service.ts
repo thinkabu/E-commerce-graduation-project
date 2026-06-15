@@ -14,7 +14,7 @@ export class AuthService {
 
   async login(dto: LoginDto, isAdminRequired: boolean = false) {
     const user = await this.usersService.findByEmail(dto.email);
-    
+
     if (!user) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
@@ -26,17 +26,19 @@ export class AuthService {
 
     // YÊU CẦU: Nếu là login admin thì mới check role admin
     if (isAdminRequired && user.role !== UserRole.ADMIN) {
-      throw new UnauthorizedException('Bạn không có quyền truy cập hệ thống này');
+      throw new UnauthorizedException(
+        'Bạn không có quyền truy cập hệ thống này',
+      );
     }
 
     if (!user.isActive) {
       throw new UnauthorizedException('Tài khoản của bạn đã bị khóa');
     }
 
-    const payload = { 
-      sub: user._id, 
-      email: user.email, 
-      role: user.role 
+    const payload = {
+      sub: user._id,
+      email: user.email,
+      role: user.role,
     };
 
     return {

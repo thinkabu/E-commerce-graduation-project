@@ -27,6 +27,34 @@ export class OrderItemDto {
   quantity: number;
 }
 
+export class BlockchainPaymentDto {
+  @ApiProperty({ example: '0x1234abcd...' })
+  @IsString()
+  transactionHash: string;
+
+  @ApiProperty({ example: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' })
+  @IsString()
+  walletAddress: string;
+
+  @ApiProperty({ example: 0.0012 })
+  @IsNumber()
+  cryptoAmount: number;
+
+  @ApiPropertyOptional({ example: 'ETH' })
+  @IsOptional()
+  @IsString()
+  cryptoSymbol?: string;
+
+  @ApiProperty({ example: 63000000 })
+  @IsNumber()
+  exchangeRate: number;
+
+  @ApiPropertyOptional({ example: 'hardhat' })
+  @IsOptional()
+  @IsString()
+  network?: string;
+}
+
 export class CreateOrderDto {
   @ApiProperty({ type: [OrderItemDto] })
   @IsArray()
@@ -46,6 +74,12 @@ export class CreateOrderDto {
   @ApiProperty({ enum: PaymentMethod, example: PaymentMethod.COD })
   @IsEnum(PaymentMethod)
   paymentMethod: PaymentMethod;
+
+  @ApiPropertyOptional({ type: BlockchainPaymentDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BlockchainPaymentDto)
+  blockchainPayment?: BlockchainPaymentDto;
 
   @ApiPropertyOptional({ example: 'Giao giờ hành chính' })
   @IsOptional()

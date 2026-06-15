@@ -15,8 +15,14 @@ export class CartService {
   async getCart(userId: string) {
     let cart = await this.cartModel
       .findOne({ userId: new Types.ObjectId(userId) })
-      .populate('items.productId', 'name images basePrice slug discountPercentage isActive')
-      .populate('items.variantId', 'variantName price images sku stockQuantity stockStatus discountPercentage')
+      .populate(
+        'items.productId',
+        'name images basePrice slug discountPercentage isActive',
+      )
+      .populate(
+        'items.variantId',
+        'variantName price images sku stockQuantity stockStatus discountPercentage',
+      )
       .lean();
 
     if (!cart) {
@@ -72,9 +78,7 @@ export class CartService {
     });
     if (!cart) throw new NotFoundException('Giỏ hàng không tồn tại');
 
-    const item = cart.items.find(
-      (i) => String((i as any)._id) === itemId,
-    );
+    const item = cart.items.find((i) => String((i as any)._id) === itemId);
     if (!item) throw new NotFoundException('Sản phẩm không có trong giỏ hàng');
 
     item.quantity = dto.quantity;

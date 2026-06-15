@@ -28,7 +28,7 @@ export const useProducts = () => {
   const deleteProduct = useCallback(
     async (
       id: string,
-      callbacks?: { onSuccess?: () => void; onError?: (error: any) => void }
+      callbacks?: { onSuccess?: () => void; onError?: (error: any) => void },
     ) => {
       try {
         await deleteProductApi(id);
@@ -39,7 +39,7 @@ export const useProducts = () => {
         callbacks?.onError?.(err);
       }
     },
-    []
+    [],
   );
 
   return { products, isLoading, error, deleteProduct, refetch: loadProducts };

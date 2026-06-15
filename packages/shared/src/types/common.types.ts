@@ -1,4 +1,4 @@
-import { CouponDiscountType, NotificationType } from '../constants/enums';
+import { CouponDiscountType, NotificationType } from "../constants/enums";
 
 // --- Coupon Interface ---
 export interface ICoupon {

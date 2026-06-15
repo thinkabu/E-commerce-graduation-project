@@ -1,35 +1,36 @@
-import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Alert, Image } from 'react-native';
-import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
-import { createReview } from '@/services/review.service';
-import Header from '@/components/Header';
-import { Box } from '@/components/ui/box';
-import { Text } from '@/components/ui/text';
-import { VStack } from '@/components/ui/vstack';
-import { HStack } from '@/components/ui/hstack';
-import { Input, InputField } from '@/components/ui/input';
-import { Button, ButtonText } from '@/components/ui/button';
-import { Pressable } from '@/components/ui/pressable';
-import { Icon } from '@/components/ui/icon';
-import { Star, Send } from 'lucide-react-native';
+import React, { useState } from "react";
+import { SafeAreaView, ScrollView, Alert, Image } from "react-native";
+import { useRouter, Stack, useLocalSearchParams } from "expo-router";
+import { useAuth } from "@/contexts/AuthContext";
+import { createReview } from "@/services/review.service";
+import Header from "@/components/Header";
+import { Box } from "@/components/ui/box";
+import { Text } from "@/components/ui/text";
+import { VStack } from "@/components/ui/vstack";
+import { HStack } from "@/components/ui/hstack";
+import { Input, InputField } from "@/components/ui/input";
+import { Button, ButtonText } from "@/components/ui/button";
+import { Pressable } from "@/components/ui/pressable";
+import { Icon } from "@/components/ui/icon";
+import { Star, Send } from "lucide-react-native";
 
 const WriteReviewScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const { productId, orderId, productName, productImage } = useLocalSearchParams<{
-    productId: string;
-    orderId: string;
-    productName: string;
-    productImage: string;
-  }>();
+  const { productId, orderId, productName, productImage } =
+    useLocalSearchParams<{
+      productId: string;
+      orderId: string;
+      productName: string;
+      productImage: string;
+    }>();
 
   const [rating, setRating] = useState(5);
-  const [title, setTitle] = useState('');
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState("");
+  const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const ratingLabels = ['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Tuyệt vời'];
+  const ratingLabels = ["", "Rất tệ", "Tệ", "Bình thường", "Tốt", "Tuyệt vời"];
 
   const handleSubmit = async () => {
     if (!user || !productId || !orderId) return;
@@ -43,12 +44,12 @@ const WriteReviewScreen = () => {
         title: title.trim() || undefined,
         comment: comment.trim() || undefined,
       });
-      Alert.alert('Thành công', 'Cảm ơn bạn đã đánh giá sản phẩm!', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert("Thành công", "Cảm ơn bạn đã đánh giá sản phẩm!", [
+        { text: "OK", onPress: () => router.back() },
       ]);
     } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Gửi đánh giá thất bại';
-      Alert.alert('Lỗi', msg);
+      const msg = error?.response?.data?.message || "Gửi đánh giá thất bại";
+      Alert.alert("Lỗi", msg);
     } finally {
       setLoading(false);
     }
@@ -59,17 +60,28 @@ const WriteReviewScreen = () => {
       <Stack.Screen options={{ headerShown: false }} />
       <Header title="Đánh giá sản phẩm" />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 20 }}
+      >
         {/* Product Info */}
         <HStack className="bg-white dark:bg-zinc-900 p-4 rounded-3xl border border-zinc-100 dark:border-zinc-800 mb-6 items-center space-x-4 gap-4 shadow-sm">
           {productImage && (
             <Image
               source={{ uri: productImage }}
-              style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: '#f4f4f5' }}
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 16,
+                backgroundColor: "#f4f4f5",
+              }}
             />
           )}
-          <Text className="flex-1 text-sm font-bold text-zinc-900 dark:text-white" numberOfLines={2}>
-            {productName || 'Sản phẩm'}
+          <Text
+            className="flex-1 text-sm font-bold text-zinc-900 dark:text-white"
+            numberOfLines={2}
+          >
+            {productName || "Sản phẩm"}
           </Text>
         </HStack>
 
@@ -80,10 +92,14 @@ const WriteReviewScreen = () => {
           </Text>
           <HStack className="space-x-3 gap-3 mb-3">
             {[1, 2, 3, 4, 5].map((star) => (
-              <Pressable key={star} onPress={() => setRating(star)} className="p-1">
+              <Pressable
+                key={star}
+                onPress={() => setRating(star)}
+                className="p-1"
+              >
                 <Icon
                   as={Star}
-                  className={`w-10 h-10 ${star <= rating ? 'text-yellow-500 fill-yellow-500' : 'text-zinc-200 dark:text-zinc-700'}`}
+                  className={`w-10 h-10 ${star <= rating ? "text-yellow-500 fill-yellow-500" : "text-zinc-200 dark:text-zinc-700"}`}
                 />
               </Pressable>
             ))}
@@ -116,7 +132,10 @@ const WriteReviewScreen = () => {
           <Text className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2 ml-1">
             Nội dung đánh giá (tuỳ chọn)
           </Text>
-          <Input className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm" style={{ height: 120 }}>
+          <Input
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm"
+            style={{ height: 120 }}
+          >
             <InputField
               value={comment}
               onChangeText={setComment}
@@ -139,7 +158,7 @@ const WriteReviewScreen = () => {
         >
           <Icon as={Send} className="text-zinc-900 w-5 h-5 mr-2" />
           <ButtonText className="text-zinc-900 font-bold text-base">
-            {loading ? 'Đang gửi...' : 'Gửi đánh giá'}
+            {loading ? "Đang gửi..." : "Gửi đánh giá"}
           </ButtonText>
         </Button>
       </ScrollView>

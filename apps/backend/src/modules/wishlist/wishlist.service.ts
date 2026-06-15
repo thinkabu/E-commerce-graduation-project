@@ -40,7 +40,10 @@ export class WishlistService {
         .sort({ addedAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate('productId', 'name images basePrice slug discountPercentage averageRating')
+        .populate(
+          'productId',
+          'name images basePrice slug discountPercentage averageRating',
+        )
         .lean(),
       this.wishlistModel.countDocuments({
         userId: new Types.ObjectId(userId),

@@ -12,7 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, UserPlus, Shield, Mail, Phone, Lock, CheckCircle2 } from "lucide-react";
+import {
+  ArrowLeft,
+  UserPlus,
+  Shield,
+  Mail,
+  Phone,
+  Lock,
+  CheckCircle2,
+} from "lucide-react";
 import { usePageTitle } from "@/contexts/PageTitleContext";
 import { toast } from "sonner";
 import { createUser } from "@/services/userService";
@@ -76,11 +84,11 @@ const AddUser: React.FC = () => {
 
     const fullPayload = {
       ...formData,
-      permissions
+      permissions,
     };
 
     const result = await createUser(fullPayload);
-    
+
     if (result.success) {
       toast.success(result.message);
       // Quay về trang danh sách sau khi tạo thành công
@@ -94,9 +102,9 @@ const AddUser: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* --- BACK BUTTON --- */}
-      <Button 
-        variant="ghost" 
-        onClick={() => navigate("/users")} 
+      <Button
+        variant="ghost"
+        onClick={() => navigate("/users")}
         className="mb-4 hover:bg-zinc-100"
       >
         <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại danh sách
@@ -104,7 +112,6 @@ const AddUser: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
           {/* --- LEFT COL: BASIC INFO --- */}
           <div className="lg:col-span-2 space-y-6">
             <Card className="border-none shadow-sm overflow-hidden">
@@ -115,67 +122,89 @@ const AddUser: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold">Thông tin cơ bản</h3>
-                    <p className="text-zinc-400 text-xs">Nhập các thông tin định danh của người dùng</p>
+                    <p className="text-zinc-400 text-xs">
+                      Nhập các thông tin định danh của người dùng
+                    </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-8 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-sm font-bold text-zinc-700">Họ và tên</Label>
+                    <Label className="text-sm font-bold text-zinc-700">
+                      Họ và tên
+                    </Label>
                     <div className="relative">
-                      <Input 
+                      <Input
                         name="fullName"
                         value={formData.fullName}
                         onChange={handleInputChange}
-                        placeholder="Nguyễn Văn A" 
-                        required 
-                        className="pl-10 h-12 rounded-xl border-zinc-200 focus:ring-zinc-900" 
+                        placeholder="Nguyễn Văn A"
+                        required
+                        className="pl-10 h-12 rounded-xl border-zinc-200 focus:ring-zinc-900"
                       />
-                      <Shield className="absolute left-3 top-3.5 text-zinc-400" size={18} />
+                      <Shield
+                        className="absolute left-3 top-3.5 text-zinc-400"
+                        size={18}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-bold text-zinc-700">Email</Label>
+                    <Label className="text-sm font-bold text-zinc-700">
+                      Email
+                    </Label>
                     <div className="relative">
-                      <Input 
+                      <Input
                         name="email"
                         type="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        placeholder="a.nguyen@example.com" 
-                        required 
-                        className="pl-10 h-12 rounded-xl border-zinc-200" 
+                        placeholder="a.nguyen@example.com"
+                        required
+                        className="pl-10 h-12 rounded-xl border-zinc-200"
                       />
-                      <Mail className="absolute left-3 top-3.5 text-zinc-400" size={18} />
+                      <Mail
+                        className="absolute left-3 top-3.5 text-zinc-400"
+                        size={18}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-bold text-zinc-700">Số điện thoại</Label>
+                    <Label className="text-sm font-bold text-zinc-700">
+                      Số điện thoại
+                    </Label>
                     <div className="relative">
-                      <Input 
+                      <Input
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        placeholder="0912345678" 
-                        className="pl-10 h-12 rounded-xl border-zinc-200" 
+                        placeholder="0912345678"
+                        className="pl-10 h-12 rounded-xl border-zinc-200"
                       />
-                      <Phone className="absolute left-3 top-3.5 text-zinc-400" size={18} />
+                      <Phone
+                        className="absolute left-3 top-3.5 text-zinc-400"
+                        size={18}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-bold text-zinc-700">Mật khẩu khởi tạo</Label>
+                    <Label className="text-sm font-bold text-zinc-700">
+                      Mật khẩu khởi tạo
+                    </Label>
                     <div className="relative">
-                      <Input 
+                      <Input
                         name="password"
                         type="password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        placeholder="••••••••" 
-                        required 
-                        className="pl-10 h-12 rounded-xl border-zinc-200" 
+                        placeholder="••••••••"
+                        required
+                        className="pl-10 h-12 rounded-xl border-zinc-200"
                       />
-                      <Lock className="absolute left-3 top-3.5 text-zinc-400" size={18} />
+                      <Lock
+                        className="absolute left-3 top-3.5 text-zinc-400"
+                        size={18}
+                      />
                     </div>
                   </div>
                 </div>
@@ -190,8 +219,12 @@ const AddUser: React.FC = () => {
                     <Shield size={20} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-zinc-900">Phân quyền chi tiết</h3>
-                    <p className="text-zinc-500 text-xs">Bật/Tắt các quyền hạn cụ thể cho người dùng này</p>
+                    <h3 className="text-lg font-bold text-zinc-900">
+                      Phân quyền chi tiết
+                    </h3>
+                    <p className="text-zinc-500 text-xs">
+                      Bật/Tắt các quyền hạn cụ thể cho người dùng này
+                    </p>
                   </div>
                 </div>
               </CardHeader>
@@ -199,30 +232,42 @@ const AddUser: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                   <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
                     <div>
-                      <p className="font-bold text-zinc-800">Quản lý sản phẩm</p>
-                      <p className="text-xs text-zinc-500">Xem, thêm, sửa, xóa sản phẩm</p>
+                      <p className="font-bold text-zinc-800">
+                        Quản lý sản phẩm
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        Xem, thêm, sửa, xóa sản phẩm
+                      </p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={permissions.manageProducts}
                       onCheckedChange={() => togglePermission("manageProducts")}
                     />
                   </div>
                   <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
                     <div>
-                      <p className="font-bold text-zinc-800">Quản lý đơn hàng</p>
-                      <p className="text-xs text-zinc-500">Duyệt và cập nhật trạng thái đơn</p>
+                      <p className="font-bold text-zinc-800">
+                        Quản lý đơn hàng
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        Duyệt và cập nhật trạng thái đơn
+                      </p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={permissions.manageOrders}
                       onCheckedChange={() => togglePermission("manageOrders")}
                     />
                   </div>
                   <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
                     <div>
-                      <p className="font-bold text-zinc-800">Quản lý khách hàng</p>
-                      <p className="text-xs text-zinc-500">Xem thông tin và phân quyền user</p>
+                      <p className="font-bold text-zinc-800">
+                        Quản lý khách hàng
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        Xem thông tin và phân quyền user
+                      </p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={permissions.manageUsers}
                       onCheckedChange={() => togglePermission("manageUsers")}
                     />
@@ -230,19 +275,25 @@ const AddUser: React.FC = () => {
                   <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
                     <div>
                       <p className="font-bold text-zinc-800">Xem báo cáo</p>
-                      <p className="text-xs text-zinc-500">Truy cập doanh thu và thống kê</p>
+                      <p className="text-xs text-zinc-500">
+                        Truy cập doanh thu và thống kê
+                      </p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={permissions.viewReports}
                       onCheckedChange={() => togglePermission("viewReports")}
                     />
                   </div>
                   <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
                     <div>
-                      <p className="font-bold text-zinc-800">Khuyến mãi & Coupon</p>
-                      <p className="text-xs text-zinc-500">Quản lý các chiến dịch giảm giá</p>
+                      <p className="font-bold text-zinc-800">
+                        Khuyến mãi & Coupon
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        Quản lý các chiến dịch giảm giá
+                      </p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={permissions.manageCoupons}
                       onCheckedChange={() => togglePermission("manageCoupons")}
                     />
@@ -257,22 +308,31 @@ const AddUser: React.FC = () => {
             <Card className="border-none shadow-sm">
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-bold text-zinc-700">Vai trò hệ thống</Label>
-                  <Select value={formData.role} onValueChange={handleRoleChange}>
+                  <Label className="text-sm font-bold text-zinc-700">
+                    Vai trò hệ thống
+                  </Label>
+                  <Select
+                    value={formData.role}
+                    onValueChange={handleRoleChange}
+                  >
                     <SelectTrigger className="h-12 rounded-xl border-zinc-200">
                       <SelectValue placeholder="Chọn vai trò" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">Khách hàng (User)</SelectItem>
-                      <SelectItem value="admin">Quản trị viên (Admin)</SelectItem>
+                      <SelectItem value="admin">
+                        Quản trị viên (Admin)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[10px] text-zinc-400 mt-2 italic">* Vai trò Admin sẽ có toàn quyền truy cập hệ thống</p>
+                  <p className="text-[10px] text-zinc-400 mt-2 italic">
+                    * Vai trò Admin sẽ có toàn quyền truy cập hệ thống
+                  </p>
                 </div>
 
                 <div className="pt-6 border-t border-zinc-100">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={isLoading}
                     className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white font-black rounded-2xl shadow-xl shadow-zinc-900/20 transition-all active:scale-[0.98] disabled:opacity-70"
                   >
@@ -294,7 +354,8 @@ const AddUser: React.FC = () => {
                   Tạm thời chưa dùng đến email thông báo.
                   "Sau khi tạo, người dùng sẽ nhận được email thông báo để kích hoạt tài khoản và đổi mật khẩu lần đầu." 
                 */}
-                Vui lòng kiểm tra kỹ thông tin trước khi xác nhận tạo người dùng mới.
+                Vui lòng kiểm tra kỹ thông tin trước khi xác nhận tạo người dùng
+                mới.
               </p>
             </div>
           </div>

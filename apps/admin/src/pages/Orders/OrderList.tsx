@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,18 +19,30 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { usePageTitle } from "@/contexts/PageTitleContext";
-import { Search, ChevronLeft, ChevronRight, Loader2, DollarSign, ShoppingCart, Clock } from "lucide-react";
-import { getAdminOrders, updateOrderStatus, getAdminOrderSummary } from "@/services/orderService";
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  DollarSign,
+  ShoppingCart,
+  Clock,
+} from "lucide-react";
+import {
+  getAdminOrders,
+  updateOrderStatus,
+  getAdminOrderSummary,
+} from "@/services/orderService";
 
 // Mock enums
 const OrderStatus = {
-  PENDING: 'PENDING',
-  CONFIRMED: 'CONFIRMED',
-  PROCESSING: 'PROCESSING',
-  SHIPPING: 'SHIPPING',
-  DELIVERED: 'DELIVERED',
-  CANCELLED: 'CANCELLED',
-  RETURNED: 'RETURNED',
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  PROCESSING: "PROCESSING",
+  SHIPPING: "SHIPPING",
+  DELIVERED: "DELIVERED",
+  CANCELLED: "CANCELLED",
+  RETURNED: "RETURNED",
 } as const;
 
 type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
@@ -33,7 +52,7 @@ const OrderList: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  
+
   // Date range filters (empty by default to load all historical orders)
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -43,44 +62,116 @@ const OrderList: React.FC = () => {
 
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
-      case OrderStatus.PENDING: return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Chờ duyệt</Badge>;
-      case OrderStatus.CONFIRMED: return <Badge variant="secondary" className="bg-purple-100 text-purple-700">Đã xác nhận</Badge>;
-      case OrderStatus.PROCESSING: return <Badge variant="secondary" className="bg-blue-100 text-blue-700">Đang xử lý</Badge>;
-      case OrderStatus.SHIPPING: return <Badge variant="secondary" className="bg-orange-100 text-orange-700">Đang giao</Badge>;
-      case OrderStatus.DELIVERED: return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Đã giao</Badge>;
-      case OrderStatus.CANCELLED: return <Badge variant="destructive">Đã hủy</Badge>;
-      case OrderStatus.RETURNED: return <Badge variant="outline" className="text-red-600 border-red-600">Đã trả hàng</Badge>;
-      default: return <Badge>{status}</Badge>;
+      case OrderStatus.PENDING:
+        return (
+          <Badge
+            variant="outline"
+            className="text-yellow-600 border-yellow-600"
+          >
+            Chờ duyệt
+          </Badge>
+        );
+      case OrderStatus.CONFIRMED:
+        return (
+          <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+            Đã xác nhận
+          </Badge>
+        );
+      case OrderStatus.PROCESSING:
+        return (
+          <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+            Đang xử lý
+          </Badge>
+        );
+      case OrderStatus.SHIPPING:
+        return (
+          <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+            Đang giao
+          </Badge>
+        );
+      case OrderStatus.DELIVERED:
+        return (
+          <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+            Đã giao
+          </Badge>
+        );
+      case OrderStatus.CANCELLED:
+        return <Badge variant="destructive">Đã hủy</Badge>;
+      case OrderStatus.RETURNED:
+        return (
+          <Badge variant="outline" className="text-red-600 border-red-600">
+            Đã trả hàng
+          </Badge>
+        );
+      default:
+        return <Badge>{status}</Badge>;
     }
   };
 
   const getOrderItemsCount = (order: any) => {
-    return order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0;
+    return (
+      order.items?.reduce(
+        (sum: number, item: any) => sum + (item.quantity || 0),
+        0,
+      ) || 0
+    );
   };
 
   const formatOrderTime = (dateStr: string) => {
     const d = new Date(dateStr);
-    const time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-    const date = d.toLocaleDateString('vi-VN');
+    const time = d.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const date = d.toLocaleDateString("vi-VN");
     return `${time} - ${date}`;
   };
 
   const getPaymentMethodBadge = (method: string) => {
     switch (method) {
-      case 'COD':
-        return <Badge variant="outline" className="text-zinc-600 border-zinc-300 bg-zinc-50 font-normal">COD (Tiền mặt)</Badge>;
-      case 'BANKING':
-        return <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50/50 font-normal">Chuyển khoản</Badge>;
-      case 'CRYPTO':
-        return <Badge variant="outline" className="text-purple-600 border-purple-300 bg-purple-50/50 font-normal">Crypto 🌐</Badge>;
+      case "COD":
+        return (
+          <Badge
+            variant="outline"
+            className="text-zinc-600 border-zinc-300 bg-zinc-50 font-normal"
+          >
+            COD (Tiền mặt)
+          </Badge>
+        );
+      case "BANKING":
+        return (
+          <Badge
+            variant="outline"
+            className="text-blue-600 border-blue-300 bg-blue-50/50 font-normal"
+          >
+            Chuyển khoản
+          </Badge>
+        );
+      case "CRYPTO":
+        return (
+          <Badge
+            variant="outline"
+            className="text-purple-600 border-purple-300 bg-purple-50/50 font-normal"
+          >
+            Crypto 🌐
+          </Badge>
+        );
       default:
-        return <Badge variant="outline" className="font-normal">{method}</Badge>;
+        return (
+          <Badge variant="outline" className="font-normal">
+            {method}
+          </Badge>
+        );
     }
   };
 
   const [orders, setOrders] = useState<any[]>([]);
   const [totalOrders, setTotalOrders] = useState<number>(0);
-  const [summary, setSummary] = useState({ totalOrders: 0, totalRevenue: 0, pendingOrders: 0 });
+  const [summary, setSummary] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchOrders = async () => {
@@ -110,7 +201,10 @@ const OrderList: React.FC = () => {
 
   const fetchSummary = async () => {
     try {
-      const res = await getAdminOrderSummary(startDate || undefined, endDate || undefined);
+      const res = await getAdminOrderSummary(
+        startDate || undefined,
+        endDate || undefined,
+      );
       if (res) setSummary(res);
     } catch (error) {
       console.error("Error fetching summary", error);
@@ -151,8 +245,10 @@ const OrderList: React.FC = () => {
     setModalLoading(true);
     try {
       await updateOrderStatus(selectedOrder._id, newStatus);
-      setOrders(prevOrders => 
-        prevOrders.map(o => o._id === selectedOrder._id ? { ...o, orderStatus: newStatus } : o)
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o._id === selectedOrder._id ? { ...o, orderStatus: newStatus } : o,
+        ),
       );
       setIsEditModalOpen(false);
       setSelectedOrder(null);
@@ -172,9 +268,17 @@ const OrderList: React.FC = () => {
     }
     setModalLoading(true);
     try {
-      await updateOrderStatus(selectedOrder._id, OrderStatus.CANCELLED, cancelReason.trim());
-      setOrders(prevOrders => 
-        prevOrders.map(o => o._id === selectedOrder._id ? { ...o, orderStatus: OrderStatus.CANCELLED } : o)
+      await updateOrderStatus(
+        selectedOrder._id,
+        OrderStatus.CANCELLED,
+        cancelReason.trim(),
+      );
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o._id === selectedOrder._id
+            ? { ...o, orderStatus: OrderStatus.CANCELLED }
+            : o,
+        ),
       );
       setIsCancelModalOpen(false);
       setSelectedOrder(null);
@@ -195,7 +299,9 @@ const OrderList: React.FC = () => {
         <Card>
           <CardContent className="p-6 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Doanh thu</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Doanh thu
+              </p>
               <h3 className="text-2xl font-bold mt-2">
                 {(summary?.totalRevenue || 0).toLocaleString()} ₫
               </h3>
@@ -208,8 +314,12 @@ const OrderList: React.FC = () => {
         <Card>
           <CardContent className="p-6 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Tổng đơn hàng</p>
-              <h3 className="text-2xl font-bold mt-2">{summary?.totalOrders || 0}</h3>
+              <p className="text-sm font-medium text-muted-foreground">
+                Tổng đơn hàng
+              </p>
+              <h3 className="text-2xl font-bold mt-2">
+                {summary?.totalOrders || 0}
+              </h3>
             </div>
             <div className="h-12 w-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
               <ShoppingCart className="h-6 w-6" />
@@ -219,8 +329,12 @@ const OrderList: React.FC = () => {
         <Card>
           <CardContent className="p-6 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Đơn chờ duyệt</p>
-              <h3 className="text-2xl font-bold mt-2">{summary?.pendingOrders || 0}</h3>
+              <p className="text-sm font-medium text-muted-foreground">
+                Đơn chờ duyệt
+              </p>
+              <h3 className="text-2xl font-bold mt-2">
+                {summary?.pendingOrders || 0}
+              </h3>
             </div>
             <div className="h-12 w-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center">
               <Clock className="h-6 w-6" />
@@ -233,7 +347,9 @@ const OrderList: React.FC = () => {
         <CardHeader>
           <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="relative flex-1">
-              <span className="text-xs text-muted-foreground mb-1 block">Tìm kiếm</span>
+              <span className="text-xs text-muted-foreground mb-1 block">
+                Tìm kiếm
+              </span>
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -245,7 +361,9 @@ const OrderList: React.FC = () => {
               </div>
             </div>
             <div className="w-full md:w-[150px]">
-              <span className="text-xs text-muted-foreground mb-1 block">Từ ngày</span>
+              <span className="text-xs text-muted-foreground mb-1 block">
+                Từ ngày
+              </span>
               <Input
                 type="date"
                 value={startDate}
@@ -253,7 +371,9 @@ const OrderList: React.FC = () => {
               />
             </div>
             <div className="w-full md:w-[150px]">
-              <span className="text-xs text-muted-foreground mb-1 block">Đến ngày</span>
+              <span className="text-xs text-muted-foreground mb-1 block">
+                Đến ngày
+              </span>
               <Input
                 type="date"
                 value={endDate}
@@ -261,7 +381,9 @@ const OrderList: React.FC = () => {
               />
             </div>
             <div className="w-full md:w-[160px]">
-              <span className="text-xs text-muted-foreground mb-1 block">Trạng thái</span>
+              <span className="text-xs text-muted-foreground mb-1 block">
+                Trạng thái
+              </span>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Lọc theo trạng thái" />
@@ -269,12 +391,20 @@ const OrderList: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">Tất cả trạng thái</SelectItem>
                   <SelectItem value={OrderStatus.PENDING}>Chờ duyệt</SelectItem>
-                  <SelectItem value={OrderStatus.CONFIRMED}>Đã xác nhận</SelectItem>
-                  <SelectItem value={OrderStatus.PROCESSING}>Đang xử lý</SelectItem>
-                  <SelectItem value={OrderStatus.SHIPPING}>Đang giao</SelectItem>
+                  <SelectItem value={OrderStatus.CONFIRMED}>
+                    Đã xác nhận
+                  </SelectItem>
+                  <SelectItem value={OrderStatus.PROCESSING}>
+                    Đang xử lý
+                  </SelectItem>
+                  <SelectItem value={OrderStatus.SHIPPING}>
+                    Đang giao
+                  </SelectItem>
                   <SelectItem value={OrderStatus.DELIVERED}>Đã giao</SelectItem>
                   <SelectItem value={OrderStatus.CANCELLED}>Đã hủy</SelectItem>
-                  <SelectItem value={OrderStatus.RETURNED}>Đã trả hàng</SelectItem>
+                  <SelectItem value={OrderStatus.RETURNED}>
+                    Đã trả hàng
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -295,74 +425,94 @@ const OrderList: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-               {isLoading ? (
-                 <TableRow>
-                   <TableCell colSpan={8} className="h-24 text-center">
-                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-zinc-400" />
-                   </TableCell>
-                 </TableRow>
-               ) : orders.length > 0 ? (
-                 orders.map((order) => (
-                    <TableRow key={order._id}>
-                      <TableCell className="font-semibold text-xs">{order.orderId}</TableCell>
-                      <TableCell>{order.shippingAddressSnapshot?.fullName || 'N/A'}</TableCell>
-                      <TableCell className="text-center font-medium">
-                         {getOrderItemsCount(order)} món
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                         {formatOrderTime(order.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                         {getPaymentMethodBadge(order.paymentMethod)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-blue-600">
-                         {order.totalAmount?.toLocaleString()} ₫
-                      </TableCell>
-                      <TableCell className="text-center">
-                         <div className="flex justify-center">
-                           {getStatusBadge(order.orderStatus)}
-                         </div>
-                      </TableCell>
-                      <TableCell>
-                         <div className="flex items-center gap-2 justify-center">
-                           <Button 
-                             variant="outline" 
-                             size="sm" 
-                             className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 h-8 px-3"
-                             onClick={() => handleOpenEditModal(order)}
-                           >
-                             Sửa
-                           </Button>
-                           <Button 
-                             variant="outline" 
-                             size="sm" 
-                             className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 h-8 px-3"
-                             onClick={() => handleOpenCancelModal(order)}
-                           >
-                             Xóa
-                           </Button>
-                         </div>
-                      </TableCell>
-                    </TableRow>
-                 ))
-               ) : (
-                 <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">Không tìm thấy đơn hàng.</TableCell>
-                 </TableRow>
-               )}
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-zinc-400" />
+                  </TableCell>
+                </TableRow>
+              ) : orders.length > 0 ? (
+                orders.map((order) => (
+                  <TableRow key={order._id}>
+                    <TableCell className="font-semibold text-xs">
+                      {order.orderId}
+                    </TableCell>
+                    <TableCell>
+                      {order.shippingAddressSnapshot?.fullName || "N/A"}
+                    </TableCell>
+                    <TableCell className="text-center font-medium">
+                      {getOrderItemsCount(order)} món
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatOrderTime(order.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      {getPaymentMethodBadge(order.paymentMethod)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-blue-600">
+                      {order.totalAmount?.toLocaleString()} ₫
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        {getStatusBadge(order.orderStatus)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 h-8 px-3"
+                          onClick={() => handleOpenEditModal(order)}
+                        >
+                          Sửa
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 h-8 px-3"
+                          onClick={() => handleOpenCancelModal(order)}
+                        >
+                          Xóa
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center">
+                    Không tìm thấy đơn hàng.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
 
           {totalPages > 1 && (
-             <div className="flex items-center justify-end space-x-2 mt-4">
-               <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                 <ChevronLeft className="h-4 w-4" /> Prev
-               </Button>
-               <span className="text-sm">Page {currentPage} of {totalPages}</span>
-               <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-                 Next <ChevronRight className="h-4 w-4" />
-               </Button>
-             </div>
+            <div className="flex items-center justify-end space-x-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" /> Prev
+              </Button>
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages}
+              >
+                Next <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -372,48 +522,71 @@ const OrderList: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-background border rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200">
             <div className="p-6">
-              <h3 className="text-lg font-bold text-foreground">Cập nhật trạng thái đơn hàng</h3>
+              <h3 className="text-lg font-bold text-foreground">
+                Cập nhật trạng thái đơn hàng
+              </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Đơn hàng: <span className="font-semibold text-primary">{selectedOrder.orderId}</span>
+                Đơn hàng:{" "}
+                <span className="font-semibold text-primary">
+                  {selectedOrder.orderId}
+                </span>
               </p>
-              
+
               <div className="mt-4 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Trạng thái mới</label>
-                  <Select 
-                    value={newStatus} 
+                  <label className="text-sm font-medium text-foreground">
+                    Trạng thái mới
+                  </label>
+                  <Select
+                    value={newStatus}
                     onValueChange={(val) => setNewStatus(val as OrderStatus)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Chọn trạng thái" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={OrderStatus.PENDING}>Chờ duyệt</SelectItem>
-                      <SelectItem value={OrderStatus.CONFIRMED}>Đã xác nhận</SelectItem>
-                      <SelectItem value={OrderStatus.PROCESSING}>Đang xử lý</SelectItem>
-                      <SelectItem value={OrderStatus.SHIPPING}>Đang giao</SelectItem>
-                      <SelectItem value={OrderStatus.DELIVERED}>Đã giao</SelectItem>
-                      <SelectItem value={OrderStatus.CANCELLED}>Đã hủy</SelectItem>
-                      <SelectItem value={OrderStatus.RETURNED}>Đã trả hàng</SelectItem>
+                      <SelectItem value={OrderStatus.PENDING}>
+                        Chờ duyệt
+                      </SelectItem>
+                      <SelectItem value={OrderStatus.CONFIRMED}>
+                        Đã xác nhận
+                      </SelectItem>
+                      <SelectItem value={OrderStatus.PROCESSING}>
+                        Đang xử lý
+                      </SelectItem>
+                      <SelectItem value={OrderStatus.SHIPPING}>
+                        Đang giao
+                      </SelectItem>
+                      <SelectItem value={OrderStatus.DELIVERED}>
+                        Đã giao
+                      </SelectItem>
+                      <SelectItem value={OrderStatus.CANCELLED}>
+                        Đã hủy
+                      </SelectItem>
+                      <SelectItem value={OrderStatus.RETURNED}>
+                        Đã trả hàng
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-end gap-3 px-6 py-4 bg-muted/40 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => { setIsEditModalOpen(false); setSelectedOrder(null); }}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setSelectedOrder(null);
+                }}
                 disabled={modalLoading}
               >
                 Hủy bỏ
               </Button>
-              <Button 
-                onClick={handleSaveStatus}
-                disabled={modalLoading}
-              >
-                {modalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button onClick={handleSaveStatus} disabled={modalLoading}>
+                {modalLoading && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Lưu thay đổi
               </Button>
             </div>
@@ -430,9 +603,13 @@ const OrderList: React.FC = () => {
                 ⚠️ Hủy đơn hàng
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Bạn đang thực hiện hủy đơn hàng <span className="font-semibold text-foreground">{selectedOrder.orderId}</span>.
+                Bạn đang thực hiện hủy đơn hàng{" "}
+                <span className="font-semibold text-foreground">
+                  {selectedOrder.orderId}
+                </span>
+                .
               </p>
-              
+
               <div className="mt-4 space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">
@@ -445,26 +622,32 @@ const OrderList: React.FC = () => {
                     onChange={(e) => setCancelReason(e.target.value)}
                   />
                   <p className="text-[11px] text-muted-foreground italic">
-                    * Lý do này sẽ được hiển thị cho khách hàng xem trong phần chi tiết đơn hàng của họ.
+                    * Lý do này sẽ được hiển thị cho khách hàng xem trong phần
+                    chi tiết đơn hàng của họ.
                   </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-end gap-3 px-6 py-4 bg-muted/40 border-t">
-              <Button 
-                variant="outline" 
-                onClick={() => { setIsCancelModalOpen(false); setSelectedOrder(null); }}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCancelModalOpen(false);
+                  setSelectedOrder(null);
+                }}
                 disabled={modalLoading}
               >
                 Hủy bỏ
               </Button>
-              <Button 
+              <Button
                 variant="destructive"
                 onClick={handleCancelOrder}
                 disabled={modalLoading}
               >
-                {modalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {modalLoading && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Xác nhận hủy
               </Button>
             </div>

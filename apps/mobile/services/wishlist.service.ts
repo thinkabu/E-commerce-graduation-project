@@ -1,13 +1,13 @@
-import api from './api';
+import api from "./api";
 
 export const getWishlist = async (userId: string, page = 1, limit = 10) => {
   try {
-    const response = await api.get('/wishlist', {
+    const response = await api.get("/wishlist", {
       params: { userId, page, limit },
     });
     return response.data.data || response.data;
   } catch (error) {
-    console.error('Error fetching wishlist:', error);
+    console.error("Error fetching wishlist:", error);
     return null;
   }
 };
@@ -17,11 +17,11 @@ export const toggleWishlist = async (userId: string, productId: string) => {
     const response = await api.post(
       `/wishlist/toggle/${productId}`,
       {},
-      { params: { userId } }
+      { params: { userId } },
     );
     return response.data.data || response.data;
   } catch (error) {
-    console.error('Error toggling wishlist:', error);
+    console.error("Error toggling wishlist:", error);
     throw error;
   }
 };
@@ -35,7 +35,7 @@ export const checkWishlist = async (userId: string, productId: string) => {
     const data = response.data.data || response.data;
     return data.isWished;
   } catch (error) {
-    console.error('Error checking wishlist:', error);
+    console.error("Error checking wishlist:", error);
     return false;
   }
 };

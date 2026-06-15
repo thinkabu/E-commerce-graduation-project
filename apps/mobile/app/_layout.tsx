@@ -22,7 +22,9 @@ export default function RootLayout() {
   const { colorScheme } = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? customDarkTheme : customLightTheme}>
+    <ThemeProvider
+      value={colorScheme === "dark" ? customDarkTheme : customLightTheme}
+    >
       <GluestackUIProvider mode="system">
         <ThemeContextProvider>
           <AuthContextProvider>
