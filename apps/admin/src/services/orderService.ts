@@ -93,3 +93,21 @@ export const updateOrderStatus = async (
     throw error;
   }
 };
+
+export const getAdminDashboardStats = async (startDate?: string, endDate?: string) => {
+  try {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    const url = `${BASE_URL}/orders/admin/dashboard?${params.toString()}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error("Failed to fetch dashboard stats");
+    }
+    const json = await res.json();
+    return json.data || json;
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    return null;
+  }
+};

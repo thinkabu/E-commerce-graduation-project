@@ -9,6 +9,7 @@ import {
   ProductVariantSchema,
 } from '../products/schemas/product-variant.schema';
 import { Address, AddressSchema } from '../users/schemas/address.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import { Coupon, CouponSchema } from '../coupons/schemas/coupon.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
 
@@ -20,6 +21,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       { name: ProductVariant.name, schema: ProductVariantSchema },
       { name: Address.name, schema: AddressSchema },
       { name: Coupon.name, schema: CouponSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     NotificationsModule, // Dùng NotificationsService trong OrdersService
   ],

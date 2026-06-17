@@ -41,8 +41,10 @@ export class AuthService {
       role: user.role,
     };
 
+    const expiresIn = isAdminRequired ? '3d' : '60d';
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, { expiresIn }),
       user: {
         _id: user._id,
         fullName: user.fullName,

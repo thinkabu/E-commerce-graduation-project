@@ -12,9 +12,9 @@ export class UserProfileEmbedding {
   userId: Types.ObjectId;
 
   @Prop({ type: [Number], required: true })
-  embedding: number[]; // Vector 1536 dimensions đại diện cho sở thích tích hợp của User
+  embedding: number[]; // Vector 384 dimensions đại diện cho sở thích tích hợp của User
 
-  @Prop({ default: 'text-embedding-3-small' })
+  @Prop({ default: 'paraphrase-multilingual-MiniLM-L12-v2' })
   embeddingModel: string; // Tên model sinh vector
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Product' }], default: [] })

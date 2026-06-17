@@ -31,9 +31,9 @@ export const checkWishlist = async (userId: string, productId: string) => {
     const response = await api.get(`/wishlist/check/${productId}`, {
       params: { userId },
     });
-    // The endpoint returns { isWished: boolean }
+    // The endpoint returns { isWishlisted: boolean }
     const data = response.data.data || response.data;
-    return data.isWished;
+    return data.isWishlisted ?? data.isWished ?? false;
   } catch (error) {
     console.error("Error checking wishlist:", error);
     return false;

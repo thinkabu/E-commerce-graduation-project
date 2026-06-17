@@ -9,6 +9,7 @@ import { RecommendationFeedbackLog, RecommendationFeedbackLogDocument } from './
 import { UserBehavior, UserBehaviorDocument } from './schemas/user-behavior.schema';
 import { ProductEmbedding, ProductEmbeddingDocument } from './schemas/product-embedding.schema';
 import { Product, ProductDocument } from '../products/schemas/product.schema';
+import { Wishlist, WishlistDocument } from '../wishlist/schemas/wishlist.schema';
 import { AiEmbeddingService } from './ai-embedding.service';
 
 export interface IRecommendationResult {
@@ -43,6 +44,8 @@ export class RecommendationsService {
     private readonly productEmbeddingModel: Model<ProductEmbeddingDocument>,
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
+    @InjectModel(Wishlist.name)
+    private readonly wishlistModel: Model<WishlistDocument>,
     private readonly aiEmbeddingService: AiEmbeddingService,
   ) {}
 
@@ -185,12 +188,9 @@ export class RecommendationsService {
           reason: 'Vector Similarity (Cosine Fallback)',
         };
       })
-     
-      .filter(item => item.score >= -1.0) // Chấp nhận tất cả ứng viên để luôn hiển thị sản phẩm tương tự khi test với Mock Vector
+      .filter(item => item.score >= 0.35) // Chỉ lấy sản phẩm có độ tương quan khá trở lên (>= 0.35)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
-      //  .filter(item => item.score > 0.4) // Chỉ lấy sản phẩm có độ tương quan khá trở lên
-      // .sort((a, b) => b.score - a.score)
 
     return matched;
   }
@@ -302,14 +302,38 @@ export class RecommendationsService {
     }
 
     // --- 2. GIAI ĐOẠN FEATURE RETRIEVAL: ĐỌC DỮ LIỆU TỪ FEATURE STORE ---
-    const [userProfile, productMetricsList] = await Promise.all([
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const [userProfile, productMetricsList, candidateProducts, wishlistItems, recentLogs] = await Promise.all([
       userObjId ? this.userRecProfileModel.findOne({ userId: userObjId }).lean() : null,
       this.productMetricsModel.find({ productId: { $in: candidateIds.map(id => new Types.ObjectId(id)) } }).lean(),
+      this.productModel.find({ _id: { $in: candidateIds.map(id => new Types.ObjectId(id)) }, isActive: true }).lean(),
+      userObjId ? this.wishlistModel.find({ userId: userObjId }).lean() : [] as any[],
+      userObjId ? this.feedbackLogModel.find({
+        userId: userObjId,
+        createdAt: { $gte: fiveMinutesAgo },
+        recommendationType: 'home_feed',
+      }).lean() as any : [] as any[],
     ]);
 
     const productMetricsMap = new Map<string, any>();
     productMetricsList.forEach(m => {
       productMetricsMap.set(m.productId.toString(), m);
+    });
+
+    const candidateProductsMap = new Map<string, any>();
+    candidateProducts.forEach(p => {
+      candidateProductsMap.set(p._id.toString(), p);
+    });
+
+    const wishlistedProductIds = new Set<string>(
+      wishlistItems.map(w => w.productId.toString())
+    );
+
+    const recentlyShownProductIds = new Set<string>();
+    recentLogs.forEach(log => {
+      log.recommendedProducts?.forEach(item => {
+        recentlyShownProductIds.add(item.productId.toString());
+      });
     });
 
     // --- 3. GIAI ĐOẠN RE-RANKING: AI HEURISTIC RANKING FORMULA ---
@@ -318,6 +342,7 @@ export class RecommendationsService {
 
     candidateMap.forEach((scores, prodId) => {
       const metrics = productMetricsMap.get(prodId);
+      const product = candidateProductsMap.get(prodId);
       
       // Trọng số các thành phần (Tổng = 1.0)
       const wVector = 0.35; // Độ tương đồng về vector
@@ -333,29 +358,64 @@ export class RecommendationsService {
           : (metrics.averageRating / 5.0) * 0.5;
       }
 
-      // Tính điểm khớp Category & Brand từ User Profile
+      // Tính điểm khớp Category & Brand từ User Profile và Wishlist
       let contextScore = 0;
-      if (userProfile && metrics) {
-        // Kiểm tra khớp danh mục ưa thích
-        const preferredCat = userProfile.preferredCategories?.find(
-          c => c.categoryId?.toString() === metrics.productId?.toString(), // mock check
-        );
-        if (preferredCat) {
-          contextScore += 0.6 * (preferredCat.score / 10.0);
+      if (userProfile && product) {
+        // 1. Kiểm tra khớp danh mục ưa thích (trọng số 0.4)
+        const prodCatId = product.categoryId?.toString();
+        if (prodCatId) {
+          const preferredCat = userProfile.preferredCategories?.find(
+            c => c.categoryId?.toString() === prodCatId,
+          );
+          if (preferredCat) {
+            contextScore += 0.4 * (preferredCat.score / 10.0);
+          }
         }
 
-        // Kiểm tra khớp khoảng giá ưa thích
-        if (userProfile.pricePreference && metrics.popularityScore > 0) { // Giả lập khớp khoảng giá
-          contextScore += 0.4;
+        // 2. Kiểm tra khớp thương hiệu/nhà sản xuất ưa thích (trọng số 0.2)
+        const prodBrand = product.manufacturer;
+        if (prodBrand) {
+          const preferredBrand = userProfile.preferredBrands?.find(
+            b => b.brand?.toLowerCase() === prodBrand.toLowerCase(),
+          );
+          if (preferredBrand) {
+            contextScore += 0.2 * (preferredBrand.score / 10.0);
+          }
+        }
+
+        // 3. Kiểm tra khớp khoảng giá ưa thích (trọng số 0.2)
+        if (userProfile.pricePreference && userProfile.pricePreference.avg > 0) {
+          const priceDiff = Math.abs(product.basePrice - userProfile.pricePreference.avg);
+          const priceRatio = priceDiff / userProfile.pricePreference.avg;
+          // Điểm cộng tối đa là 0.2 nếu khớp chính xác, giảm dần nếu lệch
+          contextScore += Math.max(0, 0.2 * (1 - priceRatio));
+        }
+
+        // 4. Cộng điểm nếu sản phẩm nằm trong Wishlist của người dùng (trọng số 0.2)
+        if (wishlistedProductIds.has(prodId)) {
+          contextScore += 0.2;
         }
       }
 
       // Tổng điểm AI Ranking
-      const finalScore = 
+      let finalScore = 
         (scores.vectorScore * wVector) +
         (scores.cfScore * wCF) +
         (popScore * wPopularity) +
         (contextScore * wContext);
+
+      // --- ÁP DỤNG ROTATION (LUÂN PHIÊN) ---
+      // Nếu sản phẩm đã được hiển thị cho user trong 5 phút qua, phạt nhẹ điểm số
+      if (recentlyShownProductIds.has(prodId)) {
+        finalScore -= 0.15;
+      }
+
+      // --- ÁP DỤNG JITTER (XÁO TRỘN NGẪU NHIÊN ±3%) ---
+      const jitter = (Math.random() * 0.06) - 0.03; // Random từ -0.03 đến 0.03
+      finalScore += jitter;
+
+      // Giới hạn điểm số trong khoảng [0.0, 1.0]
+      finalScore = Math.max(0, Math.min(1.0, finalScore));
 
       // Xác định lý do xếp hạng cao nhất để giải thích UI
       let reason = 'Được đề xuất dựa trên sở thích của bạn';
@@ -477,8 +537,8 @@ export class RecommendationsService {
       ];
       const textUsed = textParts.filter(Boolean).join('. ');
 
-      // Gọi service sinh vector
-      const embedding = await this.aiEmbeddingService.generateEmbedding(textUsed, 1536);
+      // Gọi service sinh vector (384 chiều cho paraphrase-multilingual-MiniLM-L12-v2)
+      const embedding = await this.aiEmbeddingService.generateEmbedding(textUsed, 384);
 
       // Cập nhật bảng product_embeddings
       await this.productEmbeddingModel.updateOne(
@@ -487,11 +547,7 @@ export class RecommendationsService {
           $set: {
             embedding,
             textUsedForEmbedding: textUsed,
-            embeddingModel: process.env.OPENAI_API_KEY
-              ? 'text-embedding-3-small'
-              : process.env.GEMINI_API_KEY
-              ? 'text-embedding-004'
-              : 'local-hash-mock',
+            embeddingModel: 'paraphrase-multilingual-MiniLM-L12-v2',
             lastGeneratedAt: new Date(),
           },
           $inc: { version: 1 },

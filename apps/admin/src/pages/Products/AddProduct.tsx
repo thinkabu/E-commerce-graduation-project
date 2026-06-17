@@ -26,6 +26,8 @@ const AddProduct: React.FC = () => {
   usePageTitle("Thêm Sản Phẩm Mới");
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [selectedParentId, setSelectedParentId] = useState<string>("");
+  const [selectedSubId, setSelectedSubId] = useState<string>("");
 
   const {
     formData,
@@ -186,35 +188,88 @@ const AddProduct: React.FC = () => {
                   </div>
                   <div className="space-y-4">
                     <h4 className="text-md font-medium">Loại Sản Phẩm</h4>
-                    <div>
-                      <Label>
-                        Danh mục: <span className="text-destructive">*</span>
-                      </Label>
-                      {loadingCategories ? (
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          Đang tải danh mục...
-                        </div>
-                      ) : (
-                        <Select
-                          value={formData.categoryId}
-                          onValueChange={(value) =>
-                            handleChange("categoryId", value)
-                          }
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Chọn danh mục" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories
-                              .filter((cat) => cat.isActive)
-                              .map((cat) => (
-                                <SelectItem key={cat._id} value={cat._id}>
-                                  {cat.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                    <div className="space-y-4">
+                      <div>
+                        <Label>
+                          Danh mục cha: <span className="text-destructive">*</span>
+                        </Label>
+                        {loadingCategories ? (
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            Đang tải danh mục...
+                          </div>
+                        ) : (
+                          <Select
+                            value={selectedParentId}
+                            onValueChange={(value) => {
+                              setSelectedParentId(value);
+                              setSelectedSubId("");
+                              handleChange("categoryId", value);
+                            }}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Chọn danh mục cha" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categories
+                                .filter((cat) => !cat.parentId && cat.isActive)
+                                .map((cat) => (
+                                  <SelectItem key={cat._id} value={cat._id}>
+                                    {cat.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label>Danh mục con (không bắt buộc):</Label>
+                        {loadingCategories ? (
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            Đang tải danh mục...
+                          </div>
+                        ) : (
+                          <Select
+                            value={selectedSubId || "none"}
+                            onValueChange={(value) => {
+                              if (value === "none") {
+                                setSelectedSubId("");
+                                handleChange("categoryId", selectedParentId);
+                              } else {
+                                setSelectedSubId(value);
+                                handleChange("categoryId", value);
+                              }
+                            }}
+                            disabled={!selectedParentId}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue
+                                placeholder={
+                                  selectedParentId
+                                    ? "Chọn danh mục con"
+                                    : "Vui lòng chọn danh mục cha trước"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">
+                                Không chọn (Dùng danh mục cha)
+                              </SelectItem>
+                              {categories
+                                .filter(
+                                  (cat) =>
+                                    cat.parentId === selectedParentId &&
+                                    cat.isActive,
+                                )
+                                .map((cat) => (
+                                  <SelectItem key={cat._id} value={cat._id}>
+                                    {cat.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>

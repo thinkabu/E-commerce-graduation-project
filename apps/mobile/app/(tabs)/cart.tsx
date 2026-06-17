@@ -60,82 +60,102 @@ const CartScreen = () => {
                 key={`${item.id}-${JSON.stringify(item.variants)}`}
                 className="bg-white dark:bg-zinc-900 rounded-3xl p-4 mb-4 border border-zinc-100 dark:border-zinc-800 shadow-sm"
               >
-                <HStack className="space-x-4 gap-4">
-                  <Image
-                    source={{ uri: item.image }}
-                    className="w-20 h-20 rounded-2xl bg-zinc-50 dark:bg-zinc-800"
-                  />
+                <Pressable
+                  onPress={() => {
+                    router.push({
+                      pathname: "/product/productdetail",
+                      params: { id: item.id },
+                    });
+                  }}
+                >
+                  <HStack className="space-x-4 gap-4">
+                    <Image
+                      source={{ uri: item.image }}
+                      className="w-20 h-20 rounded-2xl bg-zinc-50 dark:bg-zinc-800"
+                    />
 
-                  <VStack className="flex-1 justify-between py-0.5">
-                    <HStack className="justify-between items-start">
-                      <VStack className="flex-1 mr-2">
-                        <Text
-                          className="text-sm font-bold text-zinc-900 dark:text-white"
-                          numberOfLines={1}
-                        >
-                          {item.name}
-                        </Text>
-                        {/* Variant Info */}
-                        {item.variants &&
-                          Object.entries(item.variants).length > 0 && (
-                            <HStack className="flex-wrap mt-1">
-                              {Object.entries(item.variants).map(
-                                ([key, value], idx) => (
-                                  <Text
-                                    key={key}
-                                    className="text-[10px] text-zinc-500 mr-2"
-                                  >
-                                    {key}:{" "}
-                                    <Text className="font-bold text-zinc-700 dark:text-zinc-300">
-                                      {value}
+                    <VStack className="flex-1 justify-between py-0.5">
+                      <HStack className="justify-between items-start">
+                        <VStack className="flex-1 mr-2">
+                          <Text
+                            className="text-sm font-bold text-zinc-900 dark:text-white"
+                            numberOfLines={1}
+                          >
+                            {item.name}
+                          </Text>
+                          {/* Variant Info */}
+                          {item.variants &&
+                            Object.entries(item.variants).length > 0 && (
+                              <HStack className="flex-wrap mt-1">
+                                {Object.entries(item.variants).map(
+                                  ([key, value], idx) => (
+                                    <Text
+                                      key={key}
+                                      className="text-[10px] text-zinc-500 mr-2"
+                                    >
+                                      {key}:{" "}
+                                      <Text className="font-bold text-zinc-700 dark:text-zinc-300">
+                                        {value}
+                                      </Text>
+                                      {idx <
+                                      Object.entries(item.variants!).length - 1
+                                        ? " |"
+                                        : ""}
                                     </Text>
-                                    {idx <
-                                    Object.entries(item.variants!).length - 1
-                                      ? " |"
-                                      : ""}
-                                  </Text>
-                                ),
-                              )}
-                            </HStack>
-                          )}
-                      </VStack>
-                      <Pressable onPress={() => removeFromCart(item.id)}>
-                        <Icon as={Trash2} className="text-red-500 w-4 h-4" />
-                      </Pressable>
-                    </HStack>
-
-                    <HStack className="justify-between items-end mt-2">
-                      <Text className="text-base font-bold text-zinc-900 dark:text-white">
-                        {formatPrice(item.price)}₫
-                      </Text>
-
-                      <HStack className="items-center bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 gap-2">
+                                  ),
+                                )}
+                              </HStack>
+                            )}
+                        </VStack>
                         <Pressable
-                          onPress={() =>
-                            updateQuantity(item.id, item.quantity - 1)
-                          }
-                          className="w-7 h-7 rounded-lg bg-white dark:bg-zinc-700 items-center justify-center"
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            removeFromCart(item.id);
+                          }}
                         >
-                          <Icon
-                            as={Minus}
-                            className="text-zinc-900 dark:text-white w-3 h-3"
-                          />
-                        </Pressable>
-                        <Text className="text-sm font-bold text-zinc-900 dark:text-white px-1">
-                          {item.quantity}
-                        </Text>
-                        <Pressable
-                          onPress={() =>
-                            updateQuantity(item.id, item.quantity + 1)
-                          }
-                          className="w-7 h-7 rounded-lg bg-yellow-400 items-center justify-center"
-                        >
-                          <Icon as={Plus} className="text-zinc-900 w-3 h-3" />
+                          <Icon as={Trash2} className="text-red-500 w-4 h-4" />
                         </Pressable>
                       </HStack>
-                    </HStack>
-                  </VStack>
-                </HStack>
+
+                      <HStack className="justify-between items-end mt-2">
+                        <Text className="text-base font-bold text-zinc-900 dark:text-white">
+                          {formatPrice(item.price)}₫
+                        </Text>
+
+                        <HStack
+                          onStartShouldSetResponder={() => true}
+                          onTouchEnd={(e) => e.stopPropagation()}
+                          className="items-center bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 gap-2"
+                        >
+                          <Pressable
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(item.id, item.quantity - 1);
+                            }}
+                            className="w-7 h-7 rounded-lg bg-white dark:bg-zinc-700 items-center justify-center"
+                          >
+                            <Icon
+                              as={Minus}
+                              className="text-zinc-900 dark:text-white w-3 h-3"
+                            />
+                          </Pressable>
+                          <Text className="text-sm font-bold text-zinc-900 dark:text-white px-1">
+                            {item.quantity}
+                          </Text>
+                          <Pressable
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              updateQuantity(item.id, item.quantity + 1);
+                            }}
+                            className="w-7 h-7 rounded-lg bg-yellow-400 items-center justify-center"
+                          >
+                            <Icon as={Plus} className="text-zinc-900 w-3 h-3" />
+                          </Pressable>
+                        </HStack>
+                      </HStack>
+                    </VStack>
+                  </HStack>
+                </Pressable>
               </Box>
             ))}
             <Box className="h-10" />

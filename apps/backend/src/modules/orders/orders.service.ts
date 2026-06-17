@@ -14,6 +14,7 @@ import {
   ProductVariantDocument,
 } from '../products/schemas/product-variant.schema';
 import { Address, AddressDocument } from '../users/schemas/address.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { Coupon, CouponDocument } from '../coupons/schemas/coupon.schema';
 import {
   OrderStatus,
@@ -49,6 +50,8 @@ export class OrdersService {
     private readonly addressModel: Model<AddressDocument>,
     @InjectModel(Coupon.name)
     private readonly couponModel: Model<CouponDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -416,5 +419,97 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  private async getTopProductsByDate(orderMatch: any): Promise<any[]> {
+    const pipeline: any[] = [
+      { $match: { orderStatus: { $ne: OrderStatus.CANCELLED }, ...orderMatch } },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.productId',
+          soldCount: { $sum: '$items.quantity' },
+        },
+      },
+      { $sort: { soldCount: -1 } },
+      { $limit: 5 },
+    ];
+
+    const topAggregated = await this.orderModel.aggregate(pipeline);
+    if (topAggregated.length === 0) {
+      return this.productModel.find({ isActive: true })
+        .sort({ soldCount: -1 })
+        .limit(5)
+        .lean();
+    }
+
+    const productIds = topAggregated.map(item => item._id);
+    const products = await this.productModel.find({ _id: { $in: productIds } }).lean();
+
+    const mappedProducts = topAggregated
+      .map(aggItem => {
+        const prod = products.find(p => p._id.toString() === aggItem._id.toString());
+        if (!prod) return null;
+        return {
+          ...prod,
+          soldCount: aggItem.soldCount,
+        };
+      })
+      .filter(Boolean);
+
+    return mappedProducts;
+  }
+
+  async getAdminDashboardStats(startDate?: string, endDate?: string): Promise<any> {
+    const orderMatch: any = {};
+
+    if (startDate || endDate) {
+      orderMatch.createdAt = {};
+      if (startDate) {
+        orderMatch.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        orderMatch.createdAt.$lte = end;
+      }
+    }
+
+    const [
+      totalProducts,
+      totalUsers,
+      totalOrders,
+      revenueResult,
+      pendingOrders,
+      recentOrders,
+      topProducts,
+    ] = await Promise.all([
+      this.productModel.countDocuments({ isActive: true }),
+      this.userModel.countDocuments({ isActive: true }),
+      this.orderModel.countDocuments(orderMatch),
+      this.orderModel.aggregate([
+        { $match: { orderStatus: { $ne: OrderStatus.CANCELLED }, ...orderMatch } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      ]),
+      this.orderModel.countDocuments({ orderStatus: OrderStatus.PENDING, ...orderMatch }),
+      this.orderModel.find(orderMatch)
+        .populate('userId', 'fullName email')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean(),
+      this.getTopProductsByDate(orderMatch),
+    ]);
+
+    const totalRevenue = revenueResult[0]?.total || 0;
+
+    return {
+      totalProducts,
+      totalUsers,
+      totalOrders,
+      totalRevenue,
+      pendingOrders,
+      recentOrders,
+      topProducts,
+    };
   }
 }

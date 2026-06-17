@@ -30,6 +30,7 @@ import { useNotification } from "@/contexts/NotificationContext";
 import { getCategories, Category } from "@/services/category.service";
 import { getProducts, Product } from "@/services/product.service";
 import { getUserRecommendations, logRecommendationClick } from "@/services/recommendation.service";
+import { getWishlist } from "@/services/wishlist.service";
 
 // Banners giả lập (Vẫn giữ nguyên vì chưa có bảng Banners trong DB)
 
@@ -75,6 +76,7 @@ const HomeScreen = () => {
   const [popularProducts, setPopularProducts] = useState<Product[]>([]);
   const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
   const [recSessionId, setRecSessionId] = useState<string>("");
+  const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   // Pagination for suggested products
@@ -82,9 +84,35 @@ const HomeScreen = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
+  const fetchWishlist = async () => {
+    if (!user?._id) {
+      setWishlistedIds(new Set());
+      return;
+    }
+    try {
+      const wishlist = await getWishlist(user._id, 1, 100);
+      if (wishlist && wishlist.items) {
+        const ids = new Set<string>(
+          wishlist.items
+            .map((item: any) => {
+              if (!item.productId) return "";
+              return typeof item.productId === "string" ? item.productId : item.productId._id;
+            })
+            .filter(Boolean)
+        );
+        setWishlistedIds(ids);
+      }
+    } catch (err) {
+      console.error("Error fetching wishlist in home:", err);
+    }
+  };
+
   const fetchInitialData = async () => {
     setLoading(true);
     try {
+      // Fetch wishlist
+      await fetchWishlist();
+
       // Fetch categories
       const cats = await getCategories();
       setCategories(cats.filter((c) => c.isActive).slice(0, 5));
@@ -126,6 +154,7 @@ const HomeScreen = () => {
     useCallback(() => {
       // Tải ngay khi vào màn hình
       refreshUnreadCount();
+      fetchWishlist();
 
       // Polling tự động làm mới unreadCount mỗi 30 giây khi đang ở trang chủ
       const interval = setInterval(() => {
@@ -133,7 +162,7 @@ const HomeScreen = () => {
       }, 30000);
 
       return () => clearInterval(interval);
-    }, [refreshUnreadCount]),
+    }, [refreshUnreadCount, user?._id]),
   );
 
   const loadMoreSuggested = async () => {
@@ -435,7 +464,14 @@ const HomeScreen = () => {
                     >
                       <Box className="w-full h-32 bg-zinc-50 dark:bg-zinc-800 rounded-2xl mb-3 items-center justify-center relative overflow-hidden">
                         <Box className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 dark:bg-zinc-900/80 items-center justify-center z-10">
-                          <Icon as={Heart} className="text-zinc-400 w-4 h-4" />
+                          <Icon
+                            as={Heart}
+                            className={`${
+                              wishlistedIds.has(product._id)
+                                ? "text-red-500 fill-red-500"
+                                : "text-zinc-400"
+                            } w-4 h-4`}
+                          />
                         </Box>
                         {product.discountPercentage > 0 && (
                           <Box className="absolute top-2 left-2 bg-yellow-500 rounded-md px-1.5 py-0.5 z-10">
@@ -507,7 +543,14 @@ const HomeScreen = () => {
                   >
                     <Box className="w-full h-40 bg-zinc-50 dark:bg-zinc-800 rounded-2xl mb-3 relative overflow-hidden">
                       <Box className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 dark:bg-zinc-900/80 items-center justify-center z-10">
-                        <Icon as={Heart} className="text-zinc-400 w-4 h-4" />
+                        <Icon
+                          as={Heart}
+                          className={`${
+                            wishlistedIds.has(product._id)
+                              ? "text-red-500 fill-red-500"
+                              : "text-zinc-400"
+                          } w-4 h-4`}
+                        />
                       </Box>
                       {product.discountPercentage > 0 && (
                         <Box className="absolute top-2 left-2 bg-yellow-500 rounded-md px-1.5 py-0.5 z-10">

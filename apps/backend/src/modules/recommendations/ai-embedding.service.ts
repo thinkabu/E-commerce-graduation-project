@@ -3,48 +3,60 @@ import { Injectable, Logger } from '@nestjs/common';
 @Injectable()
 export class AiEmbeddingService {
   private readonly logger = new Logger(AiEmbeddingService.name);
+  private extractor: any = null;
 
   constructor() {}
 
   /**
-   * Sinh vector embedding mô phỏng cục bộ từ văn bản (Không gọi API ngoài)
-   * @param text Văn bản đầu vào cần tạo embedding
-   * @param dimensions Số chiều mong muốn (mặc định 1536)
+   * Khởi tạo lazy extractor pipeline để tránh làm đơ server lúc khởi động
    */
-  async generateEmbedding(text: string, dimensions = 1536): Promise<number[]> {
-    const cleanText = text ? text.replace(/\n/g, ' ').trim() : '';
-    if (!cleanText) {
-      return this.generateDeterministicMockEmbedding('empty', dimensions);
+  private async getExtractor(): Promise<any> {
+    if (!this.extractor) {
+      this.logger.log('Đang khởi tạo Local Transformers Pipeline (Xenova/paraphrase-multilingual-MiniLM-L12-v2)...');
+      try {
+        // Sử dụng dynamic import để tương thích hoàn toàn với CommonJS/ESM của NestJS
+        const { pipeline } = await import('@xenova/transformers');
+        
+        this.extractor = await pipeline(
+          'feature-extraction',
+          'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
+        );
+        this.logger.log('Pipeline Local Transformers đã khởi tạo thành công!');
+      } catch (err) {
+        this.logger.error(`Lỗi khởi tạo pipeline transformers: ${err.message}`);
+        throw err;
+      }
     }
-
-    this.logger.debug(`Generating local mock embedding for: "${cleanText.substring(0, 30)}..."`);
-    return this.generateDeterministicMockEmbedding(cleanText, dimensions);
+    return this.extractor;
   }
 
   /**
-   * Tạo vector băm chuẩn hóa bằng giải thuật LCG (Linear Congruential Generator)
-   * Nhằm đảm bảo cùng 1 văn bản đầu vào sẽ cho ra 1 vector duy nhất, hỗ trợ so khớp cosine
+   * Sinh vector embedding bằng mô hình local đa ngôn ngữ (384 chiều)
+   * @param text Văn bản cần sinh vector
+   * @param dimensions Số chiều mặc định (Mô hình này luôn trả về 384 chiều)
    */
-  private generateDeterministicMockEmbedding(text: string, dimensions: number): number[] {
-    const vector: number[] = [];
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      hash = text.charCodeAt(i) + ((hash << 5) - hash);
+  async generateEmbedding(text: string, dimensions = 384): Promise<number[]> {
+    const cleanText = text ? text.replace(/\n/g, ' ').trim() : '';
+    if (!cleanText) {
+      return new Array(dimensions).fill(0);
     }
 
-    let seed = Math.abs(hash) || 1;
-    // Hàm sinh số ngẫu nhiên giả lập dựa trên seed cố định
-    const lcg = () => {
-      seed = (seed * 1664525 + 1013904223) % 4294967296;
-      return seed / 4294967296;
-    };
+    try {
+      const extractor = await this.getExtractor();
+      
+      // Chạy mô hình trích xuất đặc trưng (pooling = mean, normalize = true)
+      const output = await extractor(cleanText, {
+        pooling: 'mean',
+        normalize: true,
+      });
 
-    for (let i = 0; i < dimensions; i++) {
-      vector.push(lcg() * 2 - 1); // Trả về số trong khoảng [-1, 1]
+      // Chuyển kết quả Tensor của pipeline thành mảng Javascript thông thường
+      const embedding = Array.from(output.data) as number[];
+      return embedding;
+    } catch (err) {
+      this.logger.error(`Lỗi sinh local embedding: ${err.message}`);
+      // Trả về mảng số không làm fallback để hệ thống không bị lỗi crash
+      return new Array(dimensions).fill(0);
     }
-
-    // Chuẩn hóa vector về độ dài bằng 1 (Unit Vector) để tích vô hướng chính là độ tương đồng Cosine
-    const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
-    return vector.map(val => val / (magnitude || 1));
   }
 }

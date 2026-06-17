@@ -20,9 +20,9 @@ export class ProductEmbedding {
     type: [Number],
     required: [true, 'Embedding vector là bắt buộc'],
   })
-  embedding: number[]; // Vector 1536 dimensions cho AI Vector Search
+  embedding: number[]; // Vector 384 dimensions (paraphrase-multilingual-MiniLM-L12-v2)
 
-  @Prop({ default: 'text-embedding-3-small' })
+  @Prop({ default: 'paraphrase-multilingual-MiniLM-L12-v2' })
   embeddingModel: string; // Model đã dùng để tạo embedding
 
   @Prop()
@@ -47,7 +47,7 @@ ProductEmbeddingSchema.index({ productId: 1 }, { unique: true });
 //   "type": "vectorSearch",
 //   "fields": [{
 //     "path": "embedding",
-//     "numDimensions": 1536,
+//     "numDimensions": 384,
 //     "similarity": "cosine",
 //     "type": "vector"
 //   }]

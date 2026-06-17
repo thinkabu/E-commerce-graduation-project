@@ -17,6 +17,7 @@ import {
   Settings,
   ImageIcon,
   Bell,
+  Loader2,
 } from "lucide-react";
 
 const menuItems = [
@@ -91,6 +92,10 @@ const Layout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { pageTitle } = usePageTitle();
   const admin = getAdminUser();
+
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   const isActive = (path: string) => {
     if (path === "/products") return location.pathname.startsWith("/products");
@@ -209,6 +214,42 @@ const Layout: React.FC = () => {
             </h1>
           </div>
 
+          {/* Render Date Filters in header ONLY on dashboard page */}
+          {location.pathname === "/dashboard" && (
+            <div className="flex items-center gap-3 bg-zinc-50 px-4 py-1.5 rounded-xl border border-zinc-200 shadow-sm self-center">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-zinc-500">Từ</span>
+                <input
+                  type="date"
+                  className="text-xs border border-zinc-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-yellow-500 bg-white text-zinc-800"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-zinc-500">Đến</span>
+                <input
+                  type="date"
+                  className="text-xs border border-zinc-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-yellow-500 bg-white text-zinc-800"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+              {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-yellow-500" />}
+              {(startDate || endDate) && (
+                <button
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                  }}
+                  className="text-xs font-bold text-red-500 hover:text-red-700 hover:underline px-1"
+                >
+                  Xóa lọc
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center gap-6">
             <div className="hidden md:flex flex-col items-end">
               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
@@ -238,7 +279,7 @@ const Layout: React.FC = () => {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto bg-zinc-50/50 p-8 custom-scrollbar">
-          <Outlet />
+          <Outlet context={{ startDate, endDate, setStartDate, setEndDate, loading, setLoading }} />
         </main>
       </div>
     </div>

@@ -26,6 +26,15 @@ export class OrdersController {
 
   // --- ADMIN ENDPOINTS ---
 
+  @Get('admin/dashboard')
+  @ApiOperation({ summary: 'Lấy dữ liệu tổng hợp Dashboard (Admin)' })
+  getAdminDashboardStats(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.ordersService.getAdminDashboardStats(startDate, endDate);
+  }
+
   @Get('admin/summary')
   @ApiOperation({ summary: 'Lấy thống kê đơn hàng (Admin)' })
   getAdminOrderSummary(

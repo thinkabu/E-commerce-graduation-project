@@ -10,6 +10,7 @@ import { RecommendationFeedbackLog, RecommendationFeedbackLogSchema } from './sc
 import { UserBehavior, UserBehaviorSchema } from './schemas/user-behavior.schema';
 import { ProductEmbedding, ProductEmbeddingSchema } from './schemas/product-embedding.schema';
 import { Product, ProductSchema } from '../products/schemas/product.schema';
+import { Wishlist, WishlistSchema } from '../wishlist/schemas/wishlist.schema';
 import { AiEmbeddingService } from './ai-embedding.service';
 import { RecommendationsCronService } from './recommendations-cron.service';
 
@@ -24,6 +25,7 @@ import { RecommendationsCronService } from './recommendations-cron.service';
       { name: UserBehavior.name, schema: UserBehaviorSchema },
       { name: ProductEmbedding.name, schema: ProductEmbeddingSchema },
       { name: Product.name, schema: ProductSchema },
+      { name: Wishlist.name, schema: WishlistSchema },
     ]),
   ],
   controllers: [RecommendationsController],

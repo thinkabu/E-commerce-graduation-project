@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Ứng dụng sử dụng Face ID để đăng nhập nhanh và bảo mật hơn."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -51,7 +54,13 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Cho phép $(PRODUCT_NAME) sử dụng Face ID để đăng nhập nhanh."
+        }
+      ]
     ],
     "notification": {
       "icon": "./assets/images/icon.png",

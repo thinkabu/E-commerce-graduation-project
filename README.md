@@ -157,3 +157,7 @@ Learn more about the power of Turborepo:
 - [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
 - [Configuration Options](https://turborepo.dev/docs/reference/configuration)
 - [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+
+chạy script testSimilarity bằng lệnh sau trong terminal để xem độ chính xác, tương quan giữa các sản phẩm:
+cd apps/backend
+npx ts-node src/modules/recommendations/test-similarity.ts
