@@ -66,7 +66,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
     console.log("[Push] ✅ Expo Push Token:", token);
     return token;
   } catch (error) {
-    console.error("[Push] ❌ Lỗi lấy token:", error);
+    console.warn("[Push] ❌ Lỗi lấy token (có thể do chạy trên Expo Go thiếu projectId):", error);
     return null;
   }
 }
@@ -84,7 +84,7 @@ export async function savePushTokenToServer(
     await api.patch(`/users/${userId}/push-token`, { token });
     console.log("[Push] ✅ Đã lưu Push Token lên server.");
   } catch (error) {
-    console.error("[Push] ❌ Lỗi lưu push token:", error);
+    console.warn("[Push] ❌ Lỗi lưu push token:", error);
   }
 }
 
@@ -99,7 +99,7 @@ export async function removePushTokenFromServer(
     await api.delete(`/users/${userId}/push-token`, { data: { token } });
     console.log("[Push] ✅ Đã xóa Push Token khỏi server.");
   } catch (error) {
-    console.error("[Push] ❌ Lỗi xóa push token:", error);
+    console.warn("[Push] ❌ Lỗi xóa push token:", error);
   }
 }
 
@@ -148,7 +148,7 @@ export async function getNotifications(
       meta: payload?.meta ?? { page, limit, total: 0, totalPages: 0 },
     };
   } catch (error) {
-    console.error("[Notifications] Lỗi lấy danh sách:", error);
+    console.warn("[Notifications] Lỗi lấy danh sách:", error);
     return { items: [], meta: { page, limit, total: 0, totalPages: 0 } };
   }
 }
@@ -178,7 +178,7 @@ export async function markNotificationAsRead(
       },
     );
   } catch (error) {
-    console.error("[Notifications] Lỗi đánh dấu đã đọc:", error);
+    console.warn("[Notifications] Lỗi đánh dấu đã đọc:", error);
   }
 }
 
@@ -188,6 +188,6 @@ export async function markAllNotificationsAsRead(
   try {
     await api.patch(`/notifications/user/${userId}/read-all`);
   } catch (error) {
-    console.error("[Notifications] Lỗi đánh dấu tất cả đã đọc:", error);
+    console.warn("[Notifications] Lỗi đánh dấu tất cả đã đọc:", error);
   }
 }

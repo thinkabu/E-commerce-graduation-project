@@ -75,3 +75,18 @@ export const getOrderById = async (
     return null;
   }
 };
+
+export const confirmOrderReceipt = async (
+  id: string,
+  userId: string,
+): Promise<Order | null> => {
+  try {
+    const response = await api.patch(`/orders/${id}/confirm-receipt`, {}, {
+      params: { userId },
+    });
+    return response.data?.data ?? response.data;
+  } catch (error) {
+    console.error("Error confirming order receipt:", error);
+    throw error;
+  }
+};

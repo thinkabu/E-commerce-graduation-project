@@ -17,7 +17,7 @@ export class CartService {
       .findOne({ userId: new Types.ObjectId(userId) })
       .populate(
         'items.productId',
-        'name images basePrice slug discountPercentage isActive',
+        'name images basePrice slug discountPercentage isActive stockQuantity',
       )
       .populate(
         'items.variantId',

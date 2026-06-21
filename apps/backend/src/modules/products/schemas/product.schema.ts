@@ -129,6 +129,9 @@ export class Product {
   soldCount: number; // Đã bán (cho trending/ranking)
 
   @Prop({ default: 0, min: 0 })
+  stockQuantity: number; // Tổng tồn kho sản phẩm
+
+  @Prop({ default: 0, min: 0 })
   viewCount: number; // Lượt xem (cho AI behavior tracking)
 
   @Prop({ default: true })

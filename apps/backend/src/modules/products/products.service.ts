@@ -41,6 +41,8 @@ export class ProductsService {
       createdVariants = await this.variantModel.insertMany(
         variants.map((v) => ({ ...v, productId: product._id })),
       );
+      // Đồng bộ stockQuantity từ các variants vừa tạo
+      await this.syncProductStock(product._id.toString());
     }
 
     // Tự động kích hoạt sinh vector embedding bất đồng bộ (không block API response)
@@ -207,6 +209,8 @@ export class ProductsService {
           });
         }
       }
+      // Đồng bộ tổng tồn kho
+      await this.syncProductStock(id);
     }
 
     // Tự động kích hoạt sinh vector embedding bất đồng bộ khi cập nhật sản phẩm
@@ -240,10 +244,12 @@ export class ProductsService {
     const product = await this.productModel.findById(productId);
     if (!product) throw new NotFoundException('Sản phẩm không tồn tại');
 
-    return this.variantModel.create({
+    const variant = await this.variantModel.create({
       ...dto,
       productId: new Types.ObjectId(productId),
     });
+    await this.syncProductStock(productId);
+    return variant;
   }
 
   async updateVariant(
@@ -259,6 +265,7 @@ export class ProductsService {
       )
       .lean();
     if (!variant) throw new NotFoundException('Biến thể không tồn tại');
+    await this.syncProductStock(productId);
     return variant;
   }
 
@@ -274,6 +281,28 @@ export class ProductsService {
       )
       .lean();
     if (!variant) throw new NotFoundException('Biến thể không tồn tại');
+    await this.syncProductStock(productId);
     return variant;
+  }
+
+  // Helper method to sync stock quantity of product
+  async syncProductStock(productId: string): Promise<void> {
+    const product = await this.productModel.findById(productId);
+    if (!product) return;
+
+    if (product.hasVariants) {
+      const activeVariants = await this.variantModel.find({
+        productId: new Types.ObjectId(productId),
+        isActive: true,
+      });
+      const totalStock = activeVariants.reduce(
+        (sum, v) => sum + (v.stockQuantity || 0),
+        0,
+      );
+      await this.productModel.updateOne(
+        { _id: product._id },
+        { $set: { stockQuantity: totalStock } },
+      );
+    }
   }
 }

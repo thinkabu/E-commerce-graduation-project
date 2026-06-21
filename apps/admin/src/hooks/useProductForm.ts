@@ -37,7 +37,7 @@ export const useProductForm = (
       const newData = { ...prev, [field]: value };
 
       // Tự động tính tổng tồn kho nếu thay đổi variants
-      if (field === "variants" && Array.isArray(value) && value.length > 0) {
+      if (field === "variants" && Array.isArray(value)) {
         newData.stockQuantity = value.reduce(
           (sum, v) => sum + (Number(v.stockQuantity) || 0),
           0,
@@ -282,6 +282,7 @@ export const useProductForm = (
         hasVariants,
         variantAttributes,
         isFeatured: formData.isFeatured || false,
+        stockQuantity: Number(formData.stockQuantity) || 0,
       };
 
       // Optional fields

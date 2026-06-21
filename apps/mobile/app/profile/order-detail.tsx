@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   View,
   Image,
+  Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, Stack, useLocalSearchParams } from "expo-router";
 import Header from "@/components/Header";
 import { Box } from "@/components/ui/box";
@@ -26,7 +27,8 @@ import {
   Star,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
-import { getOrderById, type Order } from "@/services/order.service";
+import { getOrderById, confirmOrderReceipt, type Order } from "@/services/order.service";
+import { checkReviewed } from "@/services/review.service";
 
 const formatPrice = (price: number) => price.toLocaleString("vi-VN") + "₫";
 
@@ -104,21 +106,75 @@ const OrderDetailScreen = () => {
   const { user } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviewedItems, setReviewedItems] = useState<Record<string, boolean>>({});
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const fetchOrder = async () => {
+    if (!id || !user) return;
+    try {
+      const data = await getOrderById(id, user._id);
+      setOrder(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!id || !user) return;
-    const fetchOrder = async () => {
-      try {
-        const data = await getOrderById(id, user._id);
-        setOrder(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchOrder();
-  }, [id]);
+  }, [id, user]);
+
+  useEffect(() => {
+    if (!order || !user) return;
+    if (order.orderStatus !== "DELIVERED") return;
+
+    const checkAllReviews = async () => {
+      const checked: Record<string, boolean> = {};
+      await Promise.all(
+        order.items.map(async (item) => {
+          try {
+            const hasReviewed = await checkReviewed(user._id, item.productId);
+            checked[item.productId] = hasReviewed;
+          } catch (e) {
+            checked[item.productId] = false;
+          }
+        })
+      );
+      setReviewedItems(checked);
+    };
+
+    checkAllReviews();
+  }, [order, user]);
+
+  const handleConfirmReceipt = async () => {
+    if (!id || !user) return;
+    Alert.alert(
+      "Xác nhận nhận hàng",
+      "Bạn có chắc chắn đã nhận được đơn hàng này và muốn hoàn thành đơn hàng?",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Đồng ý",
+          onPress: async () => {
+            setConfirmLoading(true);
+            try {
+              const updatedOrder = await confirmOrderReceipt(id, user._id);
+              if (updatedOrder) {
+                Alert.alert("Thành công", "Đơn hàng đã được xác nhận hoàn thành!");
+                fetchOrder();
+              }
+            } catch (error: any) {
+              const msg = error?.response?.data?.message || "Xác nhận nhận hàng thất bại. Vui lòng thử lại sau.";
+              Alert.alert("Lỗi", msg);
+            } finally {
+              setConfirmLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (loading) {
     return (
@@ -350,63 +406,84 @@ const OrderDetailScreen = () => {
           </HStack>
         </VStack>
 
+        {/* Confirm Receipt Button (only for SHIPPING orders) */}
+        {order.orderStatus === "SHIPPING" && (
+          <Button
+            onPress={handleConfirmReceipt}
+            disabled={confirmLoading}
+            className="w-full h-14 bg-green-500 rounded-2xl active:bg-green-600 shadow-sm mb-7"
+          >
+            {confirmLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <ButtonText className="text-white font-bold text-base">
+                Đã nhận được hàng
+              </ButtonText>
+            )}
+          </Button>
+        )}
+
         {/* Review Button (only for DELIVERED orders) */}
         {order.orderStatus === "DELIVERED" && (
           <VStack className="mb-7">
             <SectionLabel label="Đánh giá sản phẩm" />
             <VStack className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-              {order.items.map((item, index) => (
-                <Pressable
-                  key={index}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/profile/write-review" as any,
-                      params: {
-                        productId: item.productId as any,
-                        orderId: (order as any)._id,
-                        productName: item.productSnapshot.name,
-                        productImage: item.productSnapshot.image,
-                      },
-                    })
-                  }
-                  className={`flex-row items-center p-4 active:bg-zinc-50 dark:active:bg-zinc-800 ${index < order.items.length - 1 ? "border-b border-zinc-50 dark:border-zinc-800" : ""}`}
-                >
-                  <Image
-                    source={{ uri: item.productSnapshot.image }}
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
-                      backgroundColor: "#f4f4f5",
-                    }}
-                  />
-                  <VStack className="flex-1 ml-3">
-                    <Text
-                      className="text-sm font-bold text-zinc-900 dark:text-white"
-                      numberOfLines={1}
-                    >
-                      {item.productSnapshot.name}
-                    </Text>
-                    <HStack className="items-center space-x-1 gap-1 mt-1">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Icon
-                          key={s}
-                          as={Star}
-                          className="w-3 h-3 text-zinc-200 dark:text-zinc-700"
-                        />
-                      ))}
-                      <Text className="text-[10px] text-zinc-400 ml-1">
-                        Chưa đánh giá
+              {order.items.map((item, index) => {
+                const isReviewed = !!reviewedItems[item.productId];
+                return (
+                  <Pressable
+                    key={index}
+                    disabled={isReviewed}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/profile/write-review" as any,
+                        params: {
+                          productId: item.productId as any,
+                          orderId: (order as any)._id,
+                          productName: item.productSnapshot.name,
+                          productImage: item.productSnapshot.image,
+                        },
+                      })
+                    }
+                    className={`flex-row items-center p-4 active:bg-zinc-50 dark:active:bg-zinc-800 ${index < order.items.length - 1 ? "border-b border-zinc-50 dark:border-zinc-800" : ""}`}
+                  >
+                    <Image
+                      source={{ uri: item.productSnapshot.image }}
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 12,
+                        backgroundColor: "#f4f4f5",
+                      }}
+                    />
+                    <VStack className="flex-1 ml-3">
+                      <Text
+                        className="text-sm font-bold text-zinc-900 dark:text-white"
+                        numberOfLines={1}
+                      >
+                        {item.productSnapshot.name}
                       </Text>
-                    </HStack>
-                  </VStack>
-                  <Box className="bg-yellow-400 px-3 py-2 rounded-xl">
-                    <Text className="text-xs font-bold text-zinc-900">
-                      Đánh giá
-                    </Text>
-                  </Box>
-                </Pressable>
-              ))}
+                      <HStack className="items-center space-x-1 gap-1 mt-1">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Icon
+                            key={s}
+                            as={Star}
+                            className={`w-3 h-3 ${isReviewed ? "text-yellow-500 fill-yellow-500" : "text-zinc-200 dark:text-zinc-700"}`}
+                          />
+                        ))}
+                        <Text className={`text-[10px] ml-1 ${isReviewed ? "text-green-600 font-bold" : "text-zinc-400"}`}>
+                          {isReviewed ? "Đã đánh giá" : "Chưa đánh giá"}
+                        </Text>
+                      </HStack>
+                    </VStack>
+                    <Box className={`px-3 py-2 rounded-xl ${isReviewed ? "bg-zinc-100 dark:bg-zinc-800" : "bg-yellow-400"}`}>
+                      <Text className={`text-xs font-bold ${isReviewed ? "text-zinc-400" : "text-zinc-900"}`}>
+                        {isReviewed ? "Đã đánh giá" : "Đánh giá"}
+                      </Text>
+                    </Box>
+                  </Pressable>
+                );
+              })}
             </VStack>
           </VStack>
         )}

@@ -115,6 +115,12 @@ export class CreateProductDto {
   @IsBoolean()
   isFeatured?: boolean;
 
+  @ApiPropertyOptional({ example: 50, minimum: 0 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  stockQuantity?: number;
+
   // Cho phép tạo variants cùng lúc khi tạo product
   @ApiPropertyOptional({ type: [CreateVariantDto] })
   @IsOptional()

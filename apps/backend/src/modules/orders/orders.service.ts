@@ -139,20 +139,22 @@ export class OrdersService {
           { _id: variant._id },
           { $inc: { stockQuantity: -item.quantity } },
         );
+        // Đồng thời giảm tổng tồn kho của sản phẩm gốc và tăng soldCount
+        await this.productModel.updateOne(
+          { _id: product._id },
+          { $inc: { stockQuantity: -item.quantity, soldCount: item.quantity } },
+        );
       } else {
         // Check stock sản phẩm gốc
-        if (
-          ((product as any).stockQuantity || 0) > 0 &&
-          (product as any).stockQuantity < item.quantity
-        ) {
+        if (product.stockQuantity !== undefined && product.stockQuantity < item.quantity) {
           throw new BadRequestException(
             `Sản phẩm ${product.name} không đủ số lượng`,
           );
         }
-        // Giảm stock sản phẩm
+        // Giảm stock sản phẩm gốc và tăng soldCount
         await this.productModel.updateOne(
           { _id: product._id },
-          { $inc: { soldCount: item.quantity } },
+          { $inc: { stockQuantity: -item.quantity, soldCount: item.quantity } },
         );
       }
 
@@ -419,6 +421,51 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  async confirmReceipt(id: string, userId: string): Promise<Order> {
+    const order = await this.orderModel.findOne({
+      _id: id,
+      userId: new Types.ObjectId(userId),
+    });
+    if (!order) {
+      throw new NotFoundException('Đơn hàng không tồn tại');
+    }
+
+    if (order.orderStatus !== OrderStatus.SHIPPING) {
+      throw new BadRequestException(
+        'Chỉ có thể xác nhận đã nhận hàng khi đơn hàng đang được giao',
+      );
+    }
+
+    order.orderStatus = OrderStatus.DELIVERED;
+    order.statusHistory.push({
+      status: OrderStatus.DELIVERED,
+      changedAt: new Date(),
+      changedBy: new Types.ObjectId(userId),
+      note: 'Người mua xác nhận đã nhận hàng thành công',
+    });
+
+    await order.save();
+
+    // Gửi Push Notification đến user sau khi hoàn thành đơn hàng
+    try {
+      await this.notificationsService.sendAndSave(
+        order.userId.toString(),
+        '📦 Đơn hàng đã hoàn thành',
+        `Cảm ơn bạn đã mua hàng! Đơn hàng ${(order as any).orderId || id} đã được giao thành công. Bạn hãy đánh giá sản phẩm để nhận ưu đãi nhé!`,
+        NotificationType.ORDER,
+        {
+          orderId: order._id.toString(),
+          orderStatus: OrderStatus.DELIVERED,
+          deepLink: `/profile/order-detail?id=${order._id}`,
+        },
+      );
+    } catch (err: any) {
+      this.logger.warn(`Không gửi được push notification: ${err?.message}`);
+    }
+
+    return order.toObject();
   }
 
   private async getTopProductsByDate(orderMatch: any): Promise<any[]> {

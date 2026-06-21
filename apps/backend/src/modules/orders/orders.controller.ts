@@ -63,6 +63,16 @@ export class OrdersController {
 
   // --- USER ENDPOINTS ---
 
+  @Patch(':id/confirm-receipt')
+  @ApiOperation({ summary: 'Xác nhận đã nhận hàng thành công (User)' })
+  @ApiQuery({ name: 'userId', required: true })
+  confirmReceipt(
+    @Param('id') id: string,
+    @Query('userId') userId: string,
+  ) {
+    return this.ordersService.confirmReceipt(id, userId);
+  }
+
   @Get('user')
   @ApiOperation({ summary: 'Lấy lịch sử đơn hàng của user hiện tại' })
   @ApiQuery({ name: 'userId', required: true })
