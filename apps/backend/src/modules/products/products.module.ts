@@ -8,12 +8,14 @@ import {
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
 import { RecommendationsModule } from '../recommendations/recommendations.module';
+import { Order, OrderSchema } from '../orders/schemas/order.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Product.name, schema: ProductSchema },
       { name: ProductVariant.name, schema: ProductVariantSchema },
+      { name: Order.name, schema: OrderSchema },
     ]),
     RecommendationsModule,
   ],

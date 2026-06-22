@@ -12,7 +12,7 @@ import { Input, InputField } from "@/components/ui/input";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
 import { Icon } from "@/components/ui/icon";
-import { Star, Send } from "lucide-react-native";
+import { Star, Send, Plus, X } from "lucide-react-native";
 
 const WriteReviewScreen = () => {
   const router = useRouter();
@@ -28,9 +28,40 @@ const WriteReviewScreen = () => {
   const [rating, setRating] = useState(5);
   const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
   const ratingLabels = ["", "Rất tệ", "Tệ", "Bình thường", "Tốt", "Tuyệt vời"];
+
+  const testImages = [
+    "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=300",
+    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=300",
+    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?q=80&w=300",
+  ];
+
+  const handleAddImageUrl = () => {
+    const trimmed = imageUrl.trim();
+    if (!trimmed) return;
+    if (images.includes(trimmed)) {
+      Alert.alert("Lỗi", "Hình ảnh này đã được thêm");
+      return;
+    }
+    setImages((prev) => [...prev, trimmed]);
+    setImageUrl("");
+  };
+
+  const handleSelectTestImage = (url: string) => {
+    if (images.includes(url)) {
+      Alert.alert("Lỗi", "Hình ảnh này đã được thêm");
+      return;
+    }
+    setImages((prev) => [...prev, url]);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async () => {
     if (!user || !productId || !orderId) return;
@@ -43,6 +74,7 @@ const WriteReviewScreen = () => {
         rating,
         title: title.trim() || undefined,
         comment: comment.trim() || undefined,
+        images,
       });
       Alert.alert("Thành công", "Cảm ơn bạn đã đánh giá sản phẩm!", [
         { text: "OK", onPress: () => router.back() },
@@ -128,7 +160,7 @@ const WriteReviewScreen = () => {
         </VStack>
 
         {/* Comment */}
-        <VStack className="mb-8">
+        <VStack className="mb-6">
           <Text className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2 ml-1">
             Nội dung đánh giá (tuỳ chọn)
           </Text>
@@ -148,6 +180,66 @@ const WriteReviewScreen = () => {
               style={{ height: 110 }}
             />
           </Input>
+        </VStack>
+
+        {/* Product Images (New section) */}
+        <VStack className="mb-8">
+          <Text className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2 ml-1">
+            Hình ảnh đánh giá (tối đa 3 ảnh, URL hoặc ảnh mẫu)
+          </Text>
+
+          {/* Added Images List */}
+          {images.length > 0 && (
+            <HStack className="gap-3 mb-4 flex-wrap">
+              {images.map((img, idx) => (
+                <Box key={idx} className="relative w-20 h-20 bg-zinc-100 rounded-2xl border border-zinc-200 overflow-hidden">
+                  <Image source={{ uri: img }} className="w-full h-full object-cover" />
+                  <Pressable
+                    onPress={() => handleRemoveImage(idx)}
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500/80 items-center justify-center"
+                  >
+                    <Icon as={X} className="text-white w-3 h-3" />
+                  </Pressable>
+                </Box>
+              ))}
+            </HStack>
+          )}
+
+          {/* Add Image URL Row */}
+          <HStack className="space-x-3 gap-3 mb-4 items-center">
+            <Input className="flex-1 h-12 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
+              <InputField
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                placeholder="Nhập đường dẫn hình ảnh (http...)"
+                className="text-sm text-zinc-900 dark:text-white px-4"
+              />
+            </Input>
+            <Pressable
+              onPress={handleAddImageUrl}
+              className="w-12 h-12 bg-yellow-400 active:bg-yellow-500 rounded-2xl items-center justify-center shadow-sm"
+            >
+              <Icon as={Plus} className="text-zinc-900 w-5 h-5" />
+            </Pressable>
+          </HStack>
+
+          {/* Predefined Test Images */}
+          <VStack className="bg-zinc-100/50 dark:bg-zinc-900/50 p-4 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50">
+            <Text className="text-xs font-bold text-zinc-500 mb-3">
+              Ấn nhanh để thêm ảnh mẫu thử nghiệm:
+            </Text>
+            <HStack className="space-x-4 gap-4">
+              {testImages.map((img, idx) => (
+                <Pressable
+                  key={idx}
+                  onPress={() => handleSelectTestImage(img)}
+                  className="w-16 h-16 rounded-2xl border border-zinc-200 overflow-hidden active:opacity-75"
+                >
+                  <Image source={{ uri: img }} className="w-full h-full object-cover" />
+                </Pressable>
+              ))}
+            </HStack>
+          </VStack>
         </VStack>
 
         {/* Submit */}

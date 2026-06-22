@@ -22,6 +22,7 @@ export const createReview = async (
     rating: number;
     title?: string;
     comment?: string;
+    images?: string[];
   },
 ): Promise<ReviewData | null> => {
   try {

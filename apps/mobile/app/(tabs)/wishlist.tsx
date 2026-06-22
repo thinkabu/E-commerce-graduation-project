@@ -16,7 +16,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Button, ButtonText } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
-import { getWishlist, toggleWishlist } from "@/services/wishlist.service";
+import { useWishlist } from "@/contexts/WishlistContext";
 import {
   Heart,
   ShoppingCart,
@@ -27,35 +27,17 @@ import {
 
 const WishlistScreen = () => {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetchWishlist = async () => {
-    if (!user?._id) return;
-    setLoading(true);
-    try {
-      const data = await getWishlist(user._id);
-      if (data && data.items) {
-        setItems(data.items);
-      }
-    } catch (error) {
-      console.error("Error fetching wishlist:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { wishlistItems: items, loading, fetchWishlist, toggleWishlist } = useWishlist();
 
   // Fetch when screen is focused
   useFocusEffect(
     useCallback(() => {
       if (isAuthenticated) {
         fetchWishlist();
-      } else {
-        setItems([]);
       }
-    }, [isAuthenticated, user?._id]),
+    }, [isAuthenticated]),
   );
 
   const formatPrice = (price: number) => {
@@ -63,16 +45,10 @@ const WishlistScreen = () => {
   };
 
   const handleRemove = async (productId: string) => {
-    if (!user?._id) return;
     try {
-      // Optimistic update
-      setItems((prev) =>
-        prev.filter((item) => item.productId?._id !== productId),
-      );
-      await toggleWishlist(user._id, productId);
+      await toggleWishlist(productId);
     } catch (error) {
       console.error("Error removing from wishlist:", error);
-      fetchWishlist(); // Revert
     }
   };
 

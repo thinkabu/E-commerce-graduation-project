@@ -33,7 +33,7 @@ export class UploadController {
       },
     },
   })
-  @UseInterceptors(FilesInterceptor('images', 10)) // Max 10 files at once
+  @UseInterceptors(FilesInterceptor('images', 50)) // Max 50 files at once
   async uploadImages(
     @UploadedFiles(
       new ParseFilePipe({

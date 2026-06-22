@@ -46,6 +46,19 @@ export class ProductsController {
     return this.productsService.findFeatured(limit);
   }
 
+  @Get('best-sellers')
+  @ApiOperation({ summary: 'Lấy danh sách sản phẩm bán chạy theo thời gian' })
+  @ApiQuery({ name: 'startDate', required: false, type: String, description: 'Ngày bắt đầu (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'endDate', required: false, type: String, description: 'Ngày kết thúc (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Giới hạn số lượng' })
+  getBestSellers(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.productsService.getBestSellers({ startDate, endDate, limit });
+  }
+
   @Get(':idOrSlug')
   @ApiOperation({ summary: 'Lấy chi tiết sản phẩm (theo ID hoặc slug)' })
   @ApiParam({ name: 'idOrSlug', description: 'Product ID hoặc slug' })

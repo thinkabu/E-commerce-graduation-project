@@ -41,6 +41,7 @@ import {
 import { getProductById, getProducts } from "@/services/product.service";
 import { checkWishlist, toggleWishlist } from "@/services/wishlist.service";
 import { getSimilarProducts } from "@/services/recommendation.service";
+import { getProductReviews, ReviewData } from "@/services/review.service";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -70,6 +71,7 @@ const ProductDetailScreen = () => {
   const { user, isAuthenticated } = useAuth();
 
   const [product, setProduct] = useState<any>(null);
+  const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -161,6 +163,15 @@ const ProductDetailScreen = () => {
       }
     };
 
+    const fetchReviews = async () => {
+      try {
+        const reviewList = await getProductReviews(id);
+        setReviews(reviewList);
+      } catch (err) {
+        console.error("Error fetching reviews in details:", err);
+      }
+    };
+
     const fetchWishlistStatus = async () => {
       if (!user?._id) return;
       const isWished = await checkWishlist(user._id, id);
@@ -168,6 +179,7 @@ const ProductDetailScreen = () => {
     };
 
     fetchProduct();
+    fetchReviews();
     fetchWishlistStatus();
   }, [id, user?._id]);
 
@@ -560,41 +572,77 @@ const ProductDetailScreen = () => {
               </Pressable>
             </HStack>
 
-            {mockReviews.map((review) => (
-              <Box
-                key={review.id}
-                className="mb-6 p-4 rounded-3xl bg-zinc-50 dark:bg-zinc-800/50"
-              >
-                <HStack className="justify-between items-start mb-3">
-                  <HStack className="space-x-3 gap-3">
-                    <Image
-                      source={{ uri: review.avatar }}
-                      className="w-10 h-10 rounded-full"
-                    />
-                    <VStack>
-                      <Text className="text-sm font-bold text-zinc-900 dark:text-white">
-                        {review.user}
-                      </Text>
-                      <Text className="text-[10px] text-zinc-400">
-                        {review.date}
-                      </Text>
-                    </VStack>
-                  </HStack>
-                  <HStack>
-                    {[...Array(5)].map((_, i) => (
-                      <Icon
-                        key={i}
-                        as={Star}
-                        className={`w-3 h-3 ${i < review.rating ? "text-yellow-500 fill-yellow-500" : "text-zinc-200 dark:text-zinc-700"}`}
-                      />
-                    ))}
-                  </HStack>
-                </HStack>
-                <Text className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  {review.comment}
-                </Text>
-              </Box>
-            ))}
+            {reviews.length === 0 ? (
+              <Text className="text-sm text-zinc-500 text-center py-6">
+                Chưa có đánh giá nào cho sản phẩm này.
+              </Text>
+            ) : (
+              reviews.map((review) => {
+                const userObj = (review.userId || {}) as any;
+                const reviewerName = userObj.fullName || "Người dùng";
+                const reviewerAvatar = userObj.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=100&auto=format&fit=crop";
+                const reviewDate = new Date(review.createdAt).toLocaleDateString("vi-VN");
+
+                return (
+                  <Box
+                    key={review._id}
+                    className="mb-6 p-4 rounded-3xl bg-zinc-50 dark:bg-zinc-800/50"
+                  >
+                    <HStack className="justify-between space-x-4 gap-4 items-center">
+                      {/* Left: Review Text Info */}
+                      <VStack className="flex-1 space-y-2 gap-2">
+                        <HStack className="justify-between items-start">
+                          <HStack className="space-x-3 gap-3">
+                            <Image
+                              source={{ uri: reviewerAvatar }}
+                              className="w-10 h-10 rounded-full"
+                            />
+                            <VStack>
+                              <Text className="text-sm font-bold text-zinc-900 dark:text-white">
+                                {reviewerName}
+                              </Text>
+                              <Text className="text-[10px] text-zinc-400">
+                                {reviewDate}
+                              </Text>
+                            </VStack>
+                          </HStack>
+                        </HStack>
+                        <HStack className="mb-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Icon
+                              key={i}
+                              as={Star}
+                              className={`w-3.5 h-3.5 ${i < review.rating ? "text-yellow-500 fill-yellow-500" : "text-zinc-200 dark:text-zinc-700"}`}
+                            />
+                          ))}
+                        </HStack>
+                        {review.title && (
+                          <Text className="text-sm font-bold text-zinc-900 dark:text-white">
+                            {review.title}
+                          </Text>
+                        )}
+                        <Text className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                          {review.comment}
+                        </Text>
+                      </VStack>
+
+                      {/* Right: Review Images */}
+                      {review.images && review.images.length > 0 && (
+                        <VStack className="space-y-2 gap-2 justify-center items-center">
+                          {review.images.slice(0, 2).map((img, imgIdx) => (
+                            <Image
+                              key={imgIdx}
+                              source={{ uri: img }}
+                              className="w-16 h-16 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800"
+                            />
+                          ))}
+                        </VStack>
+                      )}
+                    </HStack>
+                  </Box>
+                );
+              })
+            )}
           </Box>
 
           {/* 7. Related Products (GRID LAYOUT) */}

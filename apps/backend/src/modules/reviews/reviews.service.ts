@@ -63,6 +63,7 @@ export class ReviewsService {
       rating: dto.rating,
       title: dto.title,
       comment: dto.comment,
+      images: dto.images || [],
       isVerifiedPurchase: true,
     });
 

@@ -3,12 +3,15 @@ import { Home, Heart, ShoppingCart, User } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { Platform } from "react-native";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const { cartItems } = useCart();
+  const { wishlistItems } = useWishlist();
   const cartCount = cartItems.length;
+  const wishlistCount = wishlistItems.length;
 
   return (
     <Tabs
@@ -40,7 +43,14 @@ export default function TabLayout() {
         name="wishlist"
         options={{
           title: "Yêu thích",
-          tabBarIcon: ({ color, size }) => <Heart color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Heart color={color} size={size} />),
+          tabBarBadge: wishlistCount > 0 ? wishlistCount : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: "#eab308", // Yellow-500
+            fontSize: 10,
+            lineHeight: 15,
+          },
         }}
       />
       <Tabs.Screen
@@ -52,7 +62,7 @@ export default function TabLayout() {
           ),
           tabBarBadge: cartCount > 0 ? cartCount : undefined,
           tabBarBadgeStyle: {
-            backgroundColor: "#ef4444", // Red-500
+            backgroundColor: "#eab308", // Yellow-500
             fontSize: 10,
             lineHeight: 15,
           },

@@ -7,6 +7,7 @@ import { useColorScheme } from "nativewind";
 
 // Import các Providers đã tạo
 import { AuthContextProvider } from "../contexts/AuthContext";
+import { WishlistContextProvider } from "../contexts/WishlistContext";
 import { CartContextProvider } from "../contexts/CartContext";
 import { AddressContextProvider } from "../contexts/AddressContext";
 import { PaymentContextProvider } from "../contexts/PaymentContext";
@@ -28,23 +29,25 @@ export default function RootLayout() {
       <GluestackUIProvider mode="system">
         <ThemeContextProvider>
           <AuthContextProvider>
-            <NotificationContextProvider>
-              <CartContextProvider>
-                <AddressContextProvider>
-                  <PaymentContextProvider>
-                    <NFTContextProvider>
-                      <Stack screenOptions={{ headerShown: false }}>
-                        {/* Trạm gác cổng điều hướng */}
-                        <Stack.Screen name="index" />
+            <WishlistContextProvider>
+              <NotificationContextProvider>
+                <CartContextProvider>
+                  <AddressContextProvider>
+                    <PaymentContextProvider>
+                      <NFTContextProvider>
+                        <Stack screenOptions={{ headerShown: false }}>
+                          {/* Trạm gác cổng điều hướng */}
+                          <Stack.Screen name="index" />
 
-                        {/* Các nhóm màn hình chính */}
-                        <Stack.Screen name="(tabs)" />
-                      </Stack>
-                    </NFTContextProvider>
-                  </PaymentContextProvider>
-                </AddressContextProvider>
-              </CartContextProvider>
-            </NotificationContextProvider>
+                          {/* Các nhóm màn hình chính */}
+                          <Stack.Screen name="(tabs)" />
+                        </Stack>
+                      </NFTContextProvider>
+                    </PaymentContextProvider>
+                  </AddressContextProvider>
+                </CartContextProvider>
+              </NotificationContextProvider>
+            </WishlistContextProvider>
           </AuthContextProvider>
         </ThemeContextProvider>
       </GluestackUIProvider>

@@ -12,6 +12,8 @@ import { QueryProductDto } from './dto/query-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
 import { RecommendationsService } from '../recommendations/recommendations.service';
+import { Order, OrderDocument } from '../orders/schemas/order.schema';
+import { OrderStatus } from '../../common/enums';
 
 @Injectable()
 export class ProductsService {
@@ -23,6 +25,8 @@ export class ProductsService {
     private readonly productModel: Model<ProductDocument>,
     @InjectModel(ProductVariant.name)
     private readonly variantModel: Model<ProductVariantDocument>,
+    @InjectModel(Order.name)
+    private readonly orderModel: Model<OrderDocument>,
     private readonly recommendationsService: RecommendationsService,
   ) {}
 
@@ -48,6 +52,11 @@ export class ProductsService {
     // Tự động kích hoạt sinh vector embedding bất đồng bộ (không block API response)
     this.recommendationsService.syncProductEmbedding(product._id.toString()).catch((err) => {
       this.logger.error(`Lỗi kích hoạt sync product embedding khi tạo mới: ${err.message}`);
+    });
+
+    // Khởi tạo metrics đo lường khuyến nghị cơ bản để sản phẩm mới xuất hiện ngay trên trang chủ
+    this.recommendationsService.initializeProductMetrics(product._id.toString()).catch((err) => {
+      this.logger.error(`Lỗi kích hoạt khởi tạo product metrics khi tạo mới: ${err.message}`);
     });
 
     return {
@@ -141,6 +150,68 @@ export class ProductsService {
       .lean();
   }
 
+  async getBestSellers(query: { startDate?: string; endDate?: string; limit?: number }) {
+    const { startDate, endDate, limit = 10 } = query;
+    const orderMatch: any = {};
+
+    if (startDate || endDate) {
+      orderMatch.createdAt = {};
+      if (startDate) {
+        orderMatch.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        orderMatch.createdAt.$lte = end;
+      }
+    }
+
+    const pipeline: any[] = [
+      { $match: { orderStatus: { $ne: OrderStatus.CANCELLED }, ...orderMatch } },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.productId',
+          soldCount: { $sum: '$items.quantity' },
+        },
+      },
+      { $sort: { soldCount: -1 } },
+      { $limit: limit },
+    ];
+
+    const topAggregated = await this.orderModel.aggregate(pipeline);
+    
+    // Fallback: If no orders are found within criteria, return all-time best sellers
+    if (topAggregated.length === 0) {
+      return this.productModel
+        .find({ isActive: true })
+        .sort({ soldCount: -1 })
+        .limit(limit)
+        .populate('categoryId', 'name slug')
+        .lean();
+    }
+
+    const productIds = topAggregated.map(item => item._id);
+    const products = await this.productModel
+      .find({ _id: { $in: productIds }, isActive: true })
+      .populate('categoryId', 'name slug')
+      .lean();
+
+    // Map details and preserve the aggregation sort order
+    const mappedProducts = topAggregated
+      .map(aggItem => {
+        const prod = products.find(p => p._id.toString() === aggItem._id.toString());
+        if (!prod) return null;
+        return {
+          ...prod,
+          soldCount: aggItem.soldCount,
+        };
+      })
+      .filter(Boolean);
+
+    return mappedProducts;
+  }
+
   async findByIdOrSlug(idOrSlug: string): Promise<any> {
     const isObjectId = Types.ObjectId.isValid(idOrSlug);
 
@@ -216,6 +287,11 @@ export class ProductsService {
     // Tự động kích hoạt sinh vector embedding bất đồng bộ khi cập nhật sản phẩm
     this.recommendationsService.syncProductEmbedding(id).catch((err) => {
       this.logger.error(`Lỗi kích hoạt sync product embedding khi cập nhật: ${err.message}`);
+    });
+
+    // Đảm bảo khởi tạo metrics khuyến nghị nếu chưa tồn tại (không ghi đè dữ liệu cũ nhờ $setOnInsert)
+    this.recommendationsService.initializeProductMetrics(id).catch((err) => {
+      this.logger.error(`Lỗi kích hoạt khởi tạo product metrics khi cập nhật: ${err.message}`);
     });
 
     return product;

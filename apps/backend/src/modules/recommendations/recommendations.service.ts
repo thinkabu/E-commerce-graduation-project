@@ -568,5 +568,40 @@ export class RecommendationsService {
       return [];
     }
   }
+
+  /**
+   * Khởi tạo chỉ số đo lường cơ bản cho sản phẩm mới (Cold Start)
+   */
+  async initializeProductMetrics(productId: string, averageRating = 0, reviewCount = 0): Promise<void> {
+    this.logger.log(`Initializing recommendation metrics for product ID: ${productId}`);
+    if (!Types.ObjectId.isValid(productId)) {
+      return;
+    }
+
+    try {
+      await this.productMetricsModel.updateOne(
+        { productId: new Types.ObjectId(productId) },
+        {
+          $set: {
+            averageRating,
+            reviewCount,
+          },
+          $setOnInsert: {
+            viewCount30d: 1,
+            clickCount30d: 1,
+            cartCount30d: 0,
+            purchaseCount30d: 0,
+            ctr: 0.1,
+            cvr: 0.05,
+            popularityScore: 10, // Baseline boost cho sản phẩm mới
+          },
+        },
+        { upsert: true },
+      );
+      this.logger.log(`✅ Khởi tạo product metrics thành công cho sản phẩm ID: ${productId}`);
+    } catch (err) {
+      this.logger.error(`Lỗi khởi tạo product metrics: ${err.message}`);
+    }
+  }
 }
 
