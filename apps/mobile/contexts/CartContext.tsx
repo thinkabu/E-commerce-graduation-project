@@ -81,6 +81,7 @@ export function CartContextProvider({ children }: { children: ReactNode }) {
       return {
         id: item._id, // This is the CartItem _id from backend
         productId: product?._id,
+        variantId: variant?._id || undefined,
         name: product?.name || "Unknown Product",
         price: variantPrice || productPrice || 0,
         image,

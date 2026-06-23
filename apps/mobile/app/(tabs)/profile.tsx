@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { ScrollView, Image, Switch, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
 import { HStack } from "@/components/ui/hstack";
@@ -25,6 +25,8 @@ import {
   ScanFace,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
+import { getUserOrders } from "@/services/order.service";
+import { getCoupons } from "@/services/coupon.service";
 
 const ProfileScreen = () => {
   const router = useRouter();
@@ -38,8 +40,33 @@ const ProfileScreen = () => {
   } = useAuth();
 
   const [isTogglingBiometric, setIsTogglingBiometric] = useState(false);
+  const [orderCount, setOrderCount] = useState<number>(0);
+  const [couponCount, setCouponCount] = useState<number>(0);
 
   const BiometricIcon = biometricType === "Face ID" ? ScanFace : Fingerprint;
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchCounts = async () => {
+        if (user?._id) {
+          try {
+            const orders = await getUserOrders(user._id);
+            setOrderCount(orders.length);
+          } catch (e) {
+            console.error("Error fetching order count in profile:", e);
+          }
+
+          try {
+            const coupons = await getCoupons();
+            setCouponCount(coupons.length);
+          } catch (e) {
+            console.error("Error fetching coupon count in profile:", e);
+          }
+        }
+      };
+      fetchCounts();
+    }, [user?._id])
+  );
 
   const handleToggleBiometric = async (value: boolean) => {
     setIsTogglingBiometric(true);
@@ -106,7 +133,7 @@ const ProfileScreen = () => {
                 source={{
                   uri:
                     user?.avatar ||
-                    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200&auto=format&fit=crop",
                 }}
                 className="w-28 h-28 rounded-full border-4 border-yellow-400"
               />
@@ -128,29 +155,19 @@ const ProfileScreen = () => {
               {user?.email || "email@example.com"}
             </Text>
 
-            <HStack className="mt-6 space-x-8 gap-8 bg-zinc-50 dark:bg-zinc-800 px-8 py-4 rounded-3xl">
-              {/* ... (stats keep as is for now) */}
-              <VStack className="items-center">
+            <HStack className="mt-6 space-x-8 gap-8 bg-zinc-50 dark:bg-zinc-800 px-8 py-4 rounded-3xl justify-around w-full max-w-[280px]">
+              <VStack className="items-center flex-1">
                 <Text className="text-lg font-bold text-zinc-900 dark:text-white">
-                  12
+                  {orderCount}
                 </Text>
                 <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">
                   Đơn hàng
                 </Text>
               </VStack>
               <Box className="w-px h-full bg-zinc-200 dark:bg-zinc-700" />
-              <VStack className="items-center">
+              <VStack className="items-center flex-1">
                 <Text className="text-lg font-bold text-zinc-900 dark:text-white">
-                  850
-                </Text>
-                <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">
-                  Điểm tích lũy
-                </Text>
-              </VStack>
-              <Box className="w-px h-full bg-zinc-200 dark:bg-zinc-700" />
-              <VStack className="items-center">
-                <Text className="text-lg font-bold text-zinc-900 dark:text-white">
-                  5
+                  {couponCount}
                 </Text>
                 <Text className="text-[10px] text-zinc-500 uppercase font-bold tracking-tighter">
                   Mã giảm giá

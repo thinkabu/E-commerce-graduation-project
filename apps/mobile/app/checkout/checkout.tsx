@@ -109,7 +109,9 @@ const CheckoutScreen = () => {
         try {
           const product = await getProductById(productId as string);
           if (product) {
-            let price = product.basePrice;
+            const discountPercent = product.discountPercentage || 0;
+            let baseDiscountedPrice = product.basePrice * (1 - discountPercent / 100);
+            let price = baseDiscountedPrice;
             let image =
               product.images?.[0] || "https://via.placeholder.com/300";
             let variantAttrs: Record<string, string> = {};
@@ -119,7 +121,8 @@ const CheckoutScreen = () => {
                 (v: any) => v._id === variantId,
               );
               if (variant) {
-                price = variant.price;
+                const variantBasePrice = variant.price !== undefined ? variant.price : product.basePrice;
+                price = variantBasePrice * (1 - discountPercent / 100);
                 if (variant.images?.length > 0) image = variant.images[0];
                 if (variant.attributes) {
                   variant.attributes.forEach((attr: any) => {
@@ -264,7 +267,13 @@ const CheckoutScreen = () => {
       const payload = {
         items: checkoutItems.map((item: any) => ({
           productId: item.productId,
-          variantId: item.variantId,
+          variantId:
+            item.variantId &&
+            item.variantId !== "undefined" &&
+            item.variantId !== "null" &&
+            item.variantId !== ""
+              ? item.variantId
+              : undefined,
           quantity: item.quantity,
         })),
         shippingAddressId: defaultAddress._id,

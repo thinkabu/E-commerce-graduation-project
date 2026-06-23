@@ -229,7 +229,7 @@ export default function LoginScreen() {
                       source={{
                         uri:
                           selectedAccount.avatar ||
-                          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
+                          "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200&auto=format&fit=crop",
                       }}
                       className="w-20 h-20 rounded-full border-2 border-yellow-500 mb-2"
                     />
@@ -340,7 +340,7 @@ export default function LoginScreen() {
                           source={{
                             uri:
                               account.avatar ||
-                              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
+                              "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200&auto=format&fit=crop",
                           }}
                           className="w-12 h-12 rounded-full border border-zinc-200 dark:border-zinc-700"
                         />

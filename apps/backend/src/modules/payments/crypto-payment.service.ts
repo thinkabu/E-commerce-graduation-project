@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
@@ -17,11 +18,29 @@ import { ethers } from 'ethers';
 
 @Injectable()
 export class CryptoPaymentService {
+  private readonly logger = new Logger(CryptoPaymentService.name);
+
   constructor(
     @InjectModel(CryptoTransaction.name)
     private readonly cryptoTransactionModel: Model<CryptoTransactionDocument>,
     private readonly configService: ConfigService,
   ) {}
+
+  // Kết nối đến Hardhat local blockchain node (luôn dùng 127.0.0.1:8545)
+  private async getHardhatProvider(): Promise<ethers.JsonRpcProvider> {
+    const rpcUrl =
+      this.configService.get<string>('HARDHAT_RPC_URL') ||
+      'http://127.0.0.1:8545';
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    try {
+      await provider.getBlockNumber();
+    } catch {
+      throw new BadRequestException(
+        `Không thể kết nối đến Hardhat local node (${rpcUrl}). Hãy chắc chắn lệnh "pnpm blockchain:start" đang chạy.`,
+      );
+    }
+    return provider;
+  }
 
   // Lấy tỷ giá VND/Crypto từ Binance API
   async getCryptoExchangeRate(currency = 'ethereum') {
@@ -118,11 +137,8 @@ export class CryptoPaymentService {
       );
     }
 
-    // 4. Kết nối đến Hardhat local node
-    const hardhatUrl =
-      this.configService.get<string>('HARDHAT_RPC_URL') ||
-      'http://127.0.0.1:8545';
-    const provider = new ethers.JsonRpcProvider(hardhatUrl);
+    // 4. Kết nối đến Hardhat local node (luôn dùng 127.0.0.1:8545)
+    const provider = await this.getHardhatProvider();
 
     // Lấy transaction từ blockchain
     let transaction: any;
@@ -172,7 +188,7 @@ export class CryptoPaymentService {
     const txValueInEth = parseFloat(ethers.formatEther(txValue));
     if (expectedAmount !== undefined) {
       const expectedAmountNum = parseFloat(expectedAmount.toString());
-      const tolerance = 0.0001;
+      const tolerance = 0.00001; // Tăng độ chính xác lên 6 chữ số thập phân (khớp với mobile app)
       if (Math.abs(txValueInEth - expectedAmountNum) > tolerance) {
         throw new BadRequestException(
           `Số tiền không khớp. Nhận: ${txValueInEth} ETH, Mong đợi: ${expectedAmountNum} ETH`,
@@ -237,7 +253,79 @@ export class CryptoPaymentService {
     };
   }
 
-  // Tự động detect transaction trong 20 blocks gần nhất
+  // Quét các block gần nhất để tìm giao dịch phù hợp (helper)
+  private async scanBlocks(
+    provider: ethers.JsonRpcProvider,
+    merchantWallet: string,
+    expectedAmountNum: number,
+    tolerance: number,
+  ): Promise<null | {
+    txHash: string;
+    tx: any;
+    receipt: any;
+    txValueInEth: number;
+    confirmations: number;
+  }> {
+    const currentBlock = await provider.getBlockNumber();
+    const startBlock = Math.max(0, currentBlock - 50); // Quét 50 block gần nhất
+
+    this.logger.log(
+      `🔍 Scanning blocks ${startBlock}–${currentBlock} for ${expectedAmountNum} ETH → ${merchantWallet.slice(0, 10)}...`,
+    );
+
+    for (let blockNum = currentBlock; blockNum >= startBlock; blockNum--) {
+      // Lấy block với danh sách hash transaction (cách đáng tin cậy trên Hardhat)
+      const block = await provider.getBlock(blockNum);
+      if (!block) continue;
+
+      const txHashes: string[] = block.transactions as string[];
+      if (!txHashes || txHashes.length === 0) continue;
+
+      this.logger.debug(`  Block #${blockNum}: ${txHashes.length} transactions`);
+
+      for (const txHash of txHashes) {
+        const tx = await provider.getTransaction(txHash);
+        if (!tx) continue;
+
+        const txTo = tx.to?.toLowerCase();
+        this.logger.debug(`    TX ${txHash.slice(0, 10)}: to=${txTo?.slice(0, 10)} value=${ethers.formatEther(tx.value)} ETH`);
+
+        if (txTo !== merchantWallet.toLowerCase()) continue;
+
+        const txValueInEth = parseFloat(ethers.formatEther(tx.value));
+        const diff = Math.abs(txValueInEth - expectedAmountNum);
+
+        this.logger.log(`  ✔ Gửi đến merchant! Giá trị: ${txValueInEth} ETH, cần: ${expectedAmountNum} ETH, diff: ${diff}`);
+
+        if (diff > tolerance) {
+          this.logger.warn(`  ✗ Số tiền không khớp (diff=${diff} > tolerance=${tolerance})`);
+          continue;
+        }
+
+        // Kiểm tra giao dịch đã được xử lý chưa
+        const existingTx = await this.cryptoTransactionModel.findOne({ txHash });
+        if (existingTx && existingTx.status === CryptoTxStatus.CONFIRMED) {
+          this.logger.warn(`  ✗ TX ${txHash.slice(0, 10)} đã được xác thực trước đó`);
+          continue;
+        }
+
+        const receipt = await provider.getTransactionReceipt(txHash);
+        if (!receipt || receipt.status !== 1) {
+          this.logger.warn(`  ✗ TX ${txHash.slice(0, 10)} chưa confirmed (receipt.status=${receipt?.status})`);
+          continue;
+        }
+
+        const confirmations = currentBlock - receipt.blockNumber + 1;
+        this.logger.log(`  ✅ Tìm thấy TX hợp lệ: ${txHash} (${confirmations} confirmations)`);
+        return { txHash, tx, receipt, txValueInEth, confirmations };
+      }
+    }
+
+    this.logger.log(`  ❌ Không tìm thấy TX phù hợp trong blocks ${startBlock}–${currentBlock}`);
+    return null;
+  }
+
+  // Tự động detect transaction — backend tự polling blockchain (10 lần × 3 giây)
   async autoDetectTransaction(
     userId: string,
     expectedAmount: number,
@@ -252,95 +340,123 @@ export class CryptoPaymentService {
       );
     }
 
-    const hardhatUrl =
-      this.configService.get<string>('HARDHAT_RPC_URL') ||
-      'http://127.0.0.1:8545';
-    const provider = new ethers.JsonRpcProvider(hardhatUrl);
-
-    let currentBlock: number;
-    try {
-      currentBlock = await provider.getBlockNumber();
-    } catch (err: any) {
-      throw new BadRequestException(
-        'Không thể kết nối đến local blockchain node',
-      );
-    }
+    // Kết nối Hardhat local qua RPC (luôn dùng 127.0.0.1:8545)
+    const provider = await this.getHardhatProvider();
 
     const expectedAmountNum = parseFloat(expectedAmount.toString());
-    const tolerance = 0.0001;
-    const startBlock = Math.max(0, currentBlock - 20);
+    const tolerance = 0.0001; // Cho phép sai lệch nhỏ (0.0001 ETH) để tránh lỗi làm tròn
+    const maxAttempts = 15; // 15 lần × 3 giây = tối đa 45 giây
+    const delayMs = 3000;
 
-    for (let blockNum = currentBlock; blockNum >= startBlock; blockNum--) {
-      const block = await provider.getBlock(blockNum);
-      if (!block || !block.transactions) continue;
+    this.logger.log(
+      `🚀 Auto-detect bắt đầu: userId=${userId}, cần ${expectedAmountNum} ETH, mạng=${network}`,
+    );
 
-      for (const txHash of block.transactions) {
-        const tx = await provider.getTransaction(txHash);
-        if (!tx) continue;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      this.logger.log(`[Lần ${attempt}/${maxAttempts}] Bắt đầu quét blockchain...`);
 
-        const txTo = tx.to?.toLowerCase();
-        if (txTo !== merchantWallet.toLowerCase()) continue;
+      const found = await this.scanBlocks(
+        provider,
+        merchantWallet,
+        expectedAmountNum,
+        tolerance,
+      );
 
-        const txValueInEth = parseFloat(ethers.formatEther(tx.value));
-        if (Math.abs(txValueInEth - expectedAmountNum) <= tolerance) {
-          // Check if already used
-          const existingTx = await this.cryptoTransactionModel.findOne({
-            txHash,
-          });
-          if (existingTx && existingTx.status === CryptoTxStatus.CONFIRMED) {
-            continue;
-          }
+      if (found) {
+        const { txHash, tx, receipt, txValueInEth, confirmations } = found;
 
-          const receipt = await provider.getTransactionReceipt(txHash);
-          if (!receipt || receipt.status !== 1) continue;
+        // Lưu giao dịch vào DB
+        const rateData = await this.getCryptoExchangeRate('ethereum');
+        const amountInFiat = Math.round(txValueInEth * rateData.vndRate);
 
-          const confirmations = currentBlock - receipt.blockNumber + 1;
+        const txRecord = new this.cryptoTransactionModel({
+          txHash,
+          userId: userId ? new Types.ObjectId(userId) : undefined,
+          fromAddress: tx.from?.toLowerCase(),
+          toAddress: tx.to?.toLowerCase(),
+          amountInWei: tx.value.toString(),
+          amountInEth: txValueInEth,
+          amountInFiat,
+          fiatCurrency: 'VND',
+          exchangeRate: rateData.vndRate,
+          gasUsed: Number(receipt.gasUsed),
+          gasPrice: tx.gasPrice ? tx.gasPrice.toString() : '0',
+          networkId: 31337,
+          networkName: network,
+          blockNumber: receipt.blockNumber,
+          status: CryptoTxStatus.CONFIRMED,
+          confirmations,
+        });
+        await txRecord.save();
 
-          // Save to DB
-          const rateData = await this.getCryptoExchangeRate('ethereum');
-          const amountInFiat = Math.round(txValueInEth * rateData.vndRate);
-
-          const txRecord = new this.cryptoTransactionModel({
-            txHash,
-            userId: userId ? new Types.ObjectId(userId) : undefined,
-            fromAddress: tx.from?.toLowerCase(),
-            toAddress: txTo,
-            amountInWei: tx.value.toString(),
-            amountInEth: txValueInEth,
-            amountInFiat,
-            fiatCurrency: 'VND',
-            exchangeRate: rateData.vndRate,
-            gasUsed: Number(receipt.gasUsed),
-            gasPrice: tx.gasPrice ? tx.gasPrice.toString() : '0',
-            networkId: 31337,
-            networkName: network,
-            blockNumber: receipt.blockNumber,
-            status: CryptoTxStatus.CONFIRMED,
+        return {
+          verified: true,
+          transaction: {
+            hash: txHash,
+            from: tx.from?.toLowerCase(),
+            to: tx.to?.toLowerCase(),
+            value: txValueInEth,
+            valueWei: tx.value.toString(),
+            status: 'success',
             confirmations,
-          });
-          await txRecord.save();
+            blockNumber: receipt.blockNumber,
+            network,
+          },
+          verifiedAt: new Date(),
+          attempt,
+        };
+      }
 
-          return {
-            verified: true,
-            transaction: {
-              hash: txHash,
-              from: tx.from?.toLowerCase(),
-              to: txTo,
-              value: txValueInEth,
-              valueWei: tx.value.toString(),
-              status: 'success',
-              confirmations,
-              blockNumber: receipt.blockNumber,
-              network,
-            },
-            verifiedAt: new Date(),
-          };
-        }
+      // Chưa tìm thấy — chờ trước khi quét lại (trừ lần cuối)
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
     }
 
     throw new NotFoundException(
-      'Chưa tìm thấy giao dịch phù hợp. Vui lòng đợi hoặc nhập TX hash thủ công.',
+      `Không tìm thấy giao dịch sau ${maxAttempts} lần quét (${(maxAttempts * delayMs) / 1000} giây). Vui lòng nhập TX hash thủ công.`,
     );
+  }
+
+  // [DEBUG] Xem nội dung 10 block gần nhất - dùng để kiểm tra backend có thấy TX không
+  async debugBlocks() {
+    const provider = await this.getHardhatProvider();
+    const currentBlock = await provider.getBlockNumber();
+    const startBlock = Math.max(0, currentBlock - 10);
+    const result: any[] = [];
+
+    for (let blockNum = currentBlock; blockNum >= startBlock; blockNum--) {
+      const block = await provider.getBlock(blockNum);
+      if (!block) continue;
+
+      const txHashes: string[] = block.transactions as string[];
+      const txDetails: any[] = [];
+
+      for (const txHash of txHashes) {
+        const tx = await provider.getTransaction(txHash);
+        if (tx) {
+          txDetails.push({
+            hash: tx.hash,
+            from: tx.from,
+            to: tx.to,
+            value: ethers.formatEther(tx.value) + ' ETH',
+            valueWei: tx.value.toString(),
+          });
+        }
+      }
+
+      result.push({
+        blockNumber: blockNum,
+        txCount: txHashes.length,
+        transactions: txDetails,
+      });
+    }
+
+    return {
+      currentBlock,
+      scannedRange: `${startBlock}–${currentBlock}`,
+      merchantWallet: this.configService.get<string>('MERCHANT_WALLET_ADDRESS'),
+      blocks: result,
+    };
   }
 }

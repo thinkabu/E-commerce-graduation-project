@@ -71,7 +71,7 @@ const BlockchainPaymentScreen = () => {
   const successAnim = React.useRef(new Animated.Value(0)).current;
 
   const vndAmount = total ? parseFloat(total as string) : 0;
-  const cryptoAmount = convertVNDToCrypto(vndAmount);
+  const cryptoAmount = parseFloat(convertVNDToCrypto(vndAmount).toFixed(6));
 
   const copyToClipboard = async () => {
     try {
@@ -83,75 +83,93 @@ const BlockchainPaymentScreen = () => {
     }
   };
 
+  const openMetaMaskPayment = async () => {
+    const amountInWei = ethers.parseEther(cryptoAmount.toFixed(6)).toString();
+    const chainId = 31337; // Hardhat network chain ID
+
+    // EIP-681: Ethereum Payment URI – MetaMask mobile nhận dạng và mở giao diện Send
+    const eip681Uri = `ethereum:${MERCHANT_WALLET}@${chainId}?value=${amountInWei}`;
+
+    // Fallback 1: metamask:// custom scheme
+    const metamaskScheme = `metamask://send?to=${MERCHANT_WALLET}&value=${amountInWei}&chainId=${chainId}`;
+
+    // Fallback 2: MetaMask universal link (mở MetaMask App qua web)
+    const metamaskUniversalLink = `https://metamask.app.link/send/${MERCHANT_WALLET}@${chainId}?value=${amountInWei}`;
+
+    try {
+      // Thử EIP-681 trước (chuẩn, MetaMask mobile mở Send UI)
+      const canOpenEip681 = await Linking.canOpenURL(eip681Uri);
+      if (canOpenEip681) {
+        await Linking.openURL(eip681Uri);
+        return true;
+      }
+
+      // Thử metamask:// scheme
+      const canOpenMetamask = await Linking.canOpenURL(metamaskScheme);
+      if (canOpenMetamask) {
+        await Linking.openURL(metamaskScheme);
+        return true;
+      }
+
+      // Fallback cuối: mở universal link (sẽ redirect sang MetaMask App nếu đã cài)
+      await Linking.openURL(metamaskUniversalLink);
+      return true;
+    } catch (err) {
+      console.error("Cannot open MetaMask:", err);
+      return false;
+    }
+  };
+
   const handleSendTransaction = async () => {
     if (!MERCHANT_WALLET) {
       Alert.alert("Lỗi", "Địa chỉ ví nhận chưa được cấu hình");
       return;
     }
 
-    try {
-      setLoading(true);
-      setTransactionStatus("pending");
+    Alert.alert(
+      "🦊 Mở MetaMask để thanh toán",
+      `Bạn sẽ được chuyển sang MetaMask để xác nhận giao dịch:\n\n` +
+        `💰 Số ETH: ${cryptoAmount.toFixed(6)} ETH\n` +
+        `📍 Ví nhận: ${metaMaskService.formatAddress(MERCHANT_WALLET)}\n` +
+        `🔗 Mạng: Hardhat Local (Chain ID: 31337)\n\n` +
+        `Sau khi xác nhận trong MetaMask, quay lại app và nhấn "Tự động xác nhận giao dịch".`,
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Mở MetaMask 🦊",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              setTransactionStatus("pending");
 
-      const amountInWei = ethers.parseEther(cryptoAmount.toFixed(6)).toString();
-      const chainId = 31337; // Hardhat network chain ID
+              const opened = await openMetaMaskPayment();
 
-      const metamaskDeepLink = `metamask://send/${MERCHANT_WALLET}@${chainId}?value=${amountInWei}`;
-      const dappUrl = `https://metamask.app.link/send/${MERCHANT_WALLET}@${chainId}?value=${amountInWei}`;
-
-      Alert.alert(
-        "Gửi Giao Dịch qua MetaMask",
-        `Bạn sẽ được chuyển sang MetaMask để thanh toán:\n\n` +
-          `${cryptoAmount.toFixed(6)} ETH\n` +
-          `Đến ví: ${metaMaskService.formatAddress(MERCHANT_WALLET)}\n\n` +
-          `Nhấn OK để chuyển khoản, sau khi hoàn thành vui lòng quay lại app và nhấn "Tự động xác nhận".`,
-        [
-          {
-            text: "Hủy",
-            style: "cancel",
-            onPress: () => {
-              setLoading(false);
-              setTransactionStatus("idle");
-            },
-          },
-          {
-            text: "Mở MetaMask",
-            onPress: async () => {
-              try {
-                const canOpen = await Linking.canOpenURL(metamaskDeepLink);
-                if (canOpen) {
-                  await Linking.openURL(metamaskDeepLink);
-                } else {
-                  await Linking.openURL(dappUrl);
-                }
-                setLoading(false);
+              if (opened) {
                 setTransactionStatus("waiting");
-              } catch (error) {
-                console.error("MetaMask deeplink error:", error);
-                setLoading(false);
+              } else {
+                // MetaMask chưa cài – hướng dẫn thủ công
                 Alert.alert(
                   "Không thể mở MetaMask",
-                  `Vui lòng mở MetaMask thủ công và chuyển:\n\n` +
+                  `Vui lòng mở MetaMask thủ công và gửi:\n\n` +
                     `Số lượng: ${cryptoAmount.toFixed(6)} ETH\n` +
-                    `Đến ví: ${MERCHANT_WALLET}\n` +
+                    `Đến địa chỉ: ${MERCHANT_WALLET}\n` +
                     `Mạng: Hardhat Local (Chain ID: 31337)`,
-                  [
-                    {
-                      text: "Đã hiểu",
-                      onPress: () => setTransactionStatus("waiting"),
-                    },
-                  ],
+                  [{ text: "Đã hiểu", onPress: () => setTransactionStatus("waiting") }],
                 );
               }
-            },
+            } catch (error: any) {
+              Alert.alert("Lỗi", error.message || "Không thể khởi tạo giao dịch");
+              setTransactionStatus("idle");
+            } finally {
+              setLoading(false);
+            }
           },
-        ],
-      );
-    } catch (error: any) {
-      setLoading(false);
-      setTransactionStatus("error");
-      Alert.alert("Lỗi", error.message || "Không thể khởi tạo giao dịch");
-    }
+        },
+      ],
+    );
   };
 
   const handleAutoDetect = async () => {
@@ -160,53 +178,55 @@ const BlockchainPaymentScreen = () => {
       setIsDetecting(true);
       setTransactionStatus("confirming");
       setLoading(true);
+      setDetectAttempts(0);
 
-      const maxAttempts = 10;
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        setDetectAttempts(attempt);
-        try {
-          const result = await autoDetectTransaction(
-            user._id,
-            cryptoAmount,
-            ETHEREUM_NETWORK,
-          );
+      // Backend tự polling blockchain (tối đa 15 lần × 3 giây = ~45 giây)
+      // Frontend chỉ cần gọi 1 lần và chờ kết quả
+      const raw = await autoDetectTransaction(
+        user._id,
+        cryptoAmount,
+        ETHEREUM_NETWORK,
+      );
 
-          if (result.verified) {
-            const txHash = result.transaction.hash;
-            setTransactionHash(txHash);
-            await handleCreateOrder(txHash, result.transaction.from);
-            return;
-          }
-        } catch (err: any) {
-          if (attempt < maxAttempts) {
-            await new Promise((resolve) => setTimeout(resolve, 3000));
-          }
-        }
+      // Backend có thể trả về trực tiếp hoặc có wrapper .data
+      const result = raw?.data ?? raw;
+
+      console.log("[AutoDetect] Backend trả về:", JSON.stringify(result));
+
+      if (result?.verified && result?.transaction?.hash) {
+        const txHash = result.transaction.hash;
+        const senderAddress = result.transaction.from ?? "";
+        setTransactionHash(txHash);
+        setDetectAttempts(result.attempt ?? 1);
+        await handleCreateOrder(txHash, senderAddress);
+        return;
       }
 
-      setLoading(false);
-      setIsDetecting(false);
+      // Backend trả về 200 nhưng verified = false (trường hợp hiếm gặp)
+      throw new Error("Giao dịch chưa được xác nhận trên blockchain.");
+    } catch (error: any) {
+      // Nếu lỗi xảy ra bên trong handleCreateOrder thì đã có Alert riêng
+      if (error?.isOrderError) return;
+
       setTransactionStatus("waiting");
       Alert.alert(
         "Chưa tìm thấy giao dịch",
-        "Giao dịch chưa xuất hiện trên mạng lưới. Bạn có thể:\n\n" +
+        error?.response?.data?.message ||
+          error?.message ||
+          "Giao dịch chưa xuất hiện trên mạng lưới.\n\n" +
           '• Nhấn "Tự động xác nhận" để quét lại\n' +
           '• Hoặc chọn "Nhập hash thủ công"',
         [
           { text: "Thử lại", onPress: () => handleAutoDetect() },
-          {
-            text: "Nhập thủ công",
-            onPress: () => handleTransactionHashInput(),
-          },
+          { text: "Nhập thủ công", onPress: () => handleTransactionHashInput() },
         ],
       );
-    } catch (error: any) {
+    } finally {
       setLoading(false);
       setIsDetecting(false);
-      setTransactionStatus("waiting");
-      Alert.alert("Lỗi", error.message || "Lỗi khi quét giao dịch tự động");
     }
   };
+
 
   const handleTransactionHashInput = () => {
     Alert.prompt(
@@ -239,7 +259,7 @@ const BlockchainPaymentScreen = () => {
       setLoading(true);
       setTransactionStatus("confirming");
 
-      const result = await verifyBlockchainTransaction(
+      const raw = await verifyBlockchainTransaction(
         user._id,
         txHash,
         "0x0000000000000000000000000000000000000000", // Backend tự phát hiện ví gửi
@@ -247,8 +267,10 @@ const BlockchainPaymentScreen = () => {
         ETHEREUM_NETWORK,
       );
 
-      if (result.verified) {
-        await handleCreateOrder(txHash, result.transaction.from);
+      const result = raw?.data ?? raw;
+
+      if (result?.verified) {
+        await handleCreateOrder(txHash, result.transaction?.from || "");
       } else {
         throw new Error("Giao dịch không hợp lệ");
       }
@@ -272,13 +294,25 @@ const BlockchainPaymentScreen = () => {
           ? [
               {
                 productId: productId as string,
-                variantId: (variantId as string) || undefined,
+                variantId:
+                  variantId &&
+                  variantId !== "undefined" &&
+                  variantId !== "null" &&
+                  variantId !== ""
+                    ? (variantId as string)
+                    : undefined,
                 quantity: parseInt(quantity as string) || 1,
               },
             ]
           : cartItems.map((item: any) => ({
               productId: item.productId,
-              variantId: item.variantId,
+              variantId:
+                item.variantId &&
+                item.variantId !== "undefined" &&
+                item.variantId !== "null" &&
+                item.variantId !== ""
+                  ? item.variantId
+                  : undefined,
               quantity: item.quantity,
             }));
 

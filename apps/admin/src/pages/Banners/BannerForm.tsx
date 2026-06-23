@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, ImagePlus, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, CheckCircle2, Loader2, Upload, Trash2 } from "lucide-react";
 import { usePageTitle } from "@/contexts/PageTitleContext";
 import { toast } from "sonner";
 import {
@@ -13,6 +13,7 @@ import {
   createBanner,
   updateBanner,
 } from "@/services/bannerService";
+import { uploadImages } from "@/services/productService";
 
 const BannerForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,7 +23,16 @@ const BannerForm: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(isEdit);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    subtitle: string;
+    image: string | File;
+    link: string;
+    position: number;
+    isActive: boolean;
+    startDate: string;
+    endDate: string;
+  }>({
     title: "",
     subtitle: "",
     image: "",
@@ -71,29 +81,65 @@ const BannerForm: React.FC = () => {
     }));
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setFormData((prev) => ({ ...prev, image: files[0] }));
+    }
+  };
+
+  const removeImage = () => {
+    setFormData((prev) => ({ ...prev, image: "" }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.image) {
+      toast.error("Vui lòng tải lên hình ảnh banner!");
+      return;
+    }
+
     setIsLoading(true);
 
-    const payload = {
-      ...formData,
-      startDate: formData.startDate
-        ? new Date(formData.startDate).toISOString()
-        : undefined,
-      endDate: formData.endDate
-        ? new Date(formData.endDate).toISOString()
-        : undefined,
-    };
+    try {
+      let imageUrl = typeof formData.image === "string" ? formData.image : "";
 
-    const result = isEdit
-      ? await updateBanner(id!, payload)
-      : await createBanner(payload);
+      if (formData.image instanceof File) {
+        toast.info("Đang tải ảnh lên Cloudinary...");
+        const uploadedUrls = await uploadImages([formData.image]);
+        if (uploadedUrls.length > 0) {
+          imageUrl = uploadedUrls[0];
+        } else {
+          toast.error("Tải ảnh thất bại!");
+          setIsLoading(false);
+          return;
+        }
+      }
 
-    if (result.success) {
-      toast.success(result.message);
-      setTimeout(() => navigate("/banners"), 1000);
-    } else {
-      toast.error(result.message);
+      const payload = {
+        ...formData,
+        image: imageUrl,
+        startDate: formData.startDate
+          ? new Date(formData.startDate).toISOString()
+          : undefined,
+        endDate: formData.endDate
+          ? new Date(formData.endDate).toISOString()
+          : undefined,
+      };
+
+      const result = isEdit
+        ? await updateBanner(id!, payload)
+        : await createBanner(payload);
+
+      if (result.success) {
+        toast.success(result.message);
+        setTimeout(() => navigate("/banners"), 1000);
+      } else {
+        toast.error(result.message);
+        setIsLoading(false);
+      }
+    } catch (error: any) {
+      toast.error("Đã xảy ra lỗi: " + error.message);
       setIsLoading(false);
     }
   };
@@ -165,25 +211,51 @@ const BannerForm: React.FC = () => {
 
             <div className="space-y-2">
               <Label className="text-sm font-bold text-zinc-700">
-                URL Hình ảnh *
+                Hình ảnh banner *
               </Label>
-              <Input
-                name="image"
-                value={formData.image}
-                onChange={handleChange}
-                placeholder="https://res.cloudinary.com/..."
-                required
-                className="h-12 rounded-xl"
-              />
-              {formData.image && (
-                <div className="mt-3 rounded-2xl overflow-hidden border border-zinc-200 max-h-48">
-                  <img
-                    src={formData.image}
-                    alt="Preview"
-                    className="w-full h-48 object-cover"
-                  />
-                </div>
-              )}
+              <div className="border-2 border-dashed border-zinc-200 hover:border-zinc-400 rounded-2xl p-6 text-center transition-colors relative bg-zinc-50/50">
+                {!formData.image ? (
+                  <div className="py-4">
+                    <Upload className="mx-auto h-10 w-10 text-zinc-400 mb-2" />
+                    <p className="text-sm text-zinc-500 mb-4 font-medium">
+                      Chọn file ảnh từ thiết bị của bạn
+                    </p>
+                    <Button type="button" variant="outline" size="sm" asChild className="rounded-xl">
+                      <label htmlFor="banner-image-file" className="cursor-pointer">
+                        Chọn file
+                        <input
+                          id="banner-image-file"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageUpload}
+                        />
+                      </label>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="relative rounded-xl overflow-hidden max-h-60 border border-zinc-200">
+                    <img
+                      src={
+                        typeof formData.image === "string"
+                          ? formData.image
+                          : URL.createObjectURL(formData.image)
+                      }
+                      alt="Banner Preview"
+                      className="w-full h-48 object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-3 right-3 h-8 w-8 rounded-full shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-transform"
+                      onClick={removeImage}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

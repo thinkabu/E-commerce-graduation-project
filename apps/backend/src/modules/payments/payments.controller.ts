@@ -59,4 +59,10 @@ export class PaymentsController {
       dto.network || 'hardhat',
     );
   }
+
+  @Get('debug-blocks')
+  @ApiOperation({ summary: '[DEBUG] Xem transaction trong 5 block gần nhất' })
+  async debugBlocks() {
+    return this.cryptoPaymentService.debugBlocks();
+  }
 }

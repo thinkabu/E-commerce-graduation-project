@@ -39,7 +39,7 @@ import {
   X,
 } from "lucide-react-native";
 import { getProductById, getProducts } from "@/services/product.service";
-import { checkWishlist, toggleWishlist } from "@/services/wishlist.service";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { getSimilarProducts } from "@/services/recommendation.service";
 import { getProductReviews, ReviewData } from "@/services/review.service";
 
@@ -69,13 +69,13 @@ const ProductDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { addToCart } = useCart();
   const { user, isAuthenticated } = useAuth();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
   const [product, setProduct] = useState<any>(null);
   const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [showSheet, setShowSheet] = useState(false);
   const [actionType, setActionType] = useState<"cart" | "buy">("cart");
@@ -172,15 +172,8 @@ const ProductDetailScreen = () => {
       }
     };
 
-    const fetchWishlistStatus = async () => {
-      if (!user?._id) return;
-      const isWished = await checkWishlist(user._id, id);
-      setIsFavorite(isWished);
-    };
-
     fetchProduct();
     fetchReviews();
-    fetchWishlistStatus();
   }, [id, user?._id]);
 
   // 2. Find matching variant when selectedAttributes change
@@ -195,6 +188,8 @@ const ProductDetailScreen = () => {
     setMatchingVariant(match || null);
   }, [selectedAttributes, product]);
 
+  const isFavorite = product?._id ? isWishlisted(product._id) : false;
+
   const handleToggleFavorite = async () => {
     if (!isAuthenticated || !user?._id) {
       Alert.alert(
@@ -205,13 +200,9 @@ const ProductDetailScreen = () => {
     }
     if (!product) return;
     try {
-      // Optimistic update
-      setIsFavorite(!isFavorite);
-      await toggleWishlist(user._id, product._id);
+      await toggleWishlist(product._id);
     } catch (error) {
-      console.error(error);
-      // Revert if error
-      setIsFavorite(isFavorite);
+      console.error("Error toggling wishlist:", error);
     }
   };
 
@@ -233,6 +224,20 @@ const ProductDetailScreen = () => {
     }
   }, [showSheet]);
 
+  // Tự động điều chỉnh số lượng dựa trên tồn kho khi mở sheet hoặc đổi biến thể
+  useEffect(() => {
+    if (product && showSheet) {
+      const maxStock = matchingVariant
+        ? matchingVariant.stockQuantity
+        : product.stockQuantity || 0;
+      if (maxStock <= 0) {
+        setQuantity(0);
+      } else {
+        setQuantity(1);
+      }
+    }
+  }, [matchingVariant, product, showSheet]);
+
   const formatPrice = (price: number) => {
     return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
@@ -244,6 +249,20 @@ const ProductDetailScreen = () => {
 
   const handleConfirmAction = () => {
     if (!product) return;
+
+    const maxStock = matchingVariant
+      ? matchingVariant.stockQuantity
+      : product.stockQuantity || 0;
+
+    if (maxStock <= 0) {
+      Alert.alert("Thông báo", "Sản phẩm hiện đã hết hàng.");
+      return;
+    }
+
+    if (quantity > maxStock) {
+      Alert.alert("Thông báo", "Số lượng yêu cầu vượt quá tồn kho.");
+      return;
+    }
 
     setShowSheet(false);
 
@@ -580,7 +599,7 @@ const ProductDetailScreen = () => {
               reviews.map((review) => {
                 const userObj = (review.userId || {}) as any;
                 const reviewerName = userObj.fullName || "Người dùng";
-                const reviewerAvatar = userObj.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=100&auto=format&fit=crop";
+                const reviewerAvatar = userObj.avatar || "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=100&auto=format&fit=crop";
                 const reviewDate = new Date(review.createdAt).toLocaleDateString("vi-VN");
 
                 return (
@@ -853,7 +872,16 @@ const ProductDetailScreen = () => {
                     </Text>
                     <HStack className="items-center bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-1 gap-4">
                       <Pressable
-                        onPress={() => setQuantity(Math.max(1, quantity - 1))}
+                        onPress={() => {
+                          const maxStock = matchingVariant
+                            ? matchingVariant.stockQuantity
+                            : product.stockQuantity || 0;
+                          if (maxStock > 0) {
+                            setQuantity(Math.max(1, quantity - 1));
+                          } else {
+                            setQuantity(0);
+                          }
+                        }}
                         className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-700 items-center justify-center shadow-sm"
                       >
                         <Icon
@@ -869,6 +897,10 @@ const ProductDetailScreen = () => {
                           const maxStock = matchingVariant
                             ? matchingVariant.stockQuantity
                             : product.stockQuantity || 0;
+                          if (maxStock <= 0) {
+                            Alert.alert("Thông báo", "Sản phẩm hiện đã hết hàng.");
+                            return;
+                          }
                           if (quantity < maxStock) {
                             setQuantity(quantity + 1);
                           } else {
@@ -889,12 +921,33 @@ const ProductDetailScreen = () => {
                 {/* Confirm Button */}
                 <Button
                   onPress={handleConfirmAction}
-                  className="bg-yellow-500 h-16 rounded-3xl active:opacity-90"
+                  disabled={(() => {
+                    const maxStock = matchingVariant
+                      ? matchingVariant.stockQuantity
+                      : product.stockQuantity || 0;
+                    return maxStock <= 0;
+                  })()}
+                  className={`${
+                    (() => {
+                      const maxStock = matchingVariant
+                        ? matchingVariant.stockQuantity
+                        : product.stockQuantity || 0;
+                      return maxStock <= 0;
+                    })()
+                      ? "bg-zinc-300 dark:bg-zinc-700"
+                      : "bg-yellow-500"
+                  } h-16 rounded-3xl active:opacity-90`}
                 >
-                  <ButtonText className="text-zinc-900 font-extrabold text-lg uppercase">
-                    {actionType === "cart"
-                      ? "Thêm vào giỏ hàng"
-                      : "Xác nhận Mua ngay"}
+                  <ButtonText className="text-zinc-900 dark:text-zinc-300 font-extrabold text-lg uppercase">
+                    {(() => {
+                      const maxStock = matchingVariant
+                        ? matchingVariant.stockQuantity
+                        : product.stockQuantity || 0;
+                      if (maxStock <= 0) return "Hết hàng";
+                      return actionType === "cart"
+                        ? "Thêm vào giỏ hàng"
+                        : "Xác nhận Mua ngay";
+                    })()}
                   </ButtonText>
                 </Button>
               </>

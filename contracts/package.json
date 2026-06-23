@@ -1,0 +1,19 @@
+{
+  "name": "contracts",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Smart contracts & local Ethereum blockchain node (Hardhat)",
+  "scripts": {
+    "node": "hardhat node",
+    "start": "hardhat node --hostname 0.0.0.0",
+    "compile": "hardhat compile",
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.9",
+    "ethers": "^6.16.0",
+    "hardhat": "^2.22.17",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

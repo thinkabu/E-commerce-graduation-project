@@ -31,32 +31,7 @@ import { getCategories, Category } from "@/services/category.service";
 import { getProducts, Product } from "@/services/product.service";
 import { getUserRecommendations, logRecommendationClick } from "@/services/recommendation.service";
 import { getWishlist } from "@/services/wishlist.service";
-
-// Banners giả lập (Vẫn giữ nguyên vì chưa có bảng Banners trong DB)
-
-const banners = [
-  {
-    id: "1",
-    image:
-      "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=600&auto=format&fit=crop",
-    title: "Sale 50%",
-    subtitle: "Tech Week",
-  },
-  {
-    id: "2",
-    image:
-      "https://images.unsplash.com/photo-1550009158-9ebf69173e03?q=80&w=600&auto=format&fit=crop",
-    title: "New Arrival",
-    subtitle: "Laptops",
-  },
-  {
-    id: "3",
-    image:
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop",
-    title: "Free Ship",
-    subtitle: "Orders > $100",
-  },
-];
+import { getBanners, Banner } from "@/services/banner.service";
 
 // Helper format price
 const formatPrice = (price: number) => {
@@ -77,6 +52,7 @@ const HomeScreen = () => {
   const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
   const [recSessionId, setRecSessionId] = useState<string>("");
   const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Pagination for suggested products
@@ -130,6 +106,10 @@ const HomeScreen = () => {
       
       setSuggestedProducts(recProducts);
       setHasMore(false); // AI suggestions trả về Top-N, không cần phân trang tiếp
+
+      // Fetch banners from DB
+      const bannerData = await getBanners();
+      setBanners(bannerData);
     } catch (error) {
       console.error("Error fetching home data:", error);
     } finally {
@@ -231,7 +211,7 @@ const HomeScreen = () => {
                 source={{
                   uri:
                     user?.avatar ||
-                    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=100&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=100&auto=format&fit=crop",
                 }}
                 className="w-11 h-11 rounded-full border-2 border-white dark:border-zinc-800"
               />
@@ -395,7 +375,7 @@ const HomeScreen = () => {
             <HStack className="space-x-4 gap-4 pr-10">
               {banners.map((banner) => (
                 <Box
-                  key={banner.id}
+                  key={banner._id}
                   className="w-[300px] h-40 rounded-3xl overflow-hidden relative shadow-md elevation-2 bg-zinc-900"
                 >
                   <Image

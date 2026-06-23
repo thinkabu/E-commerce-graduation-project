@@ -46,8 +46,8 @@ export const createOrder = async (
   try {
     const response = await api.post("/orders", payload, { params: { userId } });
     return response.data?.data ?? response.data;
-  } catch (error) {
-    console.error("Error creating order:", error);
+  } catch (error: any) {
+    console.warn("Error creating order:", error?.response?.data || error.message);
     throw error;
   }
 };
