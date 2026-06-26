@@ -52,4 +52,39 @@ export class UploadController {
       urls,
     };
   }
+
+  @Post('video')
+  @ApiOperation({ summary: 'Upload video to Cloudinary' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        video: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(FilesInterceptor('video', 1))
+  async uploadVideo(
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB limit for video
+          new FileTypeValidator({ fileType: '.(mp4|mov|avi|mkv|3gp)' }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    files: any[],
+  ) {
+    const url = await this.cloudinaryService.uploadVideo(files[0]);
+    return {
+      message: 'Upload successful',
+      url,
+      urls: [url],
+    };
+  }
 }

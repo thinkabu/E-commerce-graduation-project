@@ -13,8 +13,8 @@ export const CHAIN_IDS: Record<string, number> = {
 };
 
 export const RPC_URLS: Record<string, string> = {
-  hardhat: "http://127.0.0.1:8545",
-  localhost: "http://127.0.0.1:8545",
+  hardhat: process.env.EXPO_PUBLIC_HARDHAT_RPC_URL || "http://127.0.0.1:8545",
+  localhost: process.env.EXPO_PUBLIC_HARDHAT_RPC_URL || "http://127.0.0.1:8545",
 };
 
 class MetaMaskService {

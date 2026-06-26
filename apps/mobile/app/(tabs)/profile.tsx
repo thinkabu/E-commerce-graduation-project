@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ScrollView, Image, Switch, Alert } from "react-native";
+import { ScrollView, Switch, Alert } from "react-native";
+import AvatarInitials from "@/components/AvatarInitials";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Box } from "@/components/ui/box";
@@ -129,13 +130,12 @@ const ProfileScreen = () => {
         <Box className="bg-white dark:bg-zinc-900 px-5 pt-10 pb-8 rounded-b-[40px] shadow-sm elevation-2">
           <VStack className="items-center">
             <Box className="relative">
-              <Image
-                source={{
-                  uri:
-                    user?.avatar ||
-                    "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200&auto=format&fit=crop",
-                }}
-                className="w-28 h-28 rounded-full border-4 border-yellow-400"
+              <AvatarInitials
+                name={user?.fullName || user?.name || ""}
+                avatarUrl={user?.avatar}
+                size={112}
+                borderWidth={4}
+                borderColor="#facc15"
               />
               <Pressable
                 onPress={() => router.push("/profile/edit-profile" as any)}

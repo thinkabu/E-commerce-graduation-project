@@ -5,9 +5,10 @@ import {
   View,
   Image,
   Alert,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, Stack, useLocalSearchParams } from "expo-router";
+import { useRouter, Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
 import Header from "@/components/Header";
 import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
@@ -25,10 +26,13 @@ import {
   CreditCard,
   Receipt,
   Star,
+  AlertCircle,
+  Video,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { getOrderById, confirmOrderReceipt, type Order } from "@/services/order.service";
 import { checkReviewed } from "@/services/review.service";
+import api from "@/services/api";
 
 const formatPrice = (price: number) => price.toLocaleString("vi-VN") + "₫";
 
@@ -75,6 +79,22 @@ const getStatusConfig = (status: string) => {
         bg: "bg-green-100 dark:bg-green-900/30",
         desc: "Đơn hàng đã được giao thành công.",
       };
+    case "RETURN_REQUESTED":
+      return {
+        label: "Chờ trả hàng",
+        icon: Clock,
+        color: "text-orange-500",
+        bg: "bg-orange-100 dark:bg-orange-900/30",
+        desc: "Yêu cầu trả hàng hoàn tiền đang chờ xác nhận.",
+      };
+    case "RETURNED":
+      return {
+        label: "Đã trả hàng",
+        icon: XCircle,
+        color: "text-red-500",
+        bg: "bg-red-100 dark:bg-red-900/30",
+        desc: "Đơn hàng đã được hoàn trả thành công.",
+      };
     case "CANCELLED":
       return {
         label: "Đã hủy",
@@ -108,6 +128,7 @@ const OrderDetailScreen = () => {
   const [loading, setLoading] = useState(true);
   const [reviewedItems, setReviewedItems] = useState<Record<string, boolean>>({});
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [payNowLoading, setPayNowLoading] = useState(false);
 
   const fetchOrder = async () => {
     if (!id || !user) return;
@@ -121,9 +142,11 @@ const OrderDetailScreen = () => {
     }
   };
 
-  useEffect(() => {
-    fetchOrder();
-  }, [id, user]);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchOrder();
+    }, [id, user])
+  );
 
   useEffect(() => {
     if (!order || !user) return;
@@ -174,6 +197,56 @@ const OrderDetailScreen = () => {
         },
       ]
     );
+  };
+
+  const handlePayNow = async () => {
+    if (!order || !user) return;
+
+    if (order.paymentMethod === "CRYPTO") {
+      router.push({
+        pathname: "/checkout/blockchain-payment",
+        params: {
+          total: order.totalAmount,
+          orderId: order._id,
+          mode: "retry",
+        },
+      } as any);
+      return;
+    }
+
+    if (order.paymentMethod === "BANKING") {
+      router.push({
+        pathname: "/checkout/bank-selection",
+        params: { total: order.totalAmount, orderId: order._id },
+      } as any);
+      return;
+    }
+
+    if (order.paymentMethod === "VNPAY") {
+      setPayNowLoading(true);
+      try {
+        const response = await api.post(`/payments/vnpay/create?userId=${user._id}`, {
+          orderId: order._id,
+        });
+
+        if (response.data?.success && response.data?.data?.paymentUrl) {
+          // Mở cổng thanh toán VNPay
+          await Linking.openURL(response.data.data.paymentUrl);
+          // Đi đến màn hình Polling chờ kết quả
+          router.push({
+            pathname: "/checkout/waiting-payment",
+            params: { orderId: order._id },
+          } as any);
+        } else {
+          Alert.alert("Lỗi thanh toán", response.data?.message || "Không thể khởi tạo thanh toán VNPay");
+        }
+      } catch (err: any) {
+        console.warn("Lỗi khởi tạo thanh toán VNPay:", err);
+        Alert.alert("Lỗi", "Không thể tạo liên kết thanh toán VNPay. Vui lòng thử lại sau.");
+      } finally {
+        setPayNowLoading(false);
+      }
+    }
   };
 
   if (loading) {
@@ -357,6 +430,61 @@ const OrderDetailScreen = () => {
           </VStack>
         </VStack>
 
+        {/* Return Details Info */}
+        {(order.orderStatus === "RETURN_REQUESTED" || order.orderStatus === "RETURNED") && (
+          <VStack className="mb-7 bg-white dark:bg-zinc-900 p-5 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
+            <HStack className="items-center space-x-2 gap-2 mb-4">
+              <Icon
+                as={AlertCircle}
+                className="text-red-500 w-5 h-5"
+              />
+              <Text className="text-sm font-black text-zinc-900 dark:text-white uppercase">
+                Thông tin hoàn trả
+              </Text>
+            </HStack>
+            <VStack className="space-y-2 gap-2 text-sm">
+              <Text className="text-xs text-zinc-500">
+                Lý do: <Text className="font-bold text-zinc-800 dark:text-zinc-200">{order.returnReason || "N/A"}</Text>
+              </Text>
+              <Text className="text-xs text-zinc-500">
+                Chi tiết vấn đề: <Text className="font-medium text-zinc-800 dark:text-zinc-200">{order.returnProblem || "N/A"}</Text>
+              </Text>
+              
+              {/* Evidence Images */}
+              {order.returnImages && order.returnImages.length > 0 && (
+                <VStack className="mt-2">
+                  <Text className="text-xs text-zinc-500 mb-2">Hình ảnh bằng chứng:</Text>
+                  <HStack className="gap-2 flex-wrap">
+                    {order.returnImages.map((img: string, index: number) => (
+                      <Image
+                        key={index}
+                        source={{ uri: img }}
+                        style={{ width: 60, height: 60, borderRadius: 8, backgroundColor: "#f4f4f5" }}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </HStack>
+                </VStack>
+              )}
+
+              {/* Evidence Videos */}
+              {order.returnVideos && order.returnVideos.length > 0 && (
+                <VStack className="mt-2">
+                  <Text className="text-xs text-zinc-500 mb-2">Video bằng chứng:</Text>
+                  <HStack className="gap-2">
+                    {order.returnVideos.map((vid: string, index: number) => (
+                      <Box key={index} className="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-xl flex-row items-center space-x-2 gap-2">
+                        <Icon as={Video} className="text-zinc-500 w-4 h-4" />
+                        <Text className="text-[10px] text-zinc-600 dark:text-zinc-400 font-bold">Video #{index + 1}</Text>
+                      </Box>
+                    ))}
+                  </HStack>
+                </VStack>
+              )}
+            </VStack>
+          </VStack>
+        )}
+
         {/* Payment Summary */}
         <VStack className="mb-7 bg-white dark:bg-zinc-900 p-5 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
           <HStack className="items-center space-x-2 gap-2 mb-4">
@@ -423,10 +551,96 @@ const OrderDetailScreen = () => {
           </Button>
         )}
 
+        {/* Pay Now Button (for unpaid pending orders) */}
+        {order.orderStatus === "PENDING" &&
+          order.paymentStatus === "PENDING" &&
+          order.paymentMethod !== "COD" && (
+            <Button
+              onPress={handlePayNow}
+              disabled={payNowLoading}
+              className="w-full h-14 bg-yellow-500 rounded-2xl active:bg-yellow-600 shadow-sm mb-7"
+            >
+              {payNowLoading ? (
+                <ActivityIndicator size="small" color="#18181b" />
+              ) : (
+                <ButtonText className="text-zinc-900 font-extrabold text-base">
+                  THANH TOÁN NGAY
+                </ButtonText>
+              )}
+            </Button>
+          )}
+
+        {/* Return request button (only for DELIVERED orders within 5 days) */}
+        {order.orderStatus === "DELIVERED" && (() => {
+          const deliveredHistory = order.statusHistory?.find(
+            (h: any) => h.status === "DELIVERED"
+          );
+          const deliveryDate = deliveredHistory
+            ? new Date(deliveredHistory.changedAt)
+            : new Date(order.updatedAt || order.createdAt);
+          const isWithin5Days = Date.now() - deliveryDate.getTime() <= 5 * 24 * 60 * 60 * 1000;
+          
+          if (isWithin5Days) {
+            return (
+              <Button
+                onPress={() => {
+                  router.push({
+                    pathname: "/profile/return-order" as any,
+                    params: { orderId: order._id },
+                  });
+                }}
+                className="w-full h-14 bg-red-500 rounded-2xl active:bg-red-600 shadow-sm mb-7"
+              >
+                <ButtonText className="text-white font-bold text-base">
+                  YÊU CẦU TRẢ HÀNG / HOÀN TIỀN
+                </ButtonText>
+              </Button>
+            );
+          }
+          return null;
+        })()}
+
         {/* Review Button (only for DELIVERED orders) */}
         {order.orderStatus === "DELIVERED" && (
           <VStack className="mb-7">
             <SectionLabel label="Đánh giá sản phẩm" />
+
+            {(() => {
+              const unreviewedList = order.items.filter(
+                (item) => !reviewedItems[item.productId]
+              );
+              if (unreviewedList.length > 1) {
+                return (
+                  <Button
+                    onPress={() => {
+                      router.push({
+                        pathname: "/profile/write-review" as any,
+                        params: {
+                          orderId: order._id,
+                          productIds: unreviewedList
+                            .map((item) => item.productId)
+                            .join(","),
+                          productNames: unreviewedList
+                            .map((item) => item.productSnapshot.name)
+                            .join(";"),
+                          productImages: unreviewedList
+                            .map((item) => item.productSnapshot.image)
+                            .join(";"),
+                          mode: "all",
+                        },
+                      });
+                    }}
+                    className="mb-4 w-full h-12 bg-yellow-400 active:bg-yellow-500 rounded-2xl shadow-sm justify-center items-center"
+                  >
+                    <ButtonText className="text-zinc-900 font-bold text-sm">
+                      Đánh giá chung tất cả sản phẩm ({unreviewedList.length})
+                    </ButtonText>
+                  </Button>
+                );
+              }
+              return null;
+            })()}
+
             <VStack className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm overflow-hidden">
               {order.items.map((item, index) => {
                 const isReviewed = !!reviewedItems[item.productId];

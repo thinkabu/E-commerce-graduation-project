@@ -7,6 +7,7 @@ import {
   Animated,
   ActivityIndicator,
   Alert,
+  Linking,
 } from "react-native";
 import {
   useRouter,
@@ -42,6 +43,7 @@ import { validateCoupon } from "@/services/coupon.service";
 import { createOrder } from "@/services/order.service";
 import { getProductById } from "@/services/product.service";
 import { Input, InputField, InputSlot, InputIcon } from "@/components/ui/input";
+import api from "@/services/api";
 
 // ─── Helpers ───────────────────────────────────────────────────
 const formatPrice = (price: number) => price.toLocaleString("vi-VN") + "₫";
@@ -61,6 +63,13 @@ const PAYMENT_METHODS = [
     sub: "QR Pay / Internet Banking",
     icon: CreditCard,
     badge: null,
+  },
+  {
+    id: "VNPAY",
+    label: "Thanh toán VNPay",
+    sub: "Thẻ ATM / Thẻ quốc tế / QR Pay",
+    icon: CreditCard,
+    badge: "MỚI",
   },
   {
     id: "CRYPTO",
@@ -298,6 +307,28 @@ const CheckoutScreen = () => {
           pathname: "/checkout/bank-selection",
           params: { total: grandTotal, orderId: order._id },
         } as any);
+        return;
+      }
+
+      if (paymentMethod === "VNPAY") {
+        try {
+          const response = await api.post(`/payments/vnpay/create?userId=${user!._id}`, {
+            orderId: order._id,
+          });
+
+          if (response.data?.success && response.data?.data?.paymentUrl) {
+            await Linking.openURL(response.data.data.paymentUrl);
+            router.push({
+              pathname: "/checkout/waiting-payment",
+              params: { orderId: order._id },
+            } as any);
+          } else {
+            Alert.alert("Lỗi thanh toán", response.data?.message || "Không thể khởi tạo thanh toán VNPay");
+          }
+        } catch (vnpayErr: any) {
+          console.warn("Lỗi VNPay URL generation:", vnpayErr);
+          Alert.alert("Lỗi cổng thanh toán", "Không thể liên kết đến VNPay. Vui lòng thanh toán lại từ lịch sử đơn hàng.");
+        }
         return;
       }
 

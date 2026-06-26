@@ -44,6 +44,7 @@ var OrderStatus;
     OrderStatus["DELIVERED"] = "DELIVERED";
     OrderStatus["CANCELLED"] = "CANCELLED";
     OrderStatus["RETURNED"] = "RETURNED";
+    OrderStatus["RETURN_REQUESTED"] = "RETURN_REQUESTED";
 })(OrderStatus || (exports.OrderStatus = OrderStatus = {}));
 var PaymentMethod;
 (function (PaymentMethod) {

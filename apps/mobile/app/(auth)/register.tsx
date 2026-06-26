@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ScrollView,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, Stack } from "expo-router";
@@ -12,7 +14,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Input, InputField, InputIcon, InputSlot } from "@/components/ui/input";
-import { Button, ButtonText, ButtonIcon } from "@/components/ui/button";
+import { Button, ButtonText } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Pressable } from "@/components/ui/pressable";
 import {
@@ -24,12 +26,11 @@ import {
   Zap,
   ArrowLeft,
   CheckCircle2,
-  Heart,
   Smartphone,
 } from "lucide-react-native";
 import api from "@/services/api";
-import { Alert, ActivityIndicator } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
+import Toast from "@/components/Toast";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -41,42 +42,91 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = async () => {
-    if (!fullName || !email || !password) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
-      return;
+  // Inline field errors
+  const [errors, setErrors] = useState<{
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    password?: string;
+    general?: string;
+  }>({});
+
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error" | "warning">("error");
+
+
+
+  const showToast = (message: string, type: "success" | "error" | "warning" = "error") => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
+  const clearError = (field: keyof typeof errors) => {
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+
+
+  const validate = (): boolean => {
+    const newErrors: typeof errors = {};
+
+    if (!fullName.trim()) {
+      newErrors.fullName = "Vui lòng nhập họ và tên";
+    } else if (fullName.trim().length < 2) {
+      newErrors.fullName = "Họ tên phải có ít nhất 2 ký tự";
     }
+
+    if (!email.trim()) {
+      newErrors.email = "Vui lòng nhập email";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    if (phone && !/^(0|\+84)\d{9,10}$/.test(phone.trim())) {
+      newErrors.phone = "Số điện thoại không hợp lệ";
+    }
+
+    if (!password) {
+      newErrors.password = "Vui lòng nhập mật khẩu";
+    } else if (password.length < 6) {
+      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleRegister = async () => {
+    if (!validate()) return;
 
     setIsLoading(true);
     try {
-      console.log("Attempting to register with:", { fullName, email, phone });
-
-      // 1. Đăng ký tài khoản
-      const registerRes = await api.post("/auth/register", {
+      await api.post("/auth/register", {
         fullName,
         email,
         password,
         phone,
       });
 
-      console.log("Register success:", registerRes.data);
-
-      // 2. Tự động đăng nhập sau khi đăng ký thành công
-      const loginResponse = await api.post("/auth/login", { email, password });
-      const { access_token, user } = loginResponse.data.data;
-
-      await login(access_token, user);
-      Alert.alert("Thành công", "Tài khoản đã được tạo!");
-      router.replace("/home");
+      showToast("Đăng ký tài khoản thành công!", "success");
+      setTimeout(() => router.replace("/login"), 1000);
     } catch (error: any) {
-      console.error(
-        "Register Error Details:",
-        error.response?.data || error.message,
-      );
       const message =
         error.response?.data?.message ||
         "Đăng ký thất bại. Vui lòng kiểm tra lại kết nối API.";
-      Alert.alert("Lỗi", message);
+      // Nếu lỗi liên quan email → hiển thị inline, còn lại dùng toast
+      if (
+        message.toLowerCase().includes("email") ||
+        message.toLowerCase().includes("tồn tại") ||
+        message.toLowerCase().includes("exists")
+      ) {
+        setErrors((prev) => ({ ...prev, email: message }));
+      } else {
+        showToast(message, "error");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -116,66 +166,118 @@ export default function RegisterScreen() {
             </VStack>
 
             {/* --- FORM --- */}
-            <VStack className="space-y-6 gap-6">
-              <VStack className="space-y-2 gap-2">
+            <VStack className="space-y-5 gap-5">
+              {/* Họ và tên */}
+              <VStack className="space-y-1 gap-1">
                 <Text className="text-sm font-bold text-zinc-700 dark:text-zinc-300 ml-1">
                   Họ và tên
                 </Text>
-                <Input className="h-16 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-2">
+                <Input
+                  className={`h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-900 px-2 ${
+                    errors.fullName
+                      ? "border-red-400 dark:border-red-400"
+                      : "border-zinc-100 dark:border-zinc-800"
+                  }`}
+                >
                   <InputSlot className="pl-4">
                     <InputIcon as={User} className="text-zinc-400" />
                   </InputSlot>
                   <InputField
                     placeholder="Nguyễn Văn A"
                     value={fullName}
-                    onChangeText={setFullName}
+                    onChangeText={(t) => {
+                      setFullName(t);
+                      clearError("fullName");
+                    }}
                     className="text-zinc-900 dark:text-white font-bold"
                   />
                 </Input>
+                {errors.fullName ? (
+                  <Text className="text-red-500 text-xs font-semibold ml-1">
+                    {errors.fullName}
+                  </Text>
+                ) : null}
               </VStack>
 
-              <VStack className="space-y-2 gap-2">
+              {/* Số điện thoại */}
+              <VStack className="space-y-1 gap-1">
                 <Text className="text-sm font-bold text-zinc-700 dark:text-zinc-300 ml-1">
                   Số điện thoại
                 </Text>
-                <Input className="h-16 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-2">
+                <Input
+                  className={`h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-900 px-2 ${
+                    errors.phone
+                      ? "border-red-400 dark:border-red-400"
+                      : "border-zinc-100 dark:border-zinc-800"
+                  }`}
+                >
                   <InputSlot className="pl-4">
                     <InputIcon as={Smartphone} className="text-zinc-400" />
                   </InputSlot>
                   <InputField
                     placeholder="0901234567"
                     value={phone}
-                    onChangeText={setPhone}
+                    onChangeText={(t) => {
+                      setPhone(t);
+                      clearError("phone");
+                    }}
                     keyboardType="phone-pad"
                     className="text-zinc-900 dark:text-white font-bold"
                   />
                 </Input>
+                {errors.phone ? (
+                  <Text className="text-red-500 text-xs font-semibold ml-1">
+                    {errors.phone}
+                  </Text>
+                ) : null}
               </VStack>
 
-              <VStack className="space-y-2 gap-2">
+              {/* Email */}
+              <VStack className="space-y-1 gap-1">
                 <Text className="text-sm font-bold text-zinc-700 dark:text-zinc-300 ml-1">
                   Email
                 </Text>
-                <Input className="h-16 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-2">
+                <Input
+                  className={`h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-900 px-2 ${
+                    errors.email
+                      ? "border-red-400 dark:border-red-400"
+                      : "border-zinc-100 dark:border-zinc-800"
+                  }`}
+                >
                   <InputSlot className="pl-4">
                     <InputIcon as={Mail} className="text-zinc-400" />
                   </InputSlot>
                   <InputField
                     placeholder="customer@gmail.com"
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(t) => {
+                      setEmail(t);
+                      clearError("email");
+                    }}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     className="text-zinc-900 dark:text-white font-bold"
                   />
                 </Input>
+                {errors.email ? (
+                  <Text className="text-red-500 text-xs font-semibold ml-1">
+                    {errors.email}
+                  </Text>
+                ) : null}
               </VStack>
 
-              <VStack className="space-y-2 gap-2">
+              {/* Mật khẩu */}
+              <VStack className="space-y-1 gap-1">
                 <Text className="text-sm font-bold text-zinc-700 dark:text-zinc-300 ml-1">
                   Mật khẩu
                 </Text>
-                <Input className="h-16 rounded-2xl border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-2">
+                <Input
+                  className={`h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-900 px-2 ${
+                    errors.password
+                      ? "border-red-400 dark:border-red-400"
+                      : "border-zinc-100 dark:border-zinc-800"
+                  }`}
+                >
                   <InputSlot className="pl-4">
                     <InputIcon as={Lock} className="text-zinc-400" />
                   </InputSlot>
@@ -183,7 +285,10 @@ export default function RegisterScreen() {
                     placeholder="••••••••"
                     secureTextEntry={!showPassword}
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(t) => {
+                      setPassword(t);
+                      clearError("password");
+                    }}
                     className="text-zinc-900 dark:text-white font-bold"
                   />
                   <InputSlot
@@ -196,6 +301,11 @@ export default function RegisterScreen() {
                     />
                   </InputSlot>
                 </Input>
+                {errors.password ? (
+                  <Text className="text-red-500 text-xs font-semibold ml-1">
+                    {errors.password}
+                  </Text>
+                ) : null}
               </VStack>
 
               <HStack className="items-center space-x-2 gap-2 px-1">
@@ -211,22 +321,22 @@ export default function RegisterScreen() {
               <Button
                 onPress={handleRegister}
                 disabled={isLoading}
-                className="bg-zinc-900 dark:bg-yellow-500 h-16 rounded-2xl shadow-xl mt-4 active:opacity-90 disabled:opacity-50"
+                className="bg-zinc-900 dark:bg-yellow-500 h-16 rounded-2xl shadow-xl mt-2 active:opacity-90 disabled:opacity-50"
               >
                 {isLoading ? (
-                  <ActivityIndicator
-                    color={Platform.OS === "ios" ? "white" : "white"}
-                  />
+                  <ActivityIndicator color="white" />
                 ) : (
                   <ButtonText className="text-white dark:text-zinc-900 font-black text-lg uppercase tracking-wider">
                     Đăng ký ngay
                   </ButtonText>
                 )}
               </Button>
+
+
             </VStack>
 
             {/* --- FOOTER --- */}
-            <HStack className="justify-center items-center mt-12 pb-4">
+            <HStack className="justify-center items-center mt-10 pb-4">
               <Text className="text-zinc-500 dark:text-zinc-400 font-medium">
                 Bạn đã có tài khoản?{" "}
               </Text>
@@ -239,6 +349,15 @@ export default function RegisterScreen() {
           </Box>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 }
+
+

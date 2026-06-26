@@ -28,7 +28,8 @@ export declare enum OrderStatus {
     SHIPPING = "SHIPPING",
     DELIVERED = "DELIVERED",
     CANCELLED = "CANCELLED",
-    RETURNED = "RETURNED"
+    RETURNED = "RETURNED",
+    RETURN_REQUESTED = "RETURN_REQUESTED"
 }
 export declare enum PaymentMethod {
     COD = "COD",

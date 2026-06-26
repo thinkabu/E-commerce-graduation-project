@@ -9,6 +9,7 @@ import React, {
 import { AppState, Modal } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import AppLockScreen from "../components/AppLockScreen";
+import { useRouter } from "expo-router";
 import {
   registerForPushNotifications,
   savePushTokenToServer,
@@ -60,6 +61,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthContextProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -370,6 +372,9 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setIsLocked(false);
     setBiometricEnabled(false);
+
+    // Điều hướng ngay về trang đăng nhập
+    router.replace("/login");
   };
 
   const updateUser = async (userData: any) => {

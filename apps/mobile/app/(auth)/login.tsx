@@ -6,6 +6,9 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, Stack } from "expo-router";
@@ -24,8 +27,6 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Globe,
-  Code,
   Smartphone,
   Fingerprint,
   ScanFace,
@@ -34,7 +35,9 @@ import {
   Trash2,
 } from "lucide-react-native";
 import api from "@/services/api";
-import { Alert, Image } from "react-native";
+import { Image } from "react-native";
+import AvatarInitials from "@/components/AvatarInitials";
+import Toast from "@/components/Toast";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -56,9 +59,25 @@ export default function LoginScreen() {
   const [isBiometricLoading, setIsBiometricLoading] = useState(false);
   const [showBiometricModal, setShowBiometricModal] = useState(false);
 
+  // Inline error state
+  const [loginError, setLoginError] = useState("");
+
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error" | "warning">("error");
+
   // Chọn tài khoản đã lưu
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [isNewAccountMode, setIsNewAccountMode] = useState(false);
+
+
+
+  const showToast = (message: string, type: "success" | "error" | "warning" = "error") => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
 
   // Hiển thị modal kích hoạt sinh trắc sau khi đăng nhập
   useEffect(() => {
@@ -67,9 +86,16 @@ export default function LoginScreen() {
     }
   }, [shouldShowBiometricPrompt]);
 
+
+
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+    setLoginError("");
+    if (!email) {
+      setLoginError("Vui lòng nhập email");
+      return;
+    }
+    if (!password) {
+      setLoginError("Vui lòng nhập mật khẩu");
       return;
     }
 
@@ -83,8 +109,8 @@ export default function LoginScreen() {
         router.replace("/home");
       }
     } catch (error: any) {
-      const message = error.response?.data?.message || "Đăng nhập thất bại";
-      Alert.alert("Lỗi", message);
+      const message = error.response?.data?.message || "Email hoặc mật khẩu không đúng";
+      setLoginError(message);
     } finally {
       setIsLoading(false);
     }
@@ -93,8 +119,8 @@ export default function LoginScreen() {
   const handleSelectAccount = async (account: any) => {
     setSelectedAccount(account);
     setPassword("");
+    setLoginError("");
     if (account.biometricEnabled && biometricAvailable) {
-      // Tự động kích hoạt quét Face ID khi chọn tài khoản
       await handleQuickBiometricLogin(account.id);
     }
   };
@@ -106,11 +132,10 @@ export default function LoginScreen() {
       if (success) {
         router.replace("/home");
       } else {
-        Alert.alert(
-          "Không thể xác thực",
-          `Xác thực ${biometricType} thất bại. Vui lòng đăng nhập bằng mật khẩu.`
+        showToast(
+          `Xác thực ${biometricType} thất bại. Vui lòng đăng nhập bằng mật khẩu.`,
+          "warning"
         );
-        // Tự động lấy tài khoản làm selectedAccount để nhập mật mã
         const account = savedAccounts.find((a) => a.id === id);
         if (account) {
           setSelectedAccount(account);
@@ -118,7 +143,7 @@ export default function LoginScreen() {
         }
       }
     } catch (error) {
-      Alert.alert("Lỗi", `Đã xảy ra lỗi khi xác thực ${biometricType}.`);
+      showToast(`Đã xảy ra lỗi khi xác thực ${biometricType}.`, "error");
     } finally {
       setIsBiometricLoading(false);
     }
@@ -131,8 +156,9 @@ export default function LoginScreen() {
 
   const handleLoginWithPasswordForSelectedAccount = async () => {
     if (!selectedAccount) return;
+    setLoginError("");
     if (!password) {
-      Alert.alert("Lỗi", "Vui lòng nhập mật khẩu");
+      setLoginError("Vui lòng nhập mật khẩu");
       return;
     }
 
@@ -149,33 +175,22 @@ export default function LoginScreen() {
         router.replace("/home");
       }
     } catch (error: any) {
-      const message = error.response?.data?.message || "Đăng nhập thất bại";
-      Alert.alert("Lỗi", message);
+      const message = error.response?.data?.message || "Mật khẩu không đúng";
+      setLoginError(message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteAccount = async (id: string) => {
-    Alert.alert(
-      "Xác nhận xóa",
-      "Bạn có chắc muốn xóa tài khoản này khỏi danh sách đã lưu không? (Dữ liệu Face ID/Vân tay liên quan cũng sẽ bị xóa)",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: () => {
-            setTimeout(async () => {
-              await deleteSavedAccount(id);
-              if (selectedAccount?.id === id) {
-                setSelectedAccount(null);
-              }
-            }, 100);
-          },
-        },
-      ]
-    );
+    showToast("Giữ để xác nhận xóa tài khoản...", "warning");
+    setTimeout(async () => {
+      await deleteSavedAccount(id);
+      if (selectedAccount?.id === id) {
+        setSelectedAccount(null);
+      }
+      showToast("Đã xóa tài khoản khỏi danh sách", "success");
+    }, 100);
   };
 
   const handleBiometricPromptAccept = async () => {
@@ -190,7 +205,6 @@ export default function LoginScreen() {
     router.replace("/home");
   };
 
-  // Icon cho sinh trắc
   const BiometricIcon =
     biometricType === "Face ID" ? ScanFace : Fingerprint;
 
@@ -225,13 +239,12 @@ export default function LoginScreen() {
                 // --- NHẬP MẬT KHẨU TÀI KHOẢN ĐÃ CHỌN ---
                 <VStack className="space-y-6 gap-6">
                   <VStack className="items-center mb-4 space-y-2">
-                    <Image
-                      source={{
-                        uri:
-                          selectedAccount.avatar ||
-                          "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200&auto=format&fit=crop",
-                      }}
-                      className="w-20 h-20 rounded-full border-2 border-yellow-500 mb-2"
+                    <AvatarInitials
+                      name={selectedAccount.name}
+                      avatarUrl={selectedAccount.avatar}
+                      size={80}
+                      borderWidth={2}
+                      borderColor="#eab308"
                     />
                     <Text className="text-xl font-bold text-zinc-900 dark:text-white">
                       {selectedAccount.name}
@@ -253,7 +266,10 @@ export default function LoginScreen() {
                         placeholder="••••••••"
                         secureTextEntry={!showPassword}
                         value={password}
-                        onChangeText={setPassword}
+                        onChangeText={(t) => {
+                          setPassword(t);
+                          setLoginError("");
+                        }}
                         className="text-zinc-900 dark:text-white font-bold"
                       />
                       <InputSlot
@@ -266,6 +282,11 @@ export default function LoginScreen() {
                         />
                       </InputSlot>
                     </Input>
+                    {loginError ? (
+                      <Text className="text-red-500 text-xs font-semibold ml-1">
+                        {loginError}
+                      </Text>
+                    ) : null}
                   </VStack>
 
                   <VStack className="space-y-3 gap-3">
@@ -311,11 +332,26 @@ export default function LoginScreen() {
                       onPress={() => {
                         setSelectedAccount(null);
                         setPassword("");
+                        setLoginError("");
                       }}
                       className="items-center py-2 active:opacity-75"
                     >
                       <Text className="text-zinc-500 dark:text-zinc-400 font-bold text-sm underline">
                         Quay lại danh sách
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => {
+                        setSelectedAccount(null);
+                        setIsNewAccountMode(true);
+                        setPassword("");
+                        setLoginError("");
+                      }}
+                      className="items-center py-2 active:opacity-75 mt-2"
+                    >
+                      <Text className="text-yellow-600 font-bold text-sm underline">
+                        Sử dụng tài khoản khác
                       </Text>
                     </Pressable>
                   </VStack>
@@ -336,13 +372,12 @@ export default function LoginScreen() {
                         onPress={() => handleSelectAccount(account)}
                         className="flex-1 flex-row items-center space-x-4 gap-4"
                       >
-                        <Image
-                          source={{
-                            uri:
-                              account.avatar ||
-                              "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200&auto=format&fit=crop",
-                          }}
-                          className="w-12 h-12 rounded-full border border-zinc-200 dark:border-zinc-700"
+                        <AvatarInitials
+                          name={account.name}
+                          avatarUrl={account.avatar}
+                          size={48}
+                          borderWidth={1}
+                          borderColor="#e4e4e7"
                         />
                         <VStack className="flex-1">
                           <Text className="text-base font-bold text-zinc-900 dark:text-white">
@@ -377,15 +412,20 @@ export default function LoginScreen() {
                     </HStack>
                   ))}
 
-                  <Button
-                    variant="outline"
-                    onPress={() => setIsNewAccountMode(true)}
-                    className="border-2 border-zinc-900 dark:border-zinc-100 h-16 rounded-2xl active:opacity-90 mt-4"
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsNewAccountMode(true);
+                      setSelectedAccount(null);
+                      setEmail("");
+                      setPassword("");
+                      setLoginError("");
+                    }}
+                    className="border-2 border-zinc-900 dark:border-zinc-100 h-16 rounded-2xl active:opacity-90 mt-4 items-center justify-center"
                   >
-                    <ButtonText className="text-zinc-900 dark:text-zinc-100 font-bold uppercase tracking-wider">
+                    <Text className="text-zinc-900 dark:text-zinc-100 font-bold uppercase tracking-wider">
                       Sử dụng tài khoản khác
-                    </ButtonText>
-                  </Button>
+                    </Text>
+                  </TouchableOpacity>
                 </VStack>
               )
             ) : (
@@ -402,7 +442,10 @@ export default function LoginScreen() {
                     <InputField
                       placeholder="admin@thinkheart.com"
                       value={email}
-                      onChangeText={setEmail}
+                      onChangeText={(t) => {
+                        setEmail(t);
+                        setLoginError("");
+                      }}
                       keyboardType="email-address"
                       autoCapitalize="none"
                       className="text-zinc-900 dark:text-white font-bold"
@@ -429,7 +472,10 @@ export default function LoginScreen() {
                       placeholder="••••••••"
                       secureTextEntry={!showPassword}
                       value={password}
-                      onChangeText={setPassword}
+                      onChangeText={(t) => {
+                        setPassword(t);
+                        setLoginError("");
+                      }}
                       className="text-zinc-900 dark:text-white font-bold"
                     />
                     <InputSlot
@@ -442,6 +488,12 @@ export default function LoginScreen() {
                       />
                     </InputSlot>
                   </Input>
+                  {/* Lỗi đăng nhập inline */}
+                  {loginError ? (
+                    <Text className="text-red-500 text-xs font-semibold ml-1">
+                      {loginError}
+                    </Text>
+                  ) : null}
                 </VStack>
 
                 <Button
@@ -465,49 +517,22 @@ export default function LoginScreen() {
                 </Button>
 
                 {savedAccounts.length > 0 && (
-                  <Button
-                    variant="outline"
-                    onPress={() => setIsNewAccountMode(false)}
-                    className="border-2 border-zinc-900 dark:border-zinc-100 h-16 rounded-2xl active:opacity-90"
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsNewAccountMode(false);
+                      setLoginError("");
+                    }}
+                    className="border-2 border-zinc-900 dark:border-zinc-100 h-16 rounded-2xl active:opacity-90 items-center justify-center"
                   >
-                    <ButtonText className="text-zinc-900 dark:text-zinc-100 font-bold uppercase tracking-wider">
+                    <Text className="text-zinc-900 dark:text-zinc-100 font-bold uppercase tracking-wider">
                       Xem tài khoản đã lưu
-                    </ButtonText>
-                  </Button>
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </VStack>
             )}
 
-            {/* --- DIVIDER --- */}
-            <HStack className="items-center my-10 space-x-4 gap-4">
-              <Box className="flex-1 h-[1px] bg-zinc-100 dark:bg-zinc-800" />
-              <Text className="text-zinc-400 text-xs font-bold uppercase tracking-widest">
-                Hoặc đăng nhập bằng
-              </Text>
-              <Box className="flex-1 h-[1px] bg-zinc-100 dark:bg-zinc-800" />
-            </HStack>
 
-            {/* --- SOCIAL LOGIN --- */}
-            <HStack className="space-x-4 gap-4 mb-12">
-              <Pressable className="flex-1 h-16 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 items-center justify-center active:bg-zinc-50 dark:active:bg-zinc-800 shadow-sm">
-                <Icon
-                  as={Globe}
-                  className="text-zinc-700 dark:text-zinc-300 w-6 h-6"
-                />
-              </Pressable>
-              <Pressable className="flex-1 h-16 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 items-center justify-center active:bg-zinc-50 dark:active:bg-zinc-800 shadow-sm">
-                <Icon
-                  as={Smartphone}
-                  className="text-zinc-700 dark:text-zinc-300 w-6 h-6"
-                />
-              </Pressable>
-              <Pressable className="flex-1 h-16 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 items-center justify-center active:bg-zinc-50 dark:active:bg-zinc-800 shadow-sm">
-                <Icon
-                  as={Code}
-                  className="text-zinc-700 dark:text-zinc-300 w-6 h-6"
-                />
-              </Pressable>
-            </HStack>
 
             {/* --- FOOTER --- */}
             <HStack className="justify-center items-center mt-auto py-4">
@@ -604,6 +629,16 @@ export default function LoginScreen() {
           </Box>
         </Box>
       </Modal>
+
+      {/* Toast */}
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 }
+
+

@@ -64,13 +64,24 @@ export class OrdersController {
   // --- USER ENDPOINTS ---
 
   @Patch(':id/confirm-receipt')
-  @ApiOperation({ summary: 'Xác nhận đã nhận hàng thành công (User)' })
+  @ApiOperation({ summary: 'Xác nhận đã nhận hàng (User)' })
   @ApiQuery({ name: 'userId', required: true })
-  confirmReceipt(
+  async confirmReceipt(
     @Param('id') id: string,
     @Query('userId') userId: string,
   ) {
     return this.ordersService.confirmReceipt(id, userId);
+  }
+
+  @Patch(':id/return-request')
+  @ApiOperation({ summary: 'Yêu cầu trả hàng hoàn tiền (User)' })
+  @ApiQuery({ name: 'userId', required: true })
+  async requestReturn(
+    @Param('id') id: string,
+    @Query('userId') userId: string,
+    @Body() dto: { reason: string; problem: string; images: string[]; videos: string[] },
+  ) {
+    return this.ordersService.requestReturn(id, userId, dto);
   }
 
   @Get('user')

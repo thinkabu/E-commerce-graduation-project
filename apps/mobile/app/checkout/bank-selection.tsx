@@ -63,7 +63,7 @@ const BANKS = [
 
 const BankSelectionScreen = () => {
   const router = useRouter();
-  const { total } = useLocalSearchParams();
+  const { total, orderId } = useLocalSearchParams<{ total: string; orderId: string }>();
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -76,10 +76,9 @@ const BankSelectionScreen = () => {
   const handleConfirm = () => {
     if (!selectedBank) return;
     const bank = BANKS.find((b) => b.id === selectedBank);
-    // Ở đây ta có thể tạo QR thanh toán Napas 24/7 hoặc chuyển khoản
-    // Tạm thời quay lại checkout hoặc đi tới màn hình kết quả
+    // Điều hướng sang trang kết quả thanh toán hiển thị VietQR chuyển khoản
     router.replace(
-      `/checkout/payment-result?success=true&method=banking&bank=${bank?.name}` as any,
+      `/checkout/payment-result?status=success&method=banking&bank=${bank?.name}&orderId=${orderId}&total=${total}` as any,
     );
   };
 

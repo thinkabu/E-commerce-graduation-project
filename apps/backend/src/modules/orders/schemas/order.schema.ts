@@ -141,6 +141,30 @@ export class BlockchainPayment {
 export const BlockchainPaymentSchema =
   SchemaFactory.createForClass(BlockchainPayment);
 
+// --- VnpayPayment Subdocument ---
+@Schema({ _id: false })
+export class VnpayPayment {
+  @Prop({ required: true })
+  transactionId: string; // vnp_TxnRef
+
+  @Prop()
+  vnpayTxNo?: string; // vnp_TransactionNo
+
+  @Prop()
+  bankCode?: string; // vnp_BankCode
+
+  @Prop()
+  cardType?: string; // vnp_CardType
+
+  @Prop({ type: Date })
+  payDate?: Date; // payDate
+
+  @Prop()
+  orderInfo?: string; // vnp_OrderInfo
+}
+
+export const VnpayPaymentSchema = SchemaFactory.createForClass(VnpayPayment);
+
 // --- Order Main Document ---
 @Schema({ timestamps: true })
 export class Order {
@@ -215,11 +239,26 @@ export class Order {
   @Prop({ type: BlockchainPaymentSchema })
   blockchainPayment?: BlockchainPayment;
 
+  @Prop({ type: VnpayPaymentSchema })
+  vnpayPayment?: VnpayPayment;
+
   @Prop({ type: Date })
   paidAt?: Date;
 
   @Prop({ trim: true })
   note: string; // Ghi chú đơn hàng
+
+  @Prop()
+  returnReason?: string;
+
+  @Prop()
+  returnProblem?: string;
+
+  @Prop({ type: [String], default: [] })
+  returnImages?: string[];
+
+  @Prop({ type: [String], default: [] })
+  returnVideos?: string[];
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

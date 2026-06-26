@@ -459,7 +459,7 @@ const ProductDetailScreen = () => {
               )}
             </VStack>
 
-            <HStack className="items-center space-x-2 gap-2">
+            <HStack className="items-center space-x-2 gap-2 flex-wrap">
               <HStack className="items-center">
                 {[...Array(5)].map((_, i) => (
                   <Icon
@@ -474,6 +474,14 @@ const ProductDetailScreen = () => {
               </Text>
               <Text className="text-xs text-zinc-500">
                 ({product.reviewCount || 0} reviews)
+              </Text>
+              <Text className="text-xs text-zinc-300 dark:text-zinc-700">|</Text>
+              <Text className="text-xs text-zinc-500">
+                Đã bán {product.soldCount || 0}
+              </Text>
+              <Text className="text-xs text-zinc-300 dark:text-zinc-700">|</Text>
+              <Text className="text-xs text-zinc-500">
+                Kho: {matchingVariant ? matchingVariant.stockQuantity : product.stockQuantity || 0}
               </Text>
             </HStack>
           </Box>

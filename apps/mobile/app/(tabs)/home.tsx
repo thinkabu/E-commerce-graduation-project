@@ -26,6 +26,7 @@ import {
   ArrowUp,
 } from "lucide-react-native";
 import { useAuth } from "@/contexts/AuthContext";
+import AvatarInitials from "@/components/AvatarInitials";
 import { useNotification } from "@/contexts/NotificationContext";
 import { getCategories, Category } from "@/services/category.service";
 import { getProducts, Product } from "@/services/product.service";
@@ -207,13 +208,12 @@ const HomeScreen = () => {
         <Box className="px-5 mb-3">
           <HStack className="justify-between items-center">
             <HStack className="items-center space-x-3 gap-3">
-              <Image
-                source={{
-                  uri:
-                    user?.avatar ||
-                    "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=100&auto=format&fit=crop",
-                }}
-                className="w-11 h-11 rounded-full border-2 border-white dark:border-zinc-800"
+              <AvatarInitials
+                name={user?.fullName || "Người dùng"}
+                avatarUrl={user?.avatar}
+                size={44}
+                borderWidth={2}
+                borderColor="#ffffff"
               />
               <VStack>
                 <Text className="text-xl font-bold text-zinc-900 dark:text-white leading-tight">

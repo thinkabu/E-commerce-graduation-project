@@ -27,6 +27,7 @@ import {
   DollarSign,
   ShoppingCart,
   Clock,
+  X,
 } from "lucide-react";
 import {
   getAdminOrders,
@@ -43,9 +44,43 @@ const OrderStatus = {
   DELIVERED: "DELIVERED",
   CANCELLED: "CANCELLED",
   RETURNED: "RETURNED",
+  RETURN_REQUESTED: "RETURN_REQUESTED",
 } as const;
 
 type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+
+const isStatusTransitionDisabled = (currentStatus: string, targetStatus: string): boolean => {
+  const levels: Record<string, number> = {
+    PENDING: 1,
+    CONFIRMED: 2,
+    PROCESSING: 3,
+    SHIPPING: 4,
+    DELIVERED: 5,
+  };
+
+  if (currentStatus === targetStatus) return false;
+
+  const currentLevel = levels[currentStatus];
+  const targetLevel = levels[targetStatus];
+
+  if (currentLevel && targetLevel) {
+    return targetLevel < currentLevel;
+  }
+
+  if (targetStatus === 'CANCELLED') {
+    return currentStatus === 'SHIPPING' || currentStatus === 'DELIVERED' || currentStatus === 'RETURNED' || currentStatus === 'RETURN_REQUESTED';
+  }
+
+  if (targetStatus === 'RETURNED') {
+    return currentStatus !== 'DELIVERED' && currentStatus !== 'RETURN_REQUESTED';
+  }
+
+  if (targetStatus === 'RETURN_REQUESTED') {
+    return currentStatus !== 'DELIVERED';
+  }
+
+  return true;
+};
 
 const OrderList: React.FC = () => {
   usePageTitle("Quản Lý Đơn Hàng");
@@ -101,6 +136,12 @@ const OrderList: React.FC = () => {
         return (
           <Badge variant="outline" className="text-red-600 border-red-600">
             Đã trả hàng
+          </Badge>
+        );
+      case OrderStatus.RETURN_REQUESTED:
+        return (
+          <Badge variant="outline" className="text-orange-500 border-orange-500 bg-orange-50">
+            Yêu cầu trả hàng
           </Badge>
         );
       default:
@@ -227,6 +268,14 @@ const OrderList: React.FC = () => {
   const [newStatus, setNewStatus] = useState<OrderStatus>(OrderStatus.PENDING);
   const [cancelReason, setCancelReason] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
+
+  const [viewingOrder, setViewingOrder] = useState<any | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const handleOpenDetailModal = (order: any) => {
+    setViewingOrder(order);
+    setIsDetailModalOpen(true);
+  };
 
   const handleOpenEditModal = (order: any) => {
     setSelectedOrder(order);
@@ -434,7 +483,10 @@ const OrderList: React.FC = () => {
               ) : orders.length > 0 ? (
                 orders.map((order) => (
                   <TableRow key={order._id}>
-                    <TableCell className="font-semibold text-xs">
+                    <TableCell 
+                      className="font-semibold text-xs text-blue-600 hover:underline cursor-pointer"
+                      onClick={() => handleOpenDetailModal(order)}
+                    >
                       {order.orderId}
                     </TableCell>
                     <TableCell>
@@ -462,8 +514,22 @@ const OrderList: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
+                          className="text-zinc-700 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-950 h-8 px-3"
+                          onClick={() => handleOpenDetailModal(order)}
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 h-8 px-3"
                           onClick={() => handleOpenEditModal(order)}
+                          disabled={
+                            order.orderStatus === OrderStatus.DELIVERED ||
+                            order.orderStatus === OrderStatus.CANCELLED ||
+                            order.orderStatus === OrderStatus.RETURNED ||
+                            order.orderStatus === OrderStatus.RETURN_REQUESTED
+                          }
                         >
                           Sửa
                         </Button>
@@ -472,8 +538,14 @@ const OrderList: React.FC = () => {
                           size="sm"
                           className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 h-8 px-3"
                           onClick={() => handleOpenCancelModal(order)}
+                          disabled={
+                            order.orderStatus === OrderStatus.DELIVERED ||
+                            order.orderStatus === OrderStatus.CANCELLED ||
+                            order.orderStatus === OrderStatus.RETURNED ||
+                            order.orderStatus === OrderStatus.RETURN_REQUESTED
+                          }
                         >
-                          Xóa
+                          Hủy
                         </Button>
                       </div>
                     </TableCell>
@@ -545,26 +617,53 @@ const OrderList: React.FC = () => {
                       <SelectValue placeholder="Chọn trạng thái" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={OrderStatus.PENDING}>
+                      <SelectItem
+                        value={OrderStatus.PENDING}
+                        disabled={isStatusTransitionDisabled(selectedOrder.orderStatus, OrderStatus.PENDING)}
+                      >
                         Chờ duyệt
                       </SelectItem>
-                      <SelectItem value={OrderStatus.CONFIRMED}>
+                      <SelectItem
+                        value={OrderStatus.CONFIRMED}
+                        disabled={isStatusTransitionDisabled(selectedOrder.orderStatus, OrderStatus.CONFIRMED)}
+                      >
                         Đã xác nhận
                       </SelectItem>
-                      <SelectItem value={OrderStatus.PROCESSING}>
+                      <SelectItem
+                        value={OrderStatus.PROCESSING}
+                        disabled={isStatusTransitionDisabled(selectedOrder.orderStatus, OrderStatus.PROCESSING)}
+                      >
                         Đang xử lý
                       </SelectItem>
-                      <SelectItem value={OrderStatus.SHIPPING}>
+                      <SelectItem
+                        value={OrderStatus.SHIPPING}
+                        disabled={isStatusTransitionDisabled(selectedOrder.orderStatus, OrderStatus.SHIPPING)}
+                      >
                         Đang giao
                       </SelectItem>
-                      <SelectItem value={OrderStatus.DELIVERED}>
+                      <SelectItem
+                        value={OrderStatus.DELIVERED}
+                        disabled={isStatusTransitionDisabled(selectedOrder.orderStatus, OrderStatus.DELIVERED)}
+                      >
                         Đã giao
                       </SelectItem>
-                      <SelectItem value={OrderStatus.CANCELLED}>
+                      <SelectItem
+                        value={OrderStatus.CANCELLED}
+                        disabled={isStatusTransitionDisabled(selectedOrder.orderStatus, OrderStatus.CANCELLED)}
+                      >
                         Đã hủy
                       </SelectItem>
-                      <SelectItem value={OrderStatus.RETURNED}>
+                      <SelectItem
+                        value={OrderStatus.RETURNED}
+                        disabled={isStatusTransitionDisabled(selectedOrder.orderStatus, OrderStatus.RETURNED)}
+                      >
                         Đã trả hàng
+                      </SelectItem>
+                      <SelectItem
+                        value={OrderStatus.RETURN_REQUESTED}
+                        disabled={isStatusTransitionDisabled(selectedOrder.orderStatus, OrderStatus.RETURN_REQUESTED)}
+                      >
+                        Yêu cầu trả hàng
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -594,6 +693,183 @@ const OrderList: React.FC = () => {
         </div>
       )}
 
+      {/* Modal Chi Tiết Đơn Hàng */}
+      {isDetailModalOpen && viewingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-background border rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden animate-in fade-in-50 zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">
+                  Chi tiết đơn hàng
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  ID: <span className="font-semibold text-primary uppercase">{viewingOrder.orderId}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  setViewingOrder(null);
+                }}
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+              {/* Order Status & Payment summary */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/40 p-4 rounded-xl border">
+                <div>
+                  <span className="text-xs text-muted-foreground block mb-1">Trạng thái đơn hàng</span>
+                  {getStatusBadge(viewingOrder.orderStatus)}
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block mb-1">Thanh toán</span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      {getPaymentMethodBadge(viewingOrder.paymentMethod)}
+                      <Badge variant="outline" className={viewingOrder.paymentStatus === 'COMPLETED' ? "text-green-600 border-green-600 bg-green-50" : "text-yellow-600 border-yellow-600 bg-yellow-50"}>
+                        {viewingOrder.paymentStatus}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-bold text-foreground uppercase tracking-wider">Thông tin nhận hàng</h4>
+                <div className="bg-muted/20 p-4 rounded-xl border text-sm space-y-1.5">
+                  <p><strong>Người nhận:</strong> {viewingOrder.shippingAddressSnapshot?.fullName || "N/A"}</p>
+                  <p><strong>Số điện thoại:</strong> {viewingOrder.shippingAddressSnapshot?.phone || "N/A"}</p>
+                  <p>
+                    <strong>Địa chỉ:</strong> {viewingOrder.shippingAddressSnapshot?.street},{" "}
+                    {viewingOrder.shippingAddressSnapshot?.ward},{" "}
+                    {viewingOrder.shippingAddressSnapshot?.district},{" "}
+                    {viewingOrder.shippingAddressSnapshot?.province}
+                  </p>
+                  {viewingOrder.shippingAddressSnapshot?.note && (
+                    <p className="text-xs text-muted-foreground italic mt-1">
+                      * Ghi chú: {viewingOrder.shippingAddressSnapshot.note}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-bold text-foreground uppercase tracking-wider">Danh sách sản phẩm</h4>
+                <div className="border rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 border-b">
+                      <tr>
+                        <th className="py-2 px-3 text-left">Sản phẩm</th>
+                        <th className="py-2 px-3 text-center">SL</th>
+                        <th className="py-2 px-3 text-right">Đơn giá</th>
+                        <th className="py-2 px-3 text-right">Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {viewingOrder.items?.map((item: any, idx: number) => (
+                        <tr key={idx}>
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-3">
+                              {item.productSnapshot?.image && (
+                                <img
+                                  src={item.productSnapshot.image}
+                                  alt={item.productSnapshot.name}
+                                  className="w-10 h-10 object-cover rounded-lg bg-zinc-100"
+                                />
+                              )}
+                              <div>
+                                <p className="font-medium line-clamp-1">{item.productSnapshot?.name}</p>
+                                {item.productSnapshot?.variantName && (
+                                  <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-muted-foreground px-1.5 py-0.5 rounded font-medium">
+                                    Phân loại: {item.productSnapshot.variantName}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center font-medium">{item.quantity}</td>
+                          <td className="py-3 px-3 text-right text-muted-foreground">{item.unitPrice?.toLocaleString()} ₫</td>
+                          <td className="py-3 px-3 text-right font-medium">{item.totalPrice?.toLocaleString()} ₫</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Payment Details info (VNPay or Blockchain if exists) */}
+              {viewingOrder.paymentMethod === "VNPAY" && viewingOrder.vnpayPayment && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-foreground uppercase tracking-wider">Chi tiết thanh toán VNPay</h4>
+                  <div className="bg-muted/20 p-4 rounded-xl border text-sm space-y-1.5">
+                    <p><strong>Mã giao dịch VNPay:</strong> {viewingOrder.vnpayPayment.vnpayTxNo || "N/A"}</p>
+                    <p><strong>Mã ngân hàng:</strong> {viewingOrder.vnpayPayment.bankCode || "N/A"}</p>
+                    <p><strong>Loại thẻ:</strong> {viewingOrder.vnpayPayment.cardType || "N/A"}</p>
+                    {viewingOrder.vnpayPayment.payDate && (
+                      <p><strong>Thời gian thanh toán:</strong> {new Date(viewingOrder.vnpayPayment.payDate).toLocaleString("vi-VN")}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {viewingOrder.paymentMethod === "CRYPTO" && viewingOrder.blockchainPayment && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-foreground uppercase tracking-wider">Chi tiết thanh toán Blockchain</h4>
+                  <div className="bg-muted/20 p-4 rounded-xl border text-sm space-y-1.5 font-mono break-all text-xs">
+                    <p><strong className="font-sans text-sm text-foreground">Tx Hash:</strong> {viewingOrder.blockchainPayment.transactionHash}</p>
+                    <p><strong className="font-sans text-sm text-foreground">Ví thanh toán:</strong> {viewingOrder.blockchainPayment.walletAddress}</p>
+                    <p><strong className="font-sans text-sm text-foreground">Số lượng:</strong> {viewingOrder.blockchainPayment.cryptoAmount} {viewingOrder.blockchainPayment.cryptoSymbol || "ETH"}</p>
+                    <p><strong className="font-sans text-sm text-foreground">Mạng lưới:</strong> {viewingOrder.blockchainPayment.network}</p>
+                    <p><strong className="font-sans text-sm text-foreground">Tỷ giá:</strong> {viewingOrder.blockchainPayment.exchangeRate?.toLocaleString()} ₫/ETH</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Financial Calculation Summary */}
+              <div className="flex flex-col items-end space-y-1.5 text-sm pt-4 border-t">
+                <div className="flex justify-between w-64">
+                  <span className="text-muted-foreground">Tạm tính:</span>
+                  <span className="font-medium">{(viewingOrder.subtotal || 0).toLocaleString()} ₫</span>
+                </div>
+                <div className="flex justify-between w-64">
+                  <span className="text-muted-foreground">Phí vận chuyển:</span>
+                  <span className="font-medium">{(viewingOrder.shippingFee || 0).toLocaleString()} ₫</span>
+                </div>
+                {viewingOrder.discount > 0 && (
+                  <div className="flex justify-between w-64 text-green-600">
+                    <span>Mã giảm giá:</span>
+                    <span>-{viewingOrder.discount.toLocaleString()} ₫</span>
+                  </div>
+                )}
+                <div className="flex justify-between w-64 font-bold text-lg text-blue-600 pt-1.5 border-t">
+                  <span>Tổng thanh toán:</span>
+                  <span>{(viewingOrder.totalAmount || 0).toLocaleString()} ₫</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end px-6 py-4 bg-muted/40 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  setViewingOrder(null);
+                }}
+              >
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Modal Hủy Đơn Hàng (Xóa) */}
       {isCancelModalOpen && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">

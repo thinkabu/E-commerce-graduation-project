@@ -52,4 +52,27 @@ export class CloudinaryService {
 
     return results.map((res) => res.secure_url);
   }
+
+  async uploadVideo(
+    file: any,
+    folder: string = 'returns',
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: 'video',
+        },
+        (error: UploadApiErrorResponse, result: UploadApiResponse) => {
+          if (error) {
+            this.logger.error(`Cloudinary video upload failed: ${error.message}`);
+            return reject(error);
+          }
+          resolve(result.secure_url);
+        },
+      );
+
+      streamifier.createReadStream(file.buffer).pipe(uploadStream);
+    });
+  }
 }

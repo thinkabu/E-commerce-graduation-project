@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { Box } from "@/components/ui/box";
@@ -27,6 +27,9 @@ export default function PaymentResultScreen() {
   const orderId =
     (params.orderId as string) || "ORD-" + Math.floor(Math.random() * 1000000);
   const message = params.message as string;
+  const method = params.method as string;
+  const bankName = params.bank as string;
+  const total = Number(params.total) || 0;
 
   useEffect(() => {
     if (status === "success") {
@@ -68,19 +71,63 @@ export default function PaymentResultScreen() {
         </Box>
 
         <Text
-          className={`text-2xl font-black mb-3 ${isSuccess ? "text-zinc-900 dark:text-white" : "text-red-600"}`}
+          className={`text-2xl font-black mb-3 text-center ${isSuccess ? "text-zinc-900 dark:text-white" : "text-red-600"}`}
         >
-          {isSuccess ? "Thanh toán thành công!" : "Thanh toán thất bại"}
+          {isSuccess ? (method === "banking" ? "Đặt hàng thành công!" : "Thanh toán thành công!") : "Thanh toán thất bại"}
         </Text>
 
-        <Text className="text-zinc-500 dark:text-zinc-400 text-center mb-10 leading-relaxed px-4">
+        <Text className="text-zinc-500 dark:text-zinc-400 text-center mb-6 leading-relaxed px-4 text-sm">
           {isSuccess
-            ? `Đơn hàng #${orderId} đã được đặt thành công. Chúng tôi sẽ sớm giao hàng đến cho bạn.`
+            ? method === "banking"
+              ? `Đơn hàng #${orderId} của bạn đã được ghi nhận. Vui lòng chuyển khoản theo hướng dẫn bên dưới để hoàn tất.`
+              : `Đơn hàng #${orderId} đã được đặt và thanh toán thành công. Chúng tôi sẽ sớm giao hàng đến cho bạn.`
             : `Đã xảy ra lỗi trong quá trình thanh toán.\n${message || "Vui lòng kiểm tra lại số dư hoặc phương thức thanh toán."}`}
         </Text>
 
-        {isSuccess && (
-          <Box className="w-full bg-white dark:bg-zinc-900 rounded-3xl p-5 mb-8 border border-zinc-100 dark:border-zinc-800 shadow-sm">
+        {isSuccess && method === "banking" && total > 0 && (
+          <VStack className="items-center mb-6 bg-white dark:bg-zinc-900 p-5 rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-sm w-full gap-4">
+            <Text className="text-xs font-black text-zinc-900 dark:text-white text-center">
+              MÃ QR QUÉT THANH TOÁN (VIETQR)
+            </Text>
+            <Image
+              source={{
+                uri: `https://img.vietqr.io/image/vietcombank-9999888888-compact2.png?amount=${total}&addInfo=${orderId}&accountName=THINK%20HEART%20DIGITAL`
+              }}
+              style={{ width: 180, height: 180, borderRadius: 12, backgroundColor: '#f4f4f5' }}
+            />
+            <Text className="text-[11px] text-zinc-400 text-center leading-normal px-2">
+              Mở ứng dụng ngân hàng quét mã QR trên để chuyển khoản tự động
+            </Text>
+            <Box className="w-full bg-zinc-50 dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-900 space-y-2">
+              <HStack className="justify-between items-center mb-1.5">
+                <Text className="text-zinc-500 text-xs">Ngân hàng:</Text>
+                <Text className="text-zinc-900 dark:text-white font-bold text-xs">Vietcombank (VCB)</Text>
+              </HStack>
+              <HStack className="justify-between items-center mb-1.5">
+                <Text className="text-zinc-500 text-xs">Số tài khoản:</Text>
+                <Text className="text-zinc-900 dark:text-white font-bold text-xs">9999888888</Text>
+              </HStack>
+              <HStack className="justify-between items-center mb-1.5">
+                <Text className="text-zinc-500 text-xs">Chủ tài khoản:</Text>
+                <Text className="text-zinc-900 dark:text-white font-bold text-xs">THINK HEART DIGITAL</Text>
+              </HStack>
+              <HStack className="justify-between items-center mb-1.5">
+                <Text className="text-zinc-500 text-xs">Số tiền:</Text>
+                <Text className="text-yellow-600 font-extrabold text-xs">{total.toLocaleString()}₫</Text>
+              </HStack>
+              <HStack className="justify-between items-center">
+                <Text className="text-zinc-500 text-xs">Nội dung:</Text>
+                <Text className="text-blue-600 font-extrabold uppercase text-xs">{orderId}</Text>
+              </HStack>
+            </Box>
+            <Text className="text-[10px] text-red-500 font-bold text-center leading-relaxed">
+              * Vui lòng chuyển chính xác số tiền và ghi đúng nội dung để đơn hàng được duyệt tự động.
+            </Text>
+          </VStack>
+        )}
+
+        {isSuccess && method !== "banking" && (
+          <Box className="w-full bg-white dark:bg-zinc-900 rounded-3xl p-5 mb-6 border border-zinc-100 dark:border-zinc-800 shadow-sm">
             <HStack className="justify-between items-center mb-4">
               <Text className="text-zinc-500 text-sm">Mã đơn hàng</Text>
               <Text className="text-zinc-900 dark:text-white font-bold">
@@ -107,7 +154,7 @@ export default function PaymentResultScreen() {
             <>
               <Pressable
                 className="bg-zinc-900 dark:bg-zinc-100 w-full h-14 rounded-2xl items-center justify-center shadow-lg active:opacity-90"
-                onPress={() => router.push("/orders/my-orders" as any)}
+                onPress={() => router.push("/profile/order-history" as any)}
               >
                 <HStack className="items-center gap-2">
                   <Icon

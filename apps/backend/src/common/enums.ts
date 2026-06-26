@@ -41,12 +41,14 @@ export enum OrderStatus {
   DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED',
   RETURNED = 'RETURNED',
+  RETURN_REQUESTED = 'RETURN_REQUESTED',
 }
 
 export enum PaymentMethod {
   COD = 'COD',
   BANKING = 'BANKING',
   CRYPTO = 'CRYPTO',
+  VNPAY = 'VNPAY',
 }
 
 export enum PaymentStatus {

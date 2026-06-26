@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Order, OrderDocument } from './schemas/order.schema';
@@ -33,6 +34,7 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.DELIVERED]: 'đã được giao thành công',
   [OrderStatus.CANCELLED]: 'đã bị hủy',
   [OrderStatus.RETURNED]: 'đã được trả hàng',
+  [OrderStatus.RETURN_REQUESTED]: 'đang chờ xác nhận trả hàng',
 };
 
 @Injectable()
@@ -391,6 +393,7 @@ export class OrdersService {
       throw new NotFoundException('Đơn hàng không tồn tại');
     }
 
+    const previousStatus = order.orderStatus;
     order.orderStatus = status;
     order.statusHistory.push({
       status,
@@ -398,6 +401,35 @@ export class OrdersService {
       changedBy: adminId ? new Types.ObjectId(adminId) : order.userId,
       note: note || `Trạng thái đơn hàng cập nhật thành: ${status}`,
     });
+
+    // Nếu chuyển sang trạng thái HỦY và trước đó chưa bị HỦY, khôi phục kho hàng và coupon
+    if (status === OrderStatus.CANCELLED && previousStatus !== OrderStatus.CANCELLED) {
+      order.paymentStatus = PaymentStatus.FAILED;
+
+      // Khôi phục kho hàng gốc
+      for (const item of order.items) {
+        await this.productModel.updateOne(
+          { _id: item.productId },
+          { $inc: { stockQuantity: item.quantity, soldCount: -item.quantity } },
+        );
+        // Khôi phục kho biến thể (nếu có)
+        if (item.variantId) {
+          await this.variantModel.updateOne(
+            { _id: item.variantId },
+            { $inc: { stockQuantity: item.quantity } },
+          );
+        }
+      }
+
+      // Khôi phục coupon
+      if (order.couponId) {
+        const coupon = await this.couponModel.findById(order.couponId);
+        if (coupon) {
+          coupon.usedCount = Math.max(0, coupon.usedCount - 1);
+          await coupon.save();
+        }
+      }
+    }
 
     await order.save();
 
@@ -466,6 +498,75 @@ export class OrdersService {
     }
 
     return order.toObject();
+  }
+
+  async requestReturn(
+    id: string,
+    userId: string,
+    dto: { reason: string; problem: string; images: string[]; videos: string[] },
+  ): Promise<Order> {
+    const order = await this.orderModel.findOne({
+      _id: id,
+      userId: new Types.ObjectId(userId),
+    });
+    if (!order) {
+      throw new NotFoundException('Đơn hàng không tồn tại');
+    }
+
+    if (order.orderStatus !== OrderStatus.DELIVERED) {
+      throw new BadRequestException(
+        'Chỉ có thể yêu cầu trả hàng đối với đơn hàng đã giao',
+      );
+    }
+
+    // Kiểm tra trong vòng 5 ngày
+    const deliveredHistory = order.statusHistory?.find(
+      (h) => h.status === OrderStatus.DELIVERED,
+    );
+    const deliveryDate = deliveredHistory
+      ? new Date(deliveredHistory.changedAt)
+      : new Date((order as any).updatedAt || (order as any).createdAt);
+
+    const isWithin5Days = Date.now() - deliveryDate.getTime() <= 5 * 24 * 60 * 60 * 1000;
+    if (!isWithin5Days) {
+      throw new BadRequestException(
+        'Đã quá thời hạn 5 ngày kể từ ngày nhận hàng để yêu cầu trả hàng',
+      );
+    }
+
+    order.orderStatus = OrderStatus.RETURN_REQUESTED;
+    order.returnReason = dto.reason;
+    order.returnProblem = dto.problem;
+    order.returnImages = dto.images;
+    order.returnVideos = dto.videos;
+
+    order.statusHistory.push({
+      status: OrderStatus.RETURN_REQUESTED,
+      changedAt: new Date(),
+      changedBy: new Types.ObjectId(userId),
+      note: `Yêu cầu trả hàng hoàn tiền. Lý do: ${dto.reason}. Vấn đề: ${dto.problem}`,
+    });
+
+    await order.save();
+
+    // Gửi push notification đến user
+    try {
+      await this.notificationsService.sendAndSave(
+        order.userId.toString(),
+        '📦 Yêu cầu trả hàng',
+        `Yêu cầu trả hàng cho đơn hàng ${(order as any).orderId || id} đã được gửi thành công và đang chờ xác nhận.`,
+        NotificationType.ORDER,
+        {
+          orderId: order._id.toString(),
+          orderStatus: OrderStatus.RETURN_REQUESTED,
+          deepLink: `/profile/order-detail?id=${order._id}`,
+        },
+      );
+    } catch (err: any) {
+      this.logger.warn(`Không gửi được push notification: ${err?.message}`);
+    }
+
+    return order;
   }
 
   private async getTopProductsByDate(orderMatch: any): Promise<any[]> {
@@ -558,5 +659,36 @@ export class OrdersService {
       recentOrders,
       topProducts,
     };
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async handleAutoCancelUnpaidOrders() {
+    const expirationLimit = new Date();
+    expirationLimit.setMinutes(expirationLimit.getMinutes() - 15);
+
+    // Tìm các đơn hàng chưa thanh toán và quá 15 phút (loại trừ COD)
+    const expiredOrders = await this.orderModel.find({
+      paymentMethod: { $ne: PaymentMethod.COD },
+      paymentStatus: PaymentStatus.PENDING,
+      orderStatus: OrderStatus.PENDING,
+      createdAt: { $lte: expirationLimit },
+    });
+
+    if (expiredOrders.length === 0) return;
+
+    this.logger.log(`⏳ Phát hiện ${expiredOrders.length} đơn hàng quá hạn thanh toán. Đang tự động hủy...`);
+
+    for (const order of expiredOrders) {
+      try {
+        await this.updateOrderStatus(
+          order._id.toString(),
+          OrderStatus.CANCELLED,
+          undefined,
+          'Hết hạn thời gian chờ thanh toán (15 phút)',
+        );
+      } catch (err: any) {
+        this.logger.error(`Lỗi khi tự động hủy đơn hàng #${order.orderId}:`, err);
+      }
+    }
   }
 }

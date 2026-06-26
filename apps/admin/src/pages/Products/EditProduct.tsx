@@ -64,7 +64,8 @@ const EditProduct: React.FC = () => {
         setCategories(catData);
 
         if (id) {
-          const res = await fetch(`http://localhost:3000/api/products/${id}`);
+          const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+          const res = await fetch(`${apiBaseUrl}/products/${id}`);
           const productProps = await res.json();
 
           if (setFormData && productProps.data) {

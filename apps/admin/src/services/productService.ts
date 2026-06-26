@@ -1,6 +1,6 @@
 import type { Product } from "@/types/product";
 
-const API_BASE = "http://localhost:3000/api/products";
+const API_BASE = `${import.meta.env.VITE_API_URL || "http://localhost:3000/api"}/products`;
 
 // Helper: slug từ tên sản phẩm
 export function generateSlug(name: string): string {

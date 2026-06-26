@@ -37,6 +37,11 @@ export interface Order {
   orderStatus: string;
   statusHistory?: any[];
   createdAt: string;
+  updatedAt?: string;
+  returnReason?: string;
+  returnProblem?: string;
+  returnImages?: string[];
+  returnVideos?: string[];
 }
 
 export const createOrder = async (
@@ -79,14 +84,35 @@ export const getOrderById = async (
 export const confirmOrderReceipt = async (
   id: string,
   userId: string,
+ ): Promise<Order | null> => {
+   try {
+     const response = await api.patch(`/orders/${id}/confirm-receipt`, {}, {
+       params: { userId },
+     });
+     return response.data?.data ?? response.data;
+   } catch (error) {
+     console.error("Error confirming order receipt:", error);
+     throw error;
+   }
+ };
+
+export const requestOrderReturn = async (
+  id: string,
+  userId: string,
+  payload: {
+    reason: string;
+    problem: string;
+    images: string[];
+    videos: string[];
+  },
 ): Promise<Order | null> => {
   try {
-    const response = await api.patch(`/orders/${id}/confirm-receipt`, {}, {
+    const response = await api.patch(`/orders/${id}/return-request`, payload, {
       params: { userId },
     });
     return response.data?.data ?? response.data;
   } catch (error) {
-    console.error("Error confirming order receipt:", error);
+    console.error("Error requesting order return:", error);
     throw error;
   }
 };

@@ -22,8 +22,8 @@ interface WalletConnection {
 }
 
 interface PaymentContextType {
-  selectedPaymentMethod: "COD" | "BANKING" | "CRYPTO";
-  setPaymentMethod: (method: "COD" | "BANKING" | "CRYPTO") => void;
+  selectedPaymentMethod: "COD" | "BANKING" | "CRYPTO" | "VNPAY";
+  setPaymentMethod: (method: "COD" | "BANKING" | "CRYPTO" | "VNPAY") => void;
   cryptoRate: CryptoRate | null;
   fetchCryptoRate: () => Promise<void>;
   resetPayment: () => void;
@@ -43,7 +43,7 @@ const PaymentContext = createContext<PaymentContextType | undefined>(undefined);
 
 export function PaymentContextProvider({ children }: { children: ReactNode }) {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
-    "COD" | "BANKING" | "CRYPTO"
+    "COD" | "BANKING" | "CRYPTO" | "VNPAY"
   >("COD");
   const [cryptoRate, setCryptoRate] = useState<CryptoRate | null>(null);
   const [paymentInProgress, setPaymentInProgress] = useState(false);
@@ -51,7 +51,7 @@ export function PaymentContextProvider({ children }: { children: ReactNode }) {
   const [walletConnection, setWalletConnection] =
     useState<WalletConnection | null>(null);
 
-  const setPaymentMethod = (method: "COD" | "BANKING" | "CRYPTO") => {
+  const setPaymentMethod = (method: "COD" | "BANKING" | "CRYPTO" | "VNPAY") => {
     setSelectedPaymentMethod(method);
     if (method === "CRYPTO" && !cryptoRate) {
       fetchCryptoRate();
