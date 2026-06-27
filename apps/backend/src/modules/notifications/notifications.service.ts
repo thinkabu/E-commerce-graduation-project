@@ -152,6 +152,41 @@ export class NotificationsService {
     return notif;
   }
 
+  async saveNotificationToAll(
+    title: string,
+    body: string,
+    type: NotificationType,
+    data?: Record<string, any>,
+  ): Promise<{ savedCount: number }> {
+    const users = await this.notificationModel.db
+      .collection('users')
+      .find({}, { projection: { _id: 1 } })
+      .toArray();
+
+    if (users.length === 0) return { savedCount: 0 };
+
+    const notifications = users.map((u) => ({
+      userId: u._id,
+      title,
+      body,
+      type,
+      data: {
+        orderId: data?.orderId ? new Types.ObjectId(data.orderId) : undefined,
+        productId: data?.productId
+          ? new Types.ObjectId(data.productId)
+          : undefined,
+        txHash: data?.txHash,
+        deepLink: data?.deepLink,
+      },
+      isRead: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
+
+    await this.notificationModel.insertMany(notifications);
+    return { savedCount: users.length };
+  }
+
   // ── Gửi Push + Lưu MongoDB (dùng nhiều nhất) ─────────────────────
 
   async sendAndSave(

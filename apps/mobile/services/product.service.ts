@@ -19,6 +19,8 @@ export const getProducts = async (params?: {
   search?: string;
   categoryId?: string;
   isFeatured?: boolean;
+  sortBy?: string;
+  sortOrder?: string;
 }): Promise<{ items: Product[]; meta: any }> => {
   try {
     const response = await api.get("/products", { params });

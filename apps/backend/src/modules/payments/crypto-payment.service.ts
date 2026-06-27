@@ -52,24 +52,28 @@ export class CryptoPaymentService {
 
       const symbol = symbolMap[currency.toLowerCase()] || 'ETHUSDT';
 
-      // Lấy giá crypto từ Binance
-      const cryptoResponse = await axios.get(
-        `https://api.binance.com/api/v3/ticker/price`,
-        {
-          params: { symbol },
-          timeout: 10000,
-        },
-      );
+      // Lấy giá crypto từ Binance qua API URL cấu hình trong .env
+      const binancePriceUrl =
+        this.configService.get<string>('BINANCE_PRICE_API_URL') ||
+        'https://api.binance.com/api/v3/ticker/price';
+
+      const cryptoResponse = await axios.get(binancePriceUrl, {
+        params: { symbol },
+        timeout: 10000,
+      });
 
       const cryptoPrice = parseFloat(cryptoResponse.data.price);
 
-      // Lấy tỷ giá USD/VND thời gian thực từ API công khai (không cần API key)
+      // Lấy tỷ giá USD/VND thời gian thực từ API cấu hình trong .env
       let usdToVnd = 25400; // Giá trị fallback mặc định
       try {
-        const exchangeResponse = await axios.get(
-          'https://open.er-api.com/v6/latest/USD',
-          { timeout: 5000 },
-        );
+        const exchangeRateUrl =
+          this.configService.get<string>('EXCHANGE_RATE_API_URL') ||
+          'https://open.er-api.com/v6/latest/USD';
+
+        const exchangeResponse = await axios.get(exchangeRateUrl, {
+          timeout: 5000,
+        });
         if (
           exchangeResponse.data &&
           exchangeResponse.data.rates &&

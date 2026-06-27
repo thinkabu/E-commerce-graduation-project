@@ -254,15 +254,22 @@ export class RecommendationsService {
 
     const userObjId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : null;
 
-    // --- 1. GIAI ĐOẠN RETRIEVAL: LẤY CÁC CANDIDATES ---
+    // --- 1. GIAI ĐOẠN RETRIEVAL: LẤY TOÀN BỘ SẢN PHẨM HOẠT ĐỘNG ---
+    const activeProductsList = await this.productModel.find({ isActive: true }).select('_id').lean();
+    const candidateIds = activeProductsList.map(p => p._id.toString());
+
+    if (candidateIds.length === 0) {
+      return { sessionId, recommendations: [] };
+    }
+
     let vectorCandidates: IRecommendationResult[] = [];
     let cfCandidates: IRecommendationResult[] = [];
 
-    // Lấy Vector search candidates dựa trên User Profile Embedding
+    // Lấy Vector search candidates dựa trên User Profile Embedding cho toàn bộ sản phẩm
     if (userObjId) {
       const userProfileEmbed = await this.userProfileEmbeddingModel.findOne({ userId: userObjId });
       if (userProfileEmbed && userProfileEmbed.embedding && userProfileEmbed.embedding.length > 0) {
-        vectorCandidates = await this.searchSimilarByVector(userProfileEmbed.embedding, [], 20);
+        vectorCandidates = await this.searchSimilarByVector(userProfileEmbed.embedding, [], candidateIds.length);
       } else {
         // Fallback: Nếu user chưa có profile embedding, lấy embedding của sản phẩm cuối cùng user vừa view
         const lastBehavior = await this.userBehaviorModel
@@ -270,36 +277,29 @@ export class RecommendationsService {
           .sort({ timestamp: -1 });
 
         if (lastBehavior) {
-          vectorCandidates = await this.findSimilarProducts(lastBehavior.productId.toString(), 20);
+          vectorCandidates = await this.findSimilarProducts(lastBehavior.productId.toString(), candidateIds.length);
         }
       }
     }
 
-    // Lấy Collaborative Filtering candidates
-    cfCandidates = await this.getCFRecommendations(userId, 20);
+    // Lấy Collaborative Filtering candidates cho toàn bộ sản phẩm
+    cfCandidates = await this.getCFRecommendations(userId, candidateIds.length);
 
-    // Hợp nhất candidates
+    // Hợp nhất candidates: Khởi tạo tất cả active sản phẩm để chấm điểm toàn bộ
     const candidateMap = new Map<string, { vectorScore: number; cfScore: number }>();
+    candidateIds.forEach(id => {
+      candidateMap.set(id, { vectorScore: 0, cfScore: 0 });
+    });
     
     vectorCandidates.forEach(c => {
-      candidateMap.set(c.productId, { vectorScore: c.score, cfScore: 0 });
+      const val = candidateMap.get(c.productId);
+      if (val) val.vectorScore = c.score;
     });
 
     cfCandidates.forEach(c => {
-      const existing = candidateMap.get(c.productId);
-      if (existing) {
-        existing.cfScore = c.score;
-      } else {
-        candidateMap.set(c.productId, { vectorScore: 0, cfScore: c.score });
-      }
+      const val = candidateMap.get(c.productId);
+      if (val) val.cfScore = c.score;
     });
-
-    const candidateIds = Array.from(candidateMap.keys());
-    if (candidateIds.length === 0) {
-      // Nếu không có candidates nào, fallback hoàn toàn lấy popular
-      const fallback = await this.getPopularFallback(limit);
-      return { sessionId, recommendations: fallback };
-    }
 
     // --- 2. GIAI ĐOẠN FEATURE RETRIEVAL: ĐỌC DỮ LIỆU TỪ FEATURE STORE ---
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
@@ -436,8 +436,7 @@ export class RecommendationsService {
 
     // Sắp xếp theo score giảm dần
     const finalRecommendations = rankedResults
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+      .sort((a, b) => b.score - a.score);
 
     // --- 4. GIAI ĐOẠN FEEDBACK LOGGING: GHI LOG ĐỂ THEO DÕI CTR ---
     try {

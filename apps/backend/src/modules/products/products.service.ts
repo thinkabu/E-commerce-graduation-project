@@ -93,8 +93,12 @@ export class ProductsService {
       ];
     }
 
-    // Category filter
-    if (categoryId) filter.categoryId = new Types.ObjectId(categoryId);
+    // Category filter (support both string and ObjectId formats in DB)
+    if (categoryId) {
+      filter.categoryId = {
+        $in: [categoryId, new Types.ObjectId(categoryId)],
+      };
+    }
 
     // Price range
     if (minPrice !== undefined || maxPrice !== undefined) {

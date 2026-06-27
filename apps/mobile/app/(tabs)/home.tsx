@@ -94,8 +94,12 @@ const HomeScreen = () => {
       const cats = await getCategories();
       setCategories(cats.filter((c) => c.isActive).slice(0, 5));
 
-      // Fetch popular products (limit to 15)
-      const popData = await getProducts({ limit: 15 });
+      // Fetch popular products (limit to 15, sorted by soldCount desc for best sellers)
+      const popData = await getProducts({
+        limit: 15,
+        sortBy: "soldCount",
+        sortOrder: "desc",
+      });
       setPopularProducts(popData.items);
 
       // Fetch AI Suggested products cá nhân hóa
@@ -382,7 +386,7 @@ const HomeScreen = () => {
                     source={{ uri: banner.image }}
                     className="absolute w-full h-full object-cover opacity-60"
                   />
-                  <Box className="absolute inset-0 bg-black/20" />
+                  <Box className="absolute inset-0 bg-black/5" />
                   <VStack className="absolute bottom-4 left-5">
                     <Text className="text-xs font-bold text-yellow-400 uppercase tracking-wider">
                       {banner.subtitle}

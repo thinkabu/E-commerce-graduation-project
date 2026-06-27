@@ -93,7 +93,7 @@ const BlockchainPaymentScreen = () => {
     // Fallback 1: metamask:// custom scheme
     const metamaskScheme = `metamask://send?to=${MERCHANT_WALLET}&value=${amountInWei}&chainId=${chainId}`;
 
-    // Fallback 2: MetaMask universal link (mở MetaMask App qua web)
+    // Fallback 2: MetaMask universal link
     const metamaskUniversalLink = `https://metamask.app.link/send/${MERCHANT_WALLET}@${chainId}?value=${amountInWei}`;
 
     try {

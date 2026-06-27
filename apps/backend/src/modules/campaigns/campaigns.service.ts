@@ -93,6 +93,14 @@ export class CampaignsService {
     if (campaign.targetType === 'ALL_USERS') {
       const result = await this.notificationsService.sendToAll(payload);
       sentCount = result.sentCount;
+
+      // Lưu thông báo in-app cho toàn bộ user trong hệ thống
+      await this.notificationsService.saveNotificationToAll(
+        campaign.title,
+        campaign.body,
+        NotificationType.PROMOTION,
+        payload.data,
+      );
     } else {
       const userIds = campaign.targetUserIds.map((id) => id.toString());
       const result = await this.notificationsService.sendToMany(

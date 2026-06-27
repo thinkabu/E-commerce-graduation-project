@@ -37,8 +37,16 @@ const CategoryProductsScreen = () => {
     string | undefined
   >(id === "all" || !id ? undefined : id);
 
+  const [displayName, setDisplayName] = useState<string>(name || "Danh mục");
+
   const filterChips = ["Tất cả", "Giá thấp", "Giá cao", "Bán chạy", "Mới nhất"];
   const [activeFilter, setActiveFilter] = useState("Tất cả");
+
+  // Đồng bộ hóa state khi route parameters thay đổi (tránh lỗi reuse screen)
+  React.useEffect(() => {
+    setSelectedCategoryId(id === "all" || !id ? undefined : id);
+    setDisplayName(name || "Danh mục");
+  }, [id, name]);
 
   React.useEffect(() => {
     const fetchCats = async () => {
@@ -92,7 +100,7 @@ const CategoryProductsScreen = () => {
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-zinc-50 dark:bg-zinc-950">
       <Stack.Screen options={{ headerShown: false }} />
-      <Header title={name as string} />
+      <Header title={displayName} />
 
       <VStack className="flex-1">
         {/* Categories Bar */}
@@ -105,7 +113,10 @@ const CategoryProductsScreen = () => {
               contentContainerStyle={{ gap: 12, paddingBottom: 10 }}
             >
               <Pressable
-                onPress={() => setSelectedCategoryId(undefined)}
+                onPress={() => {
+                  setSelectedCategoryId(undefined);
+                  setDisplayName("Tất cả sản phẩm");
+                }}
                 className={`px-4 py-2 rounded-xl border ${
                   !selectedCategoryId
                     ? "bg-yellow-500 border-yellow-500"
@@ -126,7 +137,10 @@ const CategoryProductsScreen = () => {
               {categories.map((cat) => (
                 <Pressable
                   key={cat._id}
-                  onPress={() => setSelectedCategoryId(cat._id)}
+                  onPress={() => {
+                    setSelectedCategoryId(cat._id);
+                    setDisplayName(cat.name);
+                  }}
                   className={`px-4 py-2 rounded-xl border flex-row items-center space-x-2 gap-2 ${
                     selectedCategoryId === cat._id
                       ? "bg-yellow-500 border-yellow-500"

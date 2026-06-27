@@ -257,10 +257,10 @@ const Layout: React.FC = () => {
               </span>
               <span className="text-sm font-black text-zinc-900">
                 {new Date().toLocaleDateString("vi-VN", {
-                  weekday: "long",
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
+                    weekday: "long",
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
                 })}
               </span>
             </div>

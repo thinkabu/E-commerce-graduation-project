@@ -67,7 +67,7 @@ const Login: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-11 pr-4 py-4 bg-zinc-50 border border-zinc-100 text-zinc-900 font-bold rounded-2xl focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 outline-none transition-all"
-                  placeholder="admin@techshop.com"
+                  placeholder="admin@thinkheart.com"
                 />
               </div>
             </div>
@@ -128,7 +128,7 @@ const Login: React.FC = () => {
         {/* --- FOOTER --- */}
         <div className="mt-10 text-center">
           <p className="text-sm text-zinc-400 font-medium">
-            &copy; 2026 TechShop Admin Panel. Bảo mật bởi{" "}
+            &copy; 2026 ThinkHeart Admin Panel. Bảo mật bởi{" "}
             <span className="text-zinc-600 font-bold">SafeShield</span>
           </p>
         </div>
